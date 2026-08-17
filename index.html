@@ -607,22 +607,30 @@ const SUPABASE_ROW_ID = "00000000-0000-0000-0000-000000000001";
 
 async function save(){
   try {
-    // Save only the columns we know exist in cer_records.
-    const { data: updatedRows, error: updateError } = await supabaseClient
+    const payload = { data: tasks };
+
+    // Check whether the shared row already exists.
+    const { data: existingRows, error: checkError } = await supabaseClient
       .from("cer_records")
-      .update({ data: tasks })
-      .eq("id", SUPABASE_ROW_ID)
-      .select("id");
+      .select("id")
+      .limit(1);
 
-    if(updateError) throw updateError;
+    if(checkError) throw checkError;
 
-    if(!updatedRows || updatedRows.length === 0){
+    if(existingRows && existingRows.length > 0){
+      const sharedId = existingRows[0].id;
+
+      const { error: updateError } = await supabaseClient
+        .from("cer_records")
+        .update(payload)
+        .eq("id", sharedId);
+
+      if(updateError) throw updateError;
+    } else {
+      // First save: create the shared row from the existing CER dataset.
       const { error: insertError } = await supabaseClient
         .from("cer_records")
-        .insert({
-          id: SUPABASE_ROW_ID,
-          data: tasks
-        });
+        .insert(payload);
 
       if(insertError) throw insertError;
     }
