@@ -607,33 +607,26 @@ const SUPABASE_ROW_ID = "00000000-0000-0000-0000-000000000001";
 
 async function save(){
   try {
-    const payload = {
-      data: tasks,
-      updated_at: new Date().toISOString()
-    };
-
-    // Update the shared row that already exists.
+    // Save only the columns we know exist in cer_records.
     const { data: updatedRows, error: updateError } = await supabaseClient
       .from("cer_records")
-      .update(payload)
+      .update({ data: tasks })
       .eq("id", SUPABASE_ROW_ID)
       .select("id");
 
     if(updateError) throw updateError;
 
-    // If the row somehow does not exist, create it.
     if(!updatedRows || updatedRows.length === 0){
       const { error: insertError } = await supabaseClient
         .from("cer_records")
         .insert({
           id: SUPABASE_ROW_ID,
-          ...payload
+          data: tasks
         });
 
       if(insertError) throw insertError;
     }
 
-    // Keep a local copy too, so the browser has a fallback.
     localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
 
     $("#savedAt").textContent =
@@ -643,9 +636,11 @@ async function save(){
       });
 
     console.log("Saved to Supabase successfully");
+    toast("Saved successfully");
   } catch(e) {
     console.error("Supabase save failed:", e);
-    toast("Save failed — Supabase did not accept the change");
+    const msg = e?.message || e?.details || e?.hint || String(e);
+    toast("Supabase error: " + msg);
   }
 }
 
