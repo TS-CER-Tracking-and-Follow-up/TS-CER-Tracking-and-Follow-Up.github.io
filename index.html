@@ -591,16 +591,79 @@ function applySmart(t){
 }
 
 /* ---------- storage ---------- */
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(tasks)); $("#savedAt").textContent = "saved " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
-function seedSig(){ return SEED_DATA.length + ":" + (SEED_DATA[0]?.id || "") + ":" + APP_VER; }
-function load(){
-  if(localStorage.getItem(SEED_KEY) !== seedSig()){
-    localStorage.setItem(SEED_KEY, seedSig());
-    localStorage.removeItem(STORE_KEY);
+/* ---------- storage ---------- */
+const SUPABASE_ROW_ID = "00000000-0000-0000-0000-000000000001";
+
+async function save(){
+  try {
+    const { error } = await supabaseClient
+      .from("cer_records")
+      .upsert({
+        id: SUPABASE_ROW_ID,
+        data: tasks,
+        updated_at: new Date().toISOString()
+      });
+
+    if(error) throw error;
+
+    $("#savedAt").textContent =
+      "saved " + new Date().toLocaleTimeString([], {
+        hour:"2-digit",
+        minute:"2-digit"
+      });
+
+    console.log("Saved to Supabase");
+  } catch(e) {
+    console.error("Supabase save failed:", e);
+    toast("Save failed — check your internet connection");
   }
-  try{ const raw = localStorage.getItem(STORE_KEY); tasks = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(SEED_DATA)); }
-  catch(e){ tasks = JSON.parse(JSON.stringify(SEED_DATA)); }
-  if(!tasks || !tasks.length) tasks = JSON.parse(JSON.stringify(SEED_DATA));
+}
+
+function seedSig(){
+  return SEED_DATA.length + ":" + (SEED_DATA[0]?.id || "") + ":" + APP_VER;
+}
+
+async function load(){
+  try {
+    const { data: row, error } = await supabaseClient
+      .from("cer_records")
+      .select("id,data")
+      .eq("id", SUPABASE_ROW_ID)
+      .maybeSingle();
+
+    if(error) throw error;
+
+    if(row && row.data){
+      tasks = Array.isArray(row.data) ? row.data : [];
+      console.log("Loaded data from Supabase");
+      return;
+    }
+
+    const raw = localStorage.getItem(STORE_KEY);
+
+    tasks = raw
+      ? JSON.parse(raw)
+      : JSON.parse(JSON.stringify(SEED_DATA));
+
+    await save();
+
+  } catch(e) {
+    console.error("Supabase load failed:", e);
+
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      tasks = raw
+        ? JSON.parse(raw)
+        : JSON.parse(JSON.stringify(SEED_DATA));
+    } catch(err) {
+      tasks = JSON.parse(JSON.stringify(SEED_DATA));
+    }
+  }
+
+  if(!tasks || !tasks.length) {
+    tasks = JSON.parse(JSON.stringify(SEED_DATA));
+  }
+}
 }
 function resetData(){
   localStorage.setItem(SEED_KEY, seedSig());
@@ -1163,8 +1226,8 @@ document.addEventListener("keydown", e=>{
 });
 
 /* ---------- init ---------- */
-(function init(){
-  load();
+(async function init(){
+  await load();
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
   initFilters();
@@ -1174,7 +1237,7 @@ document.addEventListener("keydown", e=>{
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-const SUPABASE_URL = "https://igfvoqgeztzmgeebpdgu.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://igfvoqgeztzmgeebpdgu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WMSL5tXYCVYjUJ1VNYacIQ_HkdWdLu_";
 
 const supabaseClient = window.supabase.createClient(
