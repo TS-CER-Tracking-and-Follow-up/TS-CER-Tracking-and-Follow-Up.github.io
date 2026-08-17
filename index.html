@@ -644,8 +644,8 @@ async function load(){
 
     if(error) throw error;
 
-    if(row && row.data){
-      tasks = Array.isArray(row.data) ? row.data : [];
+    if(row && Array.isArray(row.data) && row.data.length > 0){
+      tasks = row.data;
       console.log("Loaded data from Supabase");
       return;
     }
