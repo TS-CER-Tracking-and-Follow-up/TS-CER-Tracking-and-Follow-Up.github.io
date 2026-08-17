@@ -658,26 +658,27 @@ function seedSig(){
 
 async function load(){
   try {
-    const { data: row, error } = await supabaseClient
+    // Load the first shared CER dataset from Supabase.
+    // Do NOT depend on a fixed/guessed ID; Supabase generated the real ID
+    // when the first row was created.
+    const { data: rows, error } = await supabaseClient
       .from("cer_records")
       .select("id,data")
-      .eq("id", SUPABASE_ROW_ID)
-      .maybeSingle();
+      .limit(1);
 
     if(error) throw error;
 
+    const row = rows && rows.length ? rows[0] : null;
+
     if(row && Array.isArray(row.data) && row.data.length > 0){
       tasks = row.data;
-      console.log("Loaded data from Supabase");
+      console.log("Loaded shared data from Supabase");
+      localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
       return;
     }
 
-    const raw = localStorage.getItem(STORE_KEY);
-
-    tasks = raw
-      ? JSON.parse(raw)
-      : JSON.parse(JSON.stringify(SEED_DATA));
-
+    // No shared row yet: use the original dataset and create the shared row.
+    tasks = JSON.parse(JSON.stringify(SEED_DATA));
     await save();
 
   } catch(e) {
