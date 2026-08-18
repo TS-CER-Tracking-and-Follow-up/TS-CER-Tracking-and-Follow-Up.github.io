@@ -376,9 +376,13 @@ body.view-kanban .table-scroll{display:none}
         </div>
       </div>
     </div>
-    <div class="user-badge" id="userBadge" title="Who is editing this tracker - click to change">
-      <span class="dot"></span><span class="nm" id="userBadgeName"></span><span class="chg">✕</span>
+    <div class="user-badge" id="userBadge" title="Signed-in user (from your account)">
+      <span class="dot"></span><span class="nm" id="userBadgeName"></span>
     </div>
+    <button class="btn ghost" id="authBtn" title="Sign in / sign up with your account">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      <span class="lbl" id="authBtnLabel">Sign In</span>
+    </button>
     <div class="hdr-actions">
       <button class="btn ghost" id="exportBtn" title="Export filtered rows to CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -429,8 +433,8 @@ body.view-kanban .table-scroll{display:none}
           <option value="prio-desc">Priority</option>
           <option value="value-desc">Value ▲</option>
           <option value="value-asc">Value ▼</option>
-          <option value="created-desc">Newest</option>
-          <option value="created-asc">Oldest</option>
+          <option value="cer_date-desc">Newest</option>
+          <option value="cer_date-asc">Oldest</option>
         </select>
       </div>
       <div class="tb-right">
@@ -516,6 +520,37 @@ body.view-kanban .table-scroll{display:none}
   </div>
 </div>
 
+<!-- Sign in / Sign up -->
+<div class="overlay" id="authOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-h">
+      <h2 id="authTitle">Sign in</h2>
+      <button class="x" id="authClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-b" id="authBody">
+      <div class="auth-note" style="font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:12px">
+        Use your own account so the tracker knows who edited each record. Each colleague should have their own login — your identity comes from your account and cannot be typed or changed manually.
+      </div>
+      <div class="fgrid">
+        <div class="f full"><label>Email</label><input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email"></div>
+        <div class="f full"><label>Password</label><input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <div class="f full"><label>Full name (only for new accounts)</label><input id="authName" type="text" placeholder="e.g. John Doe" autocomplete="name"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn primary" id="authSubmit" style="flex:1">Sign in</button>
+        <button class="btn ghost" id="authToggle" style="flex:1">Create account</button>
+      </div>
+      <div style="margin-top:10px;font-size:11.5px;color:var(--dim);line-height:1.45" id="authHint"></div>
+    </div>
+    <div class="modal-f">
+      <span class="err" id="authErr"></span>
+      <span class="sp"></span>
+    </div>
+  </div>
+</div>
+
 <div id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -556,39 +591,147 @@ const fmtNum = n => { if(n===null||n===undefined||isNaN(n)) return ""; return Nu
 const fmtBDT = n => n ? "৳ " + fmtNum(n) : "";
 const daysFrom = iso => { if(!iso) return null; const d = new Date(iso + "T00:00:00"); return Math.round((d - TODAY)/86400000); };
 const fmtDate = iso => { if(!iso) return ""; const [y,m,d] = iso.split("-"); return `${d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]} ${y}`; };
-const fmtStamp = iso => { if(!iso) return ""; const d = new Date(iso); if(isNaN(d)) return ""; const p = n => String(n).padStart(2,"0"); return `${p(d.getDate())} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const fmtStamp = iso => { if(!iso) return ""; const d = new Date(iso); if(isNaN(d)) return ""; const p = n => String(n).padStart(2,"0"); let h = d.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12; if(h === 0) h = 12; return `${p(d.getDate())} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}, ${p(h)}:${p(d.getMinutes())} ${ampm}`; };
 const isoDate = d => { const x = new Date(d); return x.toISOString().slice(0,10); };
 const addDays = (iso,n) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate()+n); return isoDate(d); };
 
 function uid(){ return "T" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-/* ---------- current user identity (Last Edited By) ---------- */
-const USER_KEY = "tsd_tracker_user_v1";
+/* ---------- current user identity (Supabase Auth, Last Edited By) ---------- */
+/* Identity ALWAYS comes from the signed-in Supabase account. It is never
+   typed/edited manually. Name = user_metadata.full_name || user_metadata.name,
+   falling back to the email prefix; email is used when no name is set. */
+let authState = { user: null, session: null, ready: false, error: "" };
+
+function displayNameFor(u){
+  if(!u) return "";
+  const md = (u.user_metadata || {});
+  const nm = String(md.full_name || md.name || "").trim();
+  if(nm) return nm;
+  const em = String(u.email || "").trim();
+  if(em) return em.split("@")[0].replace(/[._-]+/g," ").replace(/\b\w/g,c=>c.toUpperCase()).trim() || em;
+  return em || "";
+}
 function getUser(){
-  try{ const s = localStorage.getItem(USER_KEY); if(s){
-    const t = String(s).trim();
-    try{ const j = JSON.parse(t); if(j && typeof j === "object" && typeof j.name === "string" && j.name) return j.name; }catch(e){}
-    return t;
-  } }catch(e){}
+  const u = authState.user;
+  const nm = displayNameFor(u);
+  return nm || "";
+}
+function getUserEmail(){
+  const u = authState.user;
+  return (u && u.email) ? String(u.email).trim() : "";
+}
+function isAuthenticated(){
+  return !!(authState.session && authState.user);
+}
+function currentUser(){
+  // Identity is read-only from the authenticated account.
+  if(isAuthenticated()){
+    const nm = getUser();
+    const em = getUserEmail();
+    return em && nm !== em ? nm + " (" + em + ")" : (nm || em || "Signed-in user");
+  }
   return "";
-}
-function setUser(name){
-  const v = String(name||"").trim();
-  try{ if(v) localStorage.setItem(USER_KEY, v); else localStorage.removeItem(USER_KEY); }catch(e){}
-}
-function ensureUser(){
-  let name = getUser();
-  if(!name){ name = window.prompt("Enter your name to track who edits items (used for Last Edited By):", ""); if(name) name = String(name).trim(); if(!name) name = "Unknown User"; setUser(name); }
-  return name;
 }
 function renderUserBadge(){
   const el = $("#userBadgeName"); if(!el) return;
-  const name = getUser() || "Click to set name";
-  el.textContent = name;
-  el.title = "Editing as " + name + " - click to change";
+  const btn = $("#authBtn"); const lbl = $("#authBtnLabel");
+  if(isAuthenticated()){
+    const nm = getUser();
+    el.textContent = nm || getUserEmail() || "Signed in";
+    el.title = "Signed in as " + getUserEmail() + " — your identity is used for Last Edited By";
+    if(btn){
+      lbl.textContent = "Sign Out";
+      btn.title = "Sign out of your account";
+    }
+    $("#userBadge").classList.add("signed-in");
+  } else {
+    el.textContent = authState.ready ? "Not signed in" : "…";
+    el.title = "Sign in with your account to edit — identity is set from your login";
+    if(btn){
+      lbl.textContent = "Sign In";
+      btn.title = "Sign in / sign up with your account";
+    }
+    $("#userBadge").classList.remove("signed-in");
+  }
 }
-function currentUser(){ return getUser() || (ensureUser(), getUser()) || "Unknown User"; }
-$("#userBadge")?.addEventListener("click", ()=>{ setUser(window.prompt("Change your name (used for Last Edited By):", getUser())); renderUserBadge(); });
+/* ---------- Supabase Auth ---------- */
+let authMode = "signin";
+function openAuthModal(mode){
+  authMode = mode || "signin";
+  $("#authTitle").textContent = authMode === "signin" ? "Sign in" : "Create account";
+  $("#authSubmit").textContent = authMode === "signin" ? "Sign in" : "Create account";
+  $("#authToggle").textContent = authMode === "signin" ? "Create account" : "Back to sign in";
+  $("#authName").style.display = authMode === "signin" ? "none" : "block";
+  $("#authErr").textContent = "";
+  $("#authHint").textContent = authMode === "signin"
+    ? "Sign in with the account your administrator created for you (or the one you registered with)."
+    : "New account: your full name will be recorded as your identity (Last Edited By). A confirmation email may be required before your first sign-in.";
+  $("#authOverlay").classList.add("open");
+  setTimeout(()=>$("#authEmail")?.focus(),60);
+}
+function closeAuthModal(){ $("#authOverlay").classList.remove("open"); $("#authErr").textContent=""; }
+$("#authBtn")?.addEventListener("click", ()=>{
+  if(isAuthenticated()){
+    supabaseClient.auth.signOut().then(()=>{ renderUserBadge(); toast("Signed out"); renderLockUI(); }).catch(e=>toast("Sign out failed: "+(e.message||e)));
+    return;
+  }
+  openAuthModal("signin");
+});
+$("#authClose")?.addEventListener("click", closeAuthModal);
+$("#authOverlay")?.addEventListener("click", e=>{ if(e.target.id==="authOverlay") closeAuthModal(); });
+$("#authToggle")?.addEventListener("click", ()=>{ openAuthModal(authMode === "signin" ? "signup" : "signin"); });
+$("#authSubmit")?.addEventListener("click", async ()=>{
+  const email = String($("#authEmail")?.value||"").trim();
+  const pass = $("#authPassword")?.value || "";
+  const name = String($("#authName")?.value||"").trim();
+  if(!email || !pass){ $("#authErr").textContent = "Email and password are required."; return; }
+  if(pass.length < 6){ $("#authErr").textContent = "Password must be at least 6 characters."; return; }
+  const btn = $("#authSubmit"); btn.disabled = true; btn.textContent = "Please wait…";
+  try{
+    if(authMode === "signup"){
+      const meta = {};
+      if(name) meta.full_name = name;
+      const { data, error } = await supabaseClient.auth.signUp({ email, password: pass, options:{ data: meta } });
+      if(error) throw error;
+      if(data && data.session){
+        toast("Account created — welcome!");
+      } else {
+        toast("Account created — check your email to confirm, then sign in.");
+        closeAuthModal();
+      }
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+      if(error) throw error;
+      toast("Signed in as " + (displayNameFor(data.user) || email));
+    }
+  }catch(e){
+    $("#authErr").textContent = e?.message || e?.error_description || String(e);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = authMode === "signin" ? "Sign in" : "Create account";
+  }
+});
+$("#authPassword")?.addEventListener("keydown", e=>{ if(e.key==="Enter") $("#authSubmit")?.click(); });
+$("#authEmail")?.addEventListener("keydown", e=>{ if(e.key==="Enter") $("#authSubmit")?.click(); });
+function syncAuthSession(){
+  supabaseClient.auth.getSession().then(({ data })=>{
+    authState.session = data.session;
+    authState.user = data.session ? data.session.user : null;
+    authState.ready = true;
+    renderUserBadge();
+    renderLockUI();
+  }).catch(()=>{
+    authState.session = null; authState.user = null; authState.ready = true;
+    renderUserBadge(); renderLockUI();
+  });
+}
+function requireAuth(){
+  if(isAuthenticated()) return true;
+  toast("Please sign in — each colleague has their own account and identity.");
+  openAuthModal("signin");
+  return false;
+}
 /* ---------- /current user ---------- */
 
 /* ---------- FX conversion (BDT) ---------- */
@@ -1081,7 +1224,23 @@ function filtered(){
     else if(k==="progress") r = (a.progress||0)-(b.progress||0);
     else if(k==="ov_bdt" || k==="value") r = (a.ov_bdt||0)-(b.ov_bdt||0);
     else if(k==="order_value") r = (a.order_value||0)-(b.order_value||0);
-    else if(k==="cer_date") r = (a.cer_date||"").localeCompare(b.cer_date||"");
+    else if(k==="cer_date"){
+      // Sort by CER Receiving Date (primary). Records without a date always
+      // sort LAST regardless of sort direction. When dates are equal, use
+      // creation timestamp / SL / id as a stable secondary key.
+      const aEmpty = !(a.cer_date||""), bEmpty = !(b.cer_date||"");
+      if(aEmpty && bEmpty) r = 0;
+      else if(aEmpty) r = d;            // empty always after non-empty
+      else if(bEmpty) r = -d;           // empty always after non-empty
+      else {
+        r = (a.cer_date||"").localeCompare(b.cer_date||"");
+        if(r === 0){
+          const ac = (a.created||""), bc = (b.created||"");
+          r = ac === bc ? (parseInt(a.sl,10)||0)-(parseInt(b.sl,10)||0) : ac.localeCompare(bc);
+          if(r === 0) r = String(a.id||"").localeCompare(String(b.id||""));
+        }
+      }
+    }
     else if(k==="sl") r = (parseInt(a.sl)||0)-(parseInt(b.sl)||0);
     else if(k==="created") r = (a.created||"").localeCompare(b.created||"");
     else if(k==="cer_status") r = (a.cer_status||"").localeCompare(b.cer_status||"");
@@ -1175,9 +1334,8 @@ function detailRow(t){
       ${grid("Machine Received", fmtDate(t.machine_date))}
       ${grid("SCM Note", esc(t.scm_note), false, true).replace('<div class="v note">—</div>','<div class="v note" style="color:var(--dim);font-style:normal">—</div>')}
       <div class="det-meta">
-        <span class="tag">✏️ Last Edited</span>
-        <span class="who">${esc(t.lastEditedBy || "—")}</span>
-        <span class="when">${t.lastEditedAt ? esc(fmtStamp(t.lastEditedAt)) : "—"}</span>
+        <span class="tag">✏️ Last Edited By: ${esc(t.lastEditedBy || "—")}</span>
+        <span class="when">Last Edited: ${t.lastEditedAt ? esc(fmtStamp(t.lastEditedAt)) : "—"}</span>
       </div>
     </div>
   </td></tr>`;
@@ -1470,6 +1628,7 @@ function buildForm(t){
 }
 
 function openAdd(){
+  if(!isAuthenticated()){ requireAuth(); return; }
   if(!Lock.canEdit()){
     blockEditBanner();
     return;
@@ -1487,6 +1646,7 @@ function openAdd(){
 }
 function openEdit(id){
   const t = tasks.find(x=>x.id===id); if(!t) return;
+  if(!isAuthenticated()){ requireAuth(); return; }
   if(!Lock.canEdit()){
     blockEditBanner();
     return;
@@ -1624,6 +1784,7 @@ $("#modalOverlay").addEventListener("click", e=>{ if(e.target.id==="modalOverlay
 
 function askDelete(id){
   const t = tasks.find(x=>x.id===id); if(!t) return;
+  if(!isAuthenticated()){ requireAuth(); return; }
   pendingDelete = id;
   $("#confirmText").textContent = `“${t.item || t.cer || t.id}” will be permanently removed from this tracker.`;
   $("#confirmOverlay").classList.add("open");
@@ -1666,6 +1827,9 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- init ---------- */
 (async function init(){
+  // Restore an existing auth session (persisted by supabase-js in localStorage).
+  syncAuthSession();
+  supabaseClient.auth.onAuthStateChange(()=>{ syncAuthSession(); });
   await load();
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
