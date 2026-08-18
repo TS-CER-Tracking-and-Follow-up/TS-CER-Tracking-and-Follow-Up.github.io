@@ -715,7 +715,11 @@ $("#authSubmit")?.addEventListener("click", async ()=>{
 $("#authPassword")?.addEventListener("keydown", e=>{ if(e.key==="Enter") $("#authSubmit")?.click(); });
 $("#authEmail")?.addEventListener("keydown", e=>{ if(e.key==="Enter") $("#authSubmit")?.click(); });
 function syncAuthSession(){
-  supabaseClient.auth.getSession().then(({ data })=>{
+  // Returns a promise so init() can WAIT for the persisted session to be
+  // restored before any auth check happens (fixes the "Add Item opens a
+  // username/password popup" bug — the app no longer mistakes a not-yet-
+  // restored session for a signed-out user).
+  return supabaseClient.auth.getSession().then(({ data })=>{
     authState.session = data.session;
     authState.user = data.session ? data.session.user : null;
     authState.ready = true;
@@ -727,9 +731,12 @@ function syncAuthSession(){
   });
 }
 function requireAuth(){
+  // NOTE: never auto-opens the auth modal from Add/Edit/Delete clicks.
+  // Auto-opening here is what made an unexpected username/password (save-password)
+  // popup appear. We only guide the user with a toast; the sign-in modal stays
+  // available via the explicit "Sign In" button in the header.
   if(isAuthenticated()) return true;
-  toast("Please sign in — each colleague has their own account and identity.");
-  openAuthModal("signin");
+  toast("Please sign in first — use the Sign In button in the header (your identity comes from your account).");
   return false;
 }
 /* ---------- /current user ---------- */
@@ -802,8 +809,8 @@ loadRates(); fetchLiveRates();
 const LOCK_KEY_LOCAL = "tsd_tracker_lock_v1";
 const LOCK_ID = "tsd-single-editor";
 const LOCK_ROW_ID = 2;           // dedicated cer_records row used ONLY for the edit lock
-const LOCK_TTL = 45000;          // ms until a lock is considered stale (idle/heartbeat timeout)
-const LOCK_HEARTBEAT = 15000;    // renew interval while the lock holder is editing
+const LOCK_TTL = 60000;          // ms until a lock is considered stale (idle/heartbeat timeout)
+const LOCK_HEARTBEAT = 20000;    // renew interval while the lock holder is editing
 const LOCK_REFRESH = 4000;       // how often readers re-poll the remote lock
 
 const Lock = (()=>{
@@ -819,6 +826,10 @@ const Lock = (()=>{
   function now(){ return Date.now(); }
   function fresh(x){ return !!(x && x.expire && now() < x.expire); }
   function who(){ return getUser() || "Unknown User"; }
+  // Stable identity = the signed-in Supabase account id (never user-editable).
+  // Used to recognize lock ownership across tabs/refreshes, so a lock owner is
+  // never mistaken for a different user even if two people share a display name.
+  function myUid(){ const u = authState.user; return (u && u.id) ? String(u.id) : ""; }
 
   function emit(){
     listeners.forEach(f=>{ try{ f({remote, local, me, mode}); }catch(e){} });
@@ -873,9 +884,15 @@ const Lock = (()=>{
     const row = await sbRead();
     const cur = lockFromData(row);
     const nowMs = now();
-    if(cur && fresh(cur)) return { ok:false, holder:cur.user };
+    if(cur && fresh(cur)){
+      // The lock is live. If it belongs to THIS signed-in account (same stable
+      // uid — e.g. after a page refresh or a second tab), re-adopt it instead of
+      // failing: the lock owner must NEVER be treated as read-only.
+      if(cur.uid && myUid() && cur.uid === myUid()){ me = cur; startHeartbeat(); return { ok:true, holder:cur.user }; }
+      return { ok:false, holder:cur.user };
+    }
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    const entry = { id: LOCK_ID, user: who(), token, at:new Date().toISOString(), expire: nowMs + LOCK_TTL };
+    const entry = { id: LOCK_ID, user: who(), uid: myUid(), token, at:new Date().toISOString(), expire: nowMs + LOCK_TTL };
     let won;
     if(!row){
       // Lock row does not exist yet — create it with the lock as its only data entry.
@@ -934,7 +951,7 @@ const Lock = (()=>{
   function bcastAcquire(){
     if(!bc) return;
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    writeLocal({ user: who(), token, at:new Date().toISOString(), expire: now() + LOCK_TTL });
+    writeLocal({ user: who(), uid: myUid(), token, at:new Date().toISOString(), expire: now() + LOCK_TTL });
     bc.postMessage({ type:"acquire", entry: local });
   }
 
@@ -944,8 +961,11 @@ const Lock = (()=>{
     pollTimer = setInterval(async ()=>{
       try{
         await readRemote();
-        // If our own remote lock was overwritten/stolen (e.g. TTL race), stop pretending.
-        if(me && (!remote || remote.token !== me.token)){ me = null; stopHeartbeat(); }
+        // If our own remote lock was overwritten/stolen (e.g. TTL race), stop pretending —
+        // but only if it is not still ours by stable uid (page-refresh re-adoption case).
+        if(me && (!remote || remote.token !== me.token)){
+          if(!(remote && remote.uid && myUid() && remote.uid === myUid())){ me = null; stopHeartbeat(); }
+        }
       }catch(e){
         channelOk = false; // remote unreachable — degrade (readers fall back to local mode)
       }
@@ -982,14 +1002,21 @@ const Lock = (()=>{
     return "";
   }
   function amIHolder(){
-    const u = who();
-    // Remote holder: only if the remote lock is ours AND belongs to the current user.
-    if(me && me.user === u && fresh(remote) && remote.token === me.token) return true;
-    // Local (same-browser) holder: only if the local lock belongs to THIS user.
-    if(local && fresh(local)) return local.user === u;
+    const u = who(); const uid = myUid();
+    // Remote: ours if the lock was acquired by this signed-in account (stable
+    // uid) or by this exact token in this tab.
+    if(remote && fresh(remote)){
+      if(uid && remote.uid && remote.uid === uid) return true;
+      if(me && remote.token === me.token && me.user === u) return true;
+    }
+    // Local (same-browser fallback): only if it belongs to THIS user.
+    if(local && fresh(local)){
+      if(uid && local.uid && local.uid === uid) return true;
+      if(local.user === u) return true;
+    }
     return false;
   }
-  // force-cdn-refresh marker
+  // force-cdn-refresh marker v2
   function canEdit(){ return !isLocked() || amIHolder(); }
   async function acquire(){
     if(amIHolder()) return { ok:true, holder: who() };
@@ -1111,10 +1138,12 @@ async function save(){
 
     console.log("Saved to Supabase successfully");
     toast("Saved successfully");
+    return true;
   } catch(e) {
     console.error("Supabase save failed:", e);
     const msg = e?.message || e?.details || e?.hint || String(e);
     toast("Supabase error: " + msg);
+    return false;
   }
 }
 
@@ -1225,15 +1254,23 @@ function filtered(){
     else if(k==="ov_bdt" || k==="value") r = (a.ov_bdt||0)-(b.ov_bdt||0);
     else if(k==="order_value") r = (a.order_value||0)-(b.order_value||0);
     else if(k==="cer_date"){
-      // Sort by CER Receiving Date (primary). Records without a date always
-      // sort LAST regardless of sort direction. When dates are equal, use
-      // creation timestamp / SL / id as a stable secondary key.
-      const aEmpty = !(a.cer_date||""), bEmpty = !(b.cer_date||"");
+      // Sort by CER Receiving Date (primary). Records WITHOUT a date fall back
+      // to their creation timestamp so newly added items still surface at the
+      // TOP under "Newest" (instead of being buried at the bottom). Secondary
+      // key = created timestamp, final tiebreak = record id.
+      const dk = t=>{
+        if(t.cer_date && String(t.cer_date).trim()!=="") return String(t.cer_date).trim();
+        const c = t.created || "";
+        if(String(c).length>=10 && !isNaN(Date.parse(c))) return String(c).slice(0,10);
+        return "";
+      };
+      const ak = dk(a), bk = dk(b);
+      const aEmpty = !ak, bEmpty = !bk;
       if(aEmpty && bEmpty) r = 0;
-      else if(aEmpty) r = d;            // empty always after non-empty
-      else if(bEmpty) r = -d;           // empty always after non-empty
+      else if(aEmpty) r = d;            // empty after non-empty
+      else if(bEmpty) r = -d;           // empty after non-empty
       else {
-        r = (a.cer_date||"").localeCompare(b.cer_date||"");
+        r = ak.localeCompare(bk);
         if(r === 0){
           const ac = (a.created||""), bc = (b.created||"");
           r = ac === bc ? (parseInt(a.sl,10)||0)-(parseInt(b.sl,10)||0) : ac.localeCompare(bc);
@@ -1661,7 +1698,7 @@ function openEdit(id){
     renderLockUI();
   });
 }
-function closeModal(){ $("#modalOverlay").classList.remove("open"); $("#formErr").textContent=""; Lock.release(); renderLockUI(); }
+function closeModal(){ $("#modalOverlay").classList.remove("open"); $("#formErr").textContent=""; editingId=null; Lock.release(); renderLockUI(); }
 
 /* ---------- lock UI ---------- */
 function renderLockUI(){
@@ -1752,7 +1789,12 @@ function readForm(){
   return t;
 }
 
-$("#formSave").addEventListener("click", ()=>{
+$("#formSave").addEventListener("click", async ()=>{
+  // Defensive: never save while someone else holds the editing lock.
+  if(Lock.isLocked() && !Lock.amIHolder()){
+    toast("Read-only — " + (Lock.holderName() || "another user") + " is editing right now.");
+    return;
+  }
   const t = readForm();
   if(!t.item){ $("#formErr").textContent = "Item Name is required."; return; }
   recomputeBDT(t);
@@ -1772,11 +1814,25 @@ $("#formSave").addEventListener("click", ()=>{
   } else {
     t.id = uid();
     t.sl = String(nextSl());
+    // Record creation timestamp: enables correct Newest/Oldest sorting even
+    // before a CER Receiving Date is entered (fallback sort key).
+    if(!t.created) t.created = new Date().toISOString().slice(0,10);
     t.autoPriority = true; t.autoProgress = true; t._autoTarget = true;
+    t.lastEditedBy = currentUser();
+    t.lastEditedAt = new Date().toISOString();
     tasks.unshift(t);
     toast("Item added");
   }
-  save(); renderAll(); closeModal();
+  const ok = await save();
+  renderAll();
+  if(ok){
+    // Lock releases only AFTER a successful save (per requirement).
+    Lock.release();
+    closeModal();
+  } else {
+    // Save failed — keep the lock so the editor can retry without losing the form.
+    toast("Save failed — your form is kept open. Please try again.");
+  }
 });
 $("#formCancel").addEventListener("click", closeModal);
 $("#modalClose").addEventListener("click", closeModal);
@@ -1789,10 +1845,18 @@ function askDelete(id){
   $("#confirmText").textContent = `“${t.item || t.cer || t.id}” will be permanently removed from this tracker.`;
   $("#confirmOverlay").classList.add("open");
 }
-$("#confirmYes").addEventListener("click", ()=>{
+$("#confirmYes").addEventListener("click", async ()=>{
   if(pendingDelete){
+    // Defensive: never delete while someone else holds the editing lock.
+    if(Lock.isLocked() && !Lock.amIHolder()){
+      toast("Read-only — " + (Lock.holderName() || "another user") + " is editing right now.");
+      return;
+    }
     tasks = tasks.filter(x=>x.id!==pendingDelete);
-    save(); renderAll(); toast("Item deleted");
+    const ok = await save();
+    renderAll();
+    if(ok){ Lock.release(); toast("Item deleted"); }
+    else { toast("Delete failed — please try again."); }
   }
   pendingDelete = null;
   $("#confirmOverlay").classList.remove("open");
@@ -1827,8 +1891,9 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- init ---------- */
 (async function init(){
-  // Restore an existing auth session (persisted by supabase-js in localStorage).
-  syncAuthSession();
+  // Restore an existing auth session (persisted by supabase-js in localStorage)
+  // and WAIT for it — auth checks must never run against a half-restored state.
+  await syncAuthSession();
   supabaseClient.auth.onAuthStateChange(()=>{ syncAuthSession(); });
   await load();
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
