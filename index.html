@@ -417,7 +417,7 @@ body.view-kanban .table-scroll{display:none}
       </div>
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="searchInput" type="text" placeholder="Search item, CER, tracking, manufacturer, agent, note…" autocomplete="off">
+        <input id="searchInput" type="text" placeholder="Search item, CER, tracking, manufacturer, agent, note…" autocomplete="off" name="cer_search" spellcheck="false">
       </div>
       <div class="ctl">
         <select id="stageFilter" title="Filter by pipeline stage"></select>
@@ -767,6 +767,9 @@ function syncAuthSession(){
     // BUG 3 FIX: never let the signed-in user's email leak into the search bar.
     const si = $("#searchInput");
     if(si && !filter.q){ si.value = ""; }
+    // Also run the autofill sweep right after login — Chrome may have injected
+    // a saved email into the search field while the auth modal was open.
+    setTimeout(()=>{ const s2 = $("#searchInput"); if(s2 && !filter.q && s2.value !== ""){ s2.value = ""; } }, 400);
     renderUserBadge();
     renderLockUI();
   }).catch(()=>{
@@ -783,6 +786,39 @@ function requireAuth(){
   toast("Please sign in first — use the Sign In button in the header (your identity comes from your account).");
   return false;
 }
+/* ---------- search-bar autofill guard ---------- */
+// The search bar must ALWAYS be empty unless the user actually typed a query.
+// Browsers (Chrome) aggressively autofill the first empty text input with a
+// saved email — that is what put the email inside the search bar. No app code
+// writes an email there; we defend against autofill with several layers:
+//   1. autocomplete="off" + explicit non-generic name on the <input>
+//   2. A real-time guard: whenever the input's value changes while the user
+//      has NOT typed anything (filter.q empty), reset it and drop the change.
+//   3. After a successful login the field is cleared again (in syncAuthSession).
+//   4. On page load it is cleared, so it is never restored from autofill.
+function guardSearchAutofill(){
+  const si = $("searchInput") || $("input#searchInput");
+  if(!si) return;
+  // keep our view of "has the user typed" in sync with real keystrokes
+  si.addEventListener("keydown", ()=>{ si.dataset.userTyped = "1"; });
+  // watch EVERY value change (covers autofill, autofill-on-focus, password
+  // managers, browser extensions): if the user never typed, clear it
+  si.addEventListener("input", ()=>{
+    if(!si.dataset.userTyped){
+      if(si.value !== ""){ si.value = ""; filter.q = ""; }
+    }
+  });
+  // autofill can also fire on focus / after paint, or when the page becomes
+  // visible again (Chrome restores form state) — sweep it on those events too
+  const sweep = ()=>{
+    if(si && !si.dataset.userTyped && si.value !== ""){ si.value = ""; filter.q = ""; }
+  };
+  window.addEventListener("focus", sweep);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") setTimeout(sweep, 150); });
+  setTimeout(sweep, 300);   // after initial paint
+  setTimeout(sweep, 1200);  // after autofill has had time to run
+}
+/* ---------- /search-bar autofill guard ---------- */
 /* ---------- /current user ---------- */
 
 /* ---------- FX conversion (BDT) ---------- */
@@ -1954,6 +1990,7 @@ document.addEventListener("keydown", e=>{
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
   initFilters();
+  guardSearchAutofill();
   renderUserBadge();
   renderAll();
   Lock.init().then(()=>renderLockUI());
