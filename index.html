@@ -55,6 +55,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:6px 2px 1
 .user-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--txt);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
 .lock-banner{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--txt);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);margin-bottom:14px}
 .lock-banner.lb-me{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45)}
+.lock-banner .lb-indicator{font-size:16px;line-height:1;flex-shrink:0}
 .lock-banner .lb-txt{flex:1;line-height:1.45}
 .lock-banner .lb-btn{background:transparent;border:1px solid rgba(245,158,11,.55);color:var(--txt);font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;cursor:pointer;transition:background .15s}
 .lock-banner.lb-me .lb-btn{border-color:rgba(52,211,153,.55)}
@@ -357,7 +358,7 @@ body.view-kanban .table-scroll{display:none}
 
   <!-- Single-editor lock banner -->
   <div class="lock-banner" id="lockBanner" hidden>
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span class="lb-indicator" id="lockIndicator">🟢</span>
     <span class="lb-txt" id="lockBannerTxt"></span>
     <button class="lb-btn" id="lockReleaseBtn" hidden>Release lock</button>
   </div>
@@ -417,7 +418,9 @@ body.view-kanban .table-scroll{display:none}
       </div>
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="searchInput" type="text" placeholder="Search item, CER, tracking, manufacturer, agent, note…" autocomplete="off" name="cer_search" spellcheck="false">
+        <!-- HIDDEN DUMMY: tricks browser autofill into filling this instead of the real search bar -->
+        <input type="email" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0.01" autocomplete="email">
+        <input id="searchInput" type="text" placeholder="Search item, CER, tracking, manufacturer, agent, note…" autocomplete="off" name="tsd_q_9x7k2" spellcheck="false" data-tsd-search="1" readonly>
       </div>
       <div class="ctl">
         <select id="stageFilter" title="Filter by pipeline stage"></select>
@@ -555,6 +558,151 @@ body.view-kanban .table-scroll{display:none}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SETUP SQL — REQUIRED for single-editor lock system (v4)                    ║
+║                                                                             ║
+║  Run these SQL statements ONCE in your Supabase SQL Editor                  ║
+║  (https://supabase.com/dashboard/project/igfvoqgeztzmgeebpdgu/sql/new)      ║
+║                                                                             ║
+║  This creates a SEPARATE editor_lock table (NOT cer_records) and sets up    ║
+║  RLS policies so only the current lock holder can INSERT/UPDATE/DELETE      ║
+║  cer_records. All authenticated users can SELECT (read) all rows.           ║
+║                                                                             ║
+║  The lock is stored in editor_lock (single row, id=1). The lock holder's    ║
+║  uid is in holder_uid column. We compare that against auth.uid() to decide  ║
+║  write permissions. No RLS recursion because editor_lock is a separate      ║
+║  table from cer_records.                                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║  SETUP SQL — REQUIRED for single-editor lock system (v4)                    ║
+-- ║                                                                             ║
+-- ║  Run these SQL statements ONCE in your Supabase SQL Editor                  ║
+-- ║  (https://supabase.com/dashboard/project/igfvoqgeztzmgeebpdgu/sql/new)      ║
+-- ║                                                                             ║
+-- ║  This creates a SEPARATE editor_lock table (NOT cer_records) and sets up    ║
+-- ║  RLS policies so only the current lock holder can INSERT/UPDATE/DELETE      ║
+-- ║  cer_records. All authenticated users can SELECT (read) all rows.           ║
+-- ║                                                                             ║
+-- ║  The lock is stored in editor_lock (single row, id=1). The lock holder's    ║
+-- ║  uid is in holder_uid column. We compare that against auth.uid() to decide  ║
+-- ║  write permissions. No RLS recursion because editor_lock is a separate      ║
+-- ║  table from cer_records.                                                    ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+
+-- ============================================================
+-- STEP 1: Create the editor_lock table (separate from cer_records)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.editor_lock (
+  id bigint PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- single-row table
+  holder_uid uuid DEFAULT NULL,
+  holder_name text DEFAULT NULL,
+  acquired_at timestamptz DEFAULT NULL,
+  heartbeat_at timestamptz DEFAULT NULL,
+  expires_at timestamptz DEFAULT NULL
+);
+
+-- Insert the single lock row if it doesn't exist yet
+INSERT INTO public.editor_lock (id, holder_uid, holder_name, acquired_at, heartbeat_at, expires_at)
+SELECT 1, NULL, NULL, NULL, NULL, NULL
+WHERE NOT EXISTS (SELECT 1 FROM public.editor_lock WHERE id = 1);
+
+-- ============================================================
+-- STEP 2: Enable RLS on both tables
+-- ============================================================
+ALTER TABLE public.cer_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.editor_lock ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- STEP 3: RLS policies for cer_records
+-- ============================================================
+
+-- 3a. All authenticated users can SELECT (read) all CER records
+DROP POLICY IF EXISTS "cer_records_select_all" ON public.cer_records;
+CREATE POLICY "cer_records_select_all" ON public.cer_records
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- 3b. INSERT: only allowed if the current user holds the active (non-expired) lock,
+--     OR if no active lock exists (stale/expired lock = free for anyone)
+DROP POLICY IF EXISTS "cer_records_insert_locked" ON public.cer_records;
+CREATE POLICY "cer_records_insert_locked" ON public.cer_records
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.editor_lock
+      WHERE id = 1
+        AND (
+          -- User holds the active lock
+          (holder_uid IS NOT NULL AND holder_uid = auth.uid() AND expires_at > NOW())
+          OR
+          -- No active lock exists (stale or never acquired)
+          (holder_uid IS NULL OR expires_at IS NULL OR expires_at <= NOW())
+        )
+    )
+  );
+
+-- 3c. UPDATE: only allowed if the current user holds the active lock
+DROP POLICY IF EXISTS "cer_records_update_locked" ON public.cer_records;
+CREATE POLICY "cer_records_update_locked" ON public.cer_records
+  FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.editor_lock
+      WHERE id = 1
+        AND holder_uid IS NOT NULL
+        AND holder_uid = auth.uid()
+        AND expires_at > NOW()
+    )
+  );
+
+-- 3d. DELETE: only allowed if the current user holds the active lock
+DROP POLICY IF EXISTS "cer_records_delete_locked" ON public.cer_records;
+CREATE POLICY "cer_records_delete_locked" ON public.cer_records
+  FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.editor_lock
+      WHERE id = 1
+        AND holder_uid IS NOT NULL
+        AND holder_uid = auth.uid()
+        AND expires_at > NOW()
+    )
+  );
+
+-- ============================================================
+-- STEP 4: RLS policies for editor_lock table
+-- ============================================================
+
+-- 4a. All authenticated users can SELECT the lock row
+DROP POLICY IF EXISTS "editor_lock_select_all" ON public.editor_lock;
+CREATE POLICY "editor_lock_select_all" ON public.editor_lock
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- 4b. (No UPDATE policy needed — the Lock module now uses SECURITY DEFINER RPC functions
+--     acquire_lock(), heartbeat_lock(), release_lock() which bypass RLS.
+--     Authenticated users can only SELECT the lock row to read the current state.)
+
+-- ============================================================
+-- STEP 5: Revoke anon/public access, grant to authenticated only
+-- ============================================================
+REVOKE ALL ON public.cer_records FROM anon, public;
+GRANT SELECT ON public.cer_records TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.cer_records TO authenticated;
+
+REVOKE ALL ON public.editor_lock FROM anon, public;
+GRANT SELECT ON public.editor_lock TO authenticated;
+-- (INSERT/UPDATE/DELETE on editor_lock are handled by SECURITY DEFINER RPC functions)
+-- End of setup SQL
+-->
+
 <script>
 const SUPABASE_URL = "https://igfvoqgeztzmgeebpdgu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WMSL5tXYCVYjUJ1VNYacIQ_HkdWdLu_";
@@ -640,6 +788,7 @@ function uid(){ return "T" + Date.now().toString(36) + Math.random().toString(36
    typed/edited manually. Name = user_metadata.full_name || user_metadata.name,
    falling back to the email prefix; email is used when no name is set. */
 let authState = { user: null, session: null, ready: false, error: "" };
+let _accessToken = null; // user's Supabase access token (set on login; null before auth)
 
 function displayNameFor(u){
   if(!u) return "";
@@ -761,15 +910,27 @@ function syncAuthSession(){
     authState.session = data.session;
     authState.user = data.session ? data.session.user : null;
     authState.ready = true;
+    // Capture the user's access token so Lock REST calls use the user's JWT
+    // (required for RLS to see auth.uid() correctly).
+    // Reset to anon key on sign-out so unauthenticated reads still work.
+    if(data.session && data.session.access_token){
+      _accessToken = data.session.access_token;
+    } else {
+      _accessToken = SUPABASE_KEY;
+    }
     // BUG 1 FIX: the login box must close automatically the moment a session/
     // user is detected — no manual close needed after successful login.
     if(authState.user){ closeAuthModal(); }
-    // BUG 3 FIX: never let the signed-in user's email leak into the search bar.
-    const si = $("#searchInput");
-    if(si && !filter.q){ si.value = ""; }
-    // Also run the autofill sweep right after login — Chrome may have injected
-    // a saved email into the search field while the auth modal was open.
-    setTimeout(()=>{ const s2 = $("#searchInput"); if(s2 && !filter.q && s2.value !== ""){ s2.value = ""; } }, 400);
+    // SEARCH BAR: always empty after login, no matter what. Never restore any
+    // value (email or otherwise) into the search field. The user's typed query
+    // is intentionally NOT preserved across a re-auth/login.
+    const si = $("searchInput") || $("input#searchInput");
+    if(si){ si.value = ""; si.removeAttribute("value"); if(si.dataset) si.dataset.userTyped = ""; si.readOnly = true; }
+    filter.q = "";
+    // Sweep again shortly after login in case the browser autofills the field
+    // late (Chrome can inject a saved email into the first empty text input
+    // even after the page has settled).
+    setTimeout(()=>{ const s2 = $("searchInput") || $("input#searchInput"); if(s2){ if(s2.value !== ""){ s2.value = ""; filter.q = ""; } s2.readOnly = true; } }, 400);
     renderUserBadge();
     renderLockUI();
   }).catch(()=>{
@@ -791,32 +952,63 @@ function requireAuth(){
 // Browsers (Chrome) aggressively autofill the first empty text input with a
 // saved email — that is what put the email inside the search bar. No app code
 // writes an email there; we defend against autofill with several layers:
-//   1. autocomplete="off" + explicit non-generic name on the <input>
-//   2. A real-time guard: whenever the input's value changes while the user
-//      has NOT typed anything (filter.q empty), reset it and drop the change.
-//   3. After a successful login the field is cleared again (in syncAuthSession).
-//   4. On page load it is cleared, so it is never restored from autofill.
+//   1. A hidden dummy <input type="email"> placed BEFORE the real search bar
+//      so Chrome fills that one instead (the "honey pot" technique).
+//   2. The real search bar starts with readonly=true — Chrome never autofills
+//      a readonly field. readonly is removed on the first user interaction
+//      (mousedown / touchstart / keydown) so the user can type normally.
+//   3. autocomplete="off" + explicit non-generic name on the <input>
+//   4. A real-time guard: whenever the input's value changes while the user
+//      has NOT typed anything, reset it and drop the change.
+//   5. After a successful login the field is cleared again (in syncAuthSession).
+//   6. On page load it is cleared, so it is never restored from autofill.
 function guardSearchAutofill(){
   const si = $("searchInput") || $("input#searchInput");
   if(!si) return;
+  // Remove readonly on first real user interaction so they can type.
+  // Using mousedown (catches click/tap before focus) + touchstart (mobile)
+  // + keydown (keyboard navigation). This is the gold-standard technique:
+  // Chrome never autofills a readonly field, but the user experience is
+  // seamless because readonly disappears before they can type.
+  const enableInput = ()=>{
+    if(si.readOnly){
+      si.readOnly = false;
+      si.dataset.userTyped = "1";
+    }
+  };
+  si.addEventListener("mousedown", enableInput, {once: true});
+  si.addEventListener("touchstart", enableInput, {once: true, passive: true});
+  si.addEventListener("keydown", enableInput, {once: true});
+  // Also enable on focus (in case user tabs to it)
+  si.addEventListener("focus", ()=>{
+    if(si.readOnly){ si.readOnly = false; si.dataset.userTyped = "1"; }
+  }, {once: true});
   // keep our view of "has the user typed" in sync with real keystrokes
-  si.addEventListener("keydown", ()=>{ si.dataset.userTyped = "1"; });
+  si.addEventListener("input", ()=>{ if(si.dataset.userTyped !== "1"){ si.dataset.userTyped = "1"; } });
   // watch EVERY value change (covers autofill, autofill-on-focus, password
   // managers, browser extensions): if the user never typed, clear it
   si.addEventListener("input", ()=>{
-    if(!si.dataset.userTyped){
+    if(si.dataset.userTyped !== "1"){
       if(si.value !== ""){ si.value = ""; filter.q = ""; }
     }
   });
   // autofill can also fire on focus / after paint, or when the page becomes
-  // visible again (Chrome restores form state) — sweep it on those events too
+  // visible again (Chrome restores form state) — sweep it on those events too.
+  // The search bar must ALWAYS be empty on load and on re-entry, regardless of
+  // what the browser remembered; a user-typed query is the only thing allowed.
   const sweep = ()=>{
-    if(si && !si.dataset.userTyped && si.value !== ""){ si.value = ""; filter.q = ""; }
+    if(!si) return;
+    si.removeAttribute("value");
+    if(si.dataset) si.dataset.userTyped = si.dataset.userTyped === "1" ? "1" : "";
+    if(si.value !== ""){ si.value = ""; filter.q = ""; }
   };
-  window.addEventListener("focus", sweep);
-  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") setTimeout(sweep, 150); });
-  setTimeout(sweep, 300);   // after initial paint
-  setTimeout(sweep, 1200);  // after autofill has had time to run
+  const sweepForce = ()=>{ if(si.value !== ""){ si.value = ""; filter.q = ""; } };
+  window.addEventListener("focus", sweepForce);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") setTimeout(sweepForce, 150); });
+  window.addEventListener("pageshow", ()=>{ setTimeout(sweepForce, 150); });   // bfcache restore
+  sweep();                       // right now, before autofill can run
+  setTimeout(sweepForce, 300);   // after initial paint
+  setTimeout(sweepForce, 1200);  // after autofill has had time to run
 }
 /* ---------- /search-bar autofill guard ---------- */
 /* ---------- /current user ---------- */
@@ -888,18 +1080,18 @@ loadRates(); fetchLiveRates();
    ============================================================ */
 const LOCK_KEY_LOCAL = "tsd_tracker_lock_v1";
 const LOCK_ID = "tsd-single-editor";
-const LOCK_ROW_ID = 2;           // dedicated cer_records row used ONLY for the edit lock
+const LOCK_TABLE = "editor_lock"; // separate table for the single-editor lock (NOT cer_records)
 const LOCK_TTL = 60000;          // ms until a lock is considered stale (idle/heartbeat timeout)
 const LOCK_HEARTBEAT = 20000;    // renew interval while the lock holder is editing
 const LOCK_REFRESH = 4000;       // how often readers re-poll the remote lock
 
 const Lock = (()=>{
   const bc = ("BroadcastChannel" in window) ? new BroadcastChannel("tsd-lock") : null;
-  let remote = null;        // {user, token, at, expire}
-  let local = null;         // {user, token, at, expire}
+  let remote = null;        // {user, uid, at, expire}
+  let local = null;         // {user, uid, at, expire}
   let channelOk = true;     // false once a Supabase op fails (graceful degradation)
-  let me = null;            // {user, token, expire} — this tab's own remote lock (if acquired)
-  let hbTimer = null, pollTimer = null, bcastTimer = null;
+  let me = null;            // {user, uid, at, expire} — this tab's own remote lock (if acquired)
+  let hbTimer = null, pollTimer = null, bcastTimer = null, rtUnsub = null;
   const listeners = [];
   let mode = "remote";
 
@@ -926,95 +1118,88 @@ const Lock = (()=>{
     local = v;
   }
 
-  /* ---- remote: Supabase cer_records row id=LOCK_ROW_ID, lock JSON kept inside data column ---- */
+  /* ---- remote: Supabase editor_lock table (separate from cer_records) ---- */
   const SB_URL = "https://igfvoqgeztzmgeebpdgu.supabase.co/rest/v1";
   const SB_KEY = "sb_publishable_WMSL5tXYCVYjUJ1VNYacIQ_HkdWdLu_";
-  function sbHeaders(){ return { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json", "Prefer": "return=representation" }; }
-  function lockFromData(row){
-    if(!row || !Array.isArray(row.data)) return null;
-    const lock = row.data.find(x => x && x.__lock && x.__lock.id === LOCK_ID);
-    return lock ? lock.__lock : null;
+  function sbHeaders(){
+    // Use the signed-in user's JWT when available so RLS policies see auth.uid().
+    // Falls back to the anon key for unauthenticated reads.
+    const token = _accessToken || SB_KEY;
+    return { "apikey": SB_KEY, "Authorization": "Bearer " + token, "Content-Type": "application/json", "Prefer": "return=representation" };
+  }
+  // Convert an editor_lock row to the internal lock object {user, uid, at, expire}
+  function rowToLock(row){
+    if(!row || !row.holder_uid) return null;
+    return {
+      user: row.holder_name || "someone",
+      uid: row.holder_uid,
+      at: row.acquired_at,
+      expire: new Date(row.expires_at).getTime()
+    };
   }
   async function sbRead(){
-    const r = await fetch(SB_URL + "/cer_records?id=eq." + LOCK_ROW_ID + "&select=id,data", { headers: sbHeaders() });
+    const r = await fetch(SB_URL + "/" + LOCK_TABLE + "?id=eq.1&select=*", { headers: sbHeaders() });
     if(!r.ok) throw new Error("read " + r.status);
     const rows = await r.json();
     return (rows && rows[0]) || null;
   }
-  // Atomic compare-and-set on the lock row's data column.
-  // Guard: data=cs.[{"__lock":{<filtered fields>}}]  (jsonb containment — proven to work via REST).
-  async function sbCas(nextData, guardToken, guardUser){
-    const filterObj = { __lock: { token: guardToken } };
-    if(guardUser !== undefined) filterObj.__lock.user = guardUser;
-    const filter = "data=cs." + JSON.stringify([ filterObj ]);
-    const url = SB_URL + "/cer_records?id=eq." + LOCK_ROW_ID + "&" + encodeURIComponent(filter);
-    const r = await fetch(url, { method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ data: nextData }) });
-    if(!r.ok){ const t = await r.text().catch(()=>""); throw new Error("cas " + r.status + " " + t.slice(0,120)); }
-    // With Prefer: return=representation, PostgREST returns the matched rows;
-    // 0 rows => the guard failed (someone else holds the lock).
-    const body = await r.json().catch(()=>[]);
-    return Array.isArray(body) ? body.length > 0 : true;
-  }
-  async function readRemote(){
-    const row = await sbRead();
-    remote = lockFromData(row);
-    return remote;
-  }
+  // Atomic acquire: UPDATE only if the lock is free (holder_uid IS NULL) or expired.
+  // PostgREST returns the matched rows with Prefer: return=representation.
+  // If 0 rows matched, the guard condition failed — someone else holds a live lock.
   async function acquireRemote(){
+    const nowISO = new Date().toISOString();
+    const expireISO = new Date(now() + LOCK_TTL).toISOString();
+    const uid = myUid();
+    const name = who();
+    if(!uid) return { ok:false, holder:"not logged in" };
+
+    // First, check current state
     const row = await sbRead();
-    const cur = lockFromData(row);
-    const nowMs = now();
-    if(cur && fresh(cur)){
-      // The lock is live. If it belongs to THIS signed-in account (same stable
-      // uid — e.g. after a page refresh or a second tab), re-adopt it instead of
-      // failing: the lock owner must NEVER be treated as read-only.
-      if(cur.uid && myUid() && cur.uid === myUid()){ me = cur; startHeartbeat(); return { ok:true, holder:cur.user }; }
-      return { ok:false, holder:cur.user };
-    }
-    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    const entry = { id: LOCK_ID, user: who(), uid: myUid(), token, at:new Date().toISOString(), expire: nowMs + LOCK_TTL };
-    let won;
-    if(!row){
-      // Lock row does not exist yet — create it with the lock as its only data entry.
-      const r = await fetch(SB_URL + "/cer_records", { method: "POST", headers: sbHeaders(), body: JSON.stringify({ id: LOCK_ROW_ID, data: [ { __lock: entry } ] }) });
-      if(r.status === 409){
-        // Another tab created it between our read and insert — retry via CAS.
-        won = await sbCas([ { __lock: entry } ], null, undefined);
-      } else if(!r.ok){
-        const t = await r.text().catch(()=>""); throw new Error("ins " + r.status + " " + t.slice(0,120));
-      } else {
-        won = true;
+    if(row && row.holder_uid){
+      const curExpire = new Date(row.expires_at).getTime();
+      if(now() < curExpire){
+        // Lock is live. If it belongs to THIS signed-in account, re-adopt.
+        if(row.holder_uid === uid){ me = { user: name, uid, at: row.acquired_at, expire: curExpire }; startHeartbeat(); return { ok:true, holder: name }; }
+        return { ok:false, holder: row.holder_name || "someone" };
       }
-    } else {
-      won = await sbCas([ { __lock: entry } ], cur ? cur.token : null, cur ? cur.user : undefined);
     }
-    if(!won) return { ok:false, holder: (await readRemote().catch(()=>null))?.user || "someone else" };
-    // Confirm we actually won (another tab may have written between read & update).
-    const after = await readRemote();
-    if(!after || after.token !== token){ return { ok:false, holder: (after&&after.user)||"someone else" }; }
-    me = entry; startHeartbeat(); return { ok:true, holder: who() };
+
+    // Atomic acquire via Supabase RPC (SECURITY DEFINER — bypasses RLS, handles atomicity server-side)
+    const { data: acquired, error: acquireErr } = await supabaseClient.rpc('acquire_lock', { p_name: name });
+    if(acquireErr){
+      console.warn("acquire_lock RPC error:", acquireErr);
+      return { ok:false, holder: (await sbRead().catch(()=>null))?.holder_name || "someone else" };
+    }
+    if(acquired === true){
+      // Successfully acquired — read back to get the authoritative state
+      const after = await sbRead().catch(()=>null);
+      if(after && after.holder_uid === uid){
+        const expireTime = new Date(after.expires_at).getTime();
+        me = { user: name, uid, at: after.acquired_at, expire: expireTime };
+        startHeartbeat();
+        return { ok:true, holder: name };
+      }
+      // RPC said yes but read-back doesn't match — treat as failure
+      return { ok:false, holder: (after&&after.holder_name)||"someone else" };
+    }
+    // acquire_lock returned false — someone else holds the lock
+    const cur = await sbRead().catch(()=>null);
+    return { ok:false, holder: (cur&&cur.holder_name)||"someone else" };
   }
   async function renewRemote(){
     if(!me) return;
     try{
-      me.expire = now() + LOCK_TTL;
-      const row = await sbRead();
-      if(!row) return;
-      const cur = lockFromData(row);
-      if(!cur || cur.token !== me.token) return;
-      await sbCas([ { __lock: me } ], me.token, me.user);
+      const { data: ok, error: hbErr } = await supabaseClient.rpc('heartbeat_lock');
+      if(!hbErr && ok === true){
+        me.expire = now() + LOCK_TTL;
+      }
     }catch(e){}
   }
   async function releaseRemote(){
     if(!me) return;
-    const t = me.token;
     me = null; stopHeartbeat();
     try{
-      const row = await sbRead();
-      if(!row) return;
-      const cur = lockFromData(row);
-      if(!cur || cur.token !== t) return;
-      await sbCas([], t, cur.user);
+      await supabaseClient.rpc('release_lock');
     }catch(e){}
   }
   function startHeartbeat(){
@@ -1030,8 +1215,8 @@ const Lock = (()=>{
   }
   function bcastAcquire(){
     if(!bc) return;
-    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    writeLocal({ user: who(), uid: myUid(), token, at:new Date().toISOString(), expire: now() + LOCK_TTL });
+    const expire = now() + LOCK_TTL;
+    writeLocal({ user: who(), uid: myUid(), at:new Date().toISOString(), expire });
     bc.postMessage({ type:"acquire", entry: local });
   }
 
@@ -1040,10 +1225,11 @@ const Lock = (()=>{
     stopPolling();
     pollTimer = setInterval(async ()=>{
       try{
-        await readRemote();
+        const row = await sbRead();
+        remote = rowToLock(row);
         // If our own remote lock was overwritten/stolen (e.g. TTL race), stop pretending —
         // but only if it is not still ours by stable uid (page-refresh re-adoption case).
-        if(me && (!remote || remote.token !== me.token)){
+        if(me && (!remote || remote.uid !== me.uid)){
           if(!(remote && remote.uid && myUid() && remote.uid === myUid())){ me = null; stopHeartbeat(); }
         }
       }catch(e){
@@ -1054,11 +1240,42 @@ const Lock = (()=>{
   }
   function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
 
+  /* ---- Supabase Realtime subscription (instant cross-browser lock propagation) ---- */
+  function startRealtime(){
+    stopRealtime();
+    try{
+      const channel = supabaseClient.channel("lock-realtime-editor_lock");
+      channel.on("postgres_changes",
+        { event: "*", schema: "public", table: LOCK_TABLE, filter: "id=eq.1" },
+        (payload)=>{
+          const newRow = payload.new || payload.event?.new;
+          if(newRow){
+            remote = rowToLock(newRow);
+          } else if(payload.eventType === "DELETE"){
+            remote = null;
+          }
+          // If our own remote lock was overwritten/stolen, stop pretending
+          if(me && (!remote || remote.uid !== me.uid)){
+            if(!(remote && remote.uid && myUid() && remote.uid === myUid())){ me = null; stopHeartbeat(); }
+          }
+          emit();
+        }
+      );
+      channel.subscribe();
+      rtUnsub = ()=>{ channel.unsubscribe(); };
+    }catch(e){
+      // Realtime unavailable — polling fallback still works
+    }
+  }
+  function stopRealtime(){ if(rtUnsub){ try{ rtUnsub(); }catch(e){} rtUnsub = null; } }
+
   /* ---- public API ---- */
   async function init(){
     readLocal();
     try{
-      await readRemote(); channelOk = true; mode = "remote";
+      const row = await sbRead();
+      remote = rowToLock(row);
+      channelOk = true; mode = "remote";
     }catch(e){
       channelOk = false; mode = "local";
     }
@@ -1067,12 +1284,13 @@ const Lock = (()=>{
         const d = ev.data || {};
         if(d.type === "sync" && d.local) local = d.local;
         if(d.type === "acquire" && d.entry){ local = d.entry; }
-        if(d.type === "release"){ if(!d.entry){ local = null; } else if(local && local.token === d.entry.token){ local = null; } }
+        if(d.type === "release"){ if(!d.entry){ local = null; } else if(local && local.uid === d.entry.uid){ local = null; } }
         emit();
       };
       bcastTimer = setInterval(()=>{ if(bc) bc.postMessage({ type:"sync", local }); }, 6000);
     }
     startPolling();
+    startRealtime();
     emit();
   }
   function isLocked(){ return fresh(remote) || fresh(local); }
@@ -1083,11 +1301,9 @@ const Lock = (()=>{
   }
   function amIHolder(){
     const u = who(); const uid = myUid();
-    // Remote: ours if the lock was acquired by this signed-in account (stable
-    // uid) or by this exact token in this tab.
+    // Remote: ours if the lock was acquired by this signed-in account (stable uid)
     if(remote && fresh(remote)){
       if(uid && remote.uid && remote.uid === uid) return true;
-      if(me && remote.token === me.token && me.user === u) return true;
     }
     // Local (same-browser fallback): only if it belongs to THIS user.
     if(local && fresh(local)){
@@ -1096,7 +1312,6 @@ const Lock = (()=>{
     }
     return false;
   }
-  // force-cdn-refresh marker v2
   function canEdit(){ return !isLocked() || amIHolder(); }
   async function acquire(){
     if(amIHolder()) return { ok:true, holder: who() };
@@ -1120,11 +1335,11 @@ const Lock = (()=>{
     // Only the current holder may release.
     if(!amIHolder()){ return; }
     if(me){ await releaseRemote(); }
-    if(local && local.token){ writeLocal(null); if(bc) bc.postMessage({ type:"release", entry:{ token: local.token } }); }
+    if(local && local.uid){ writeLocal(null); if(bc) bc.postMessage({ type:"release", entry:{ uid: local.uid } }); }
     stopHeartbeat();
     emit();
   }
-  return { init, onChange, isLocked, holderName, amIHolder, canEdit, acquire, release, getMode:()=>mode, getDebug:()=>({ remote, local, me: me ? { user: me.user, token: me.token } : null, channelOk, mode }) };
+  return { init, onChange, isLocked, holderName, amIHolder, canEdit, acquire, release, getMode:()=>mode, getDebug:()=>({ remote, local, me: me ? { user: me.user, uid: me.uid } : null, channelOk, mode }) };
 })();
 window.__lockTest = Lock;   // exposed for automated browser testing only
 window.__sbClient = supabaseClient; // exposed for automated browser testing only
@@ -1186,11 +1401,10 @@ async function save(){
   try {
     const payload = { data: tasks };
 
-    // Check whether the shared row already exists (skip the lock row).
+    // Check whether the shared row already exists.
     const { data: existingRows, error: checkError } = await supabaseClient
       .from("cer_records")
       .select("id")
-      .neq("id", LOCK_ROW_ID)
       .limit(1);
 
     if(checkError) throw checkError;
@@ -1239,7 +1453,6 @@ async function load(){
     const { data: rows, error } = await supabaseClient
       .from("cer_records")
       .select("id,data")
-      .neq("id", LOCK_ROW_ID)
       .limit(1);
 
     if(error) throw error;
@@ -1788,23 +2001,31 @@ function openEdit(id){
     renderLockUI();
   });
 }
-function closeModal(){ $("#modalOverlay").classList.remove("open"); $("#formErr").textContent=""; editingId=null; Lock.release(); renderLockUI(); }
+function closeModal(skipRelease){
+  $("#modalOverlay").classList.remove("open");
+  $("#formErr").textContent="";
+  editingId=null;
+  if(!skipRelease){ Lock.release(); }
+  renderLockUI();
+}
 
 /* ---------- lock UI ---------- */
 function renderLockUI(){
   const b = $("#lockBanner"); if(!b) return;
-  const txt = $("#lockBannerTxt"); const btn = $("#lockReleaseBtn");
+  const txt = $("#lockBannerTxt"); const btn = $("#lockReleaseBtn"); const ind = $("#lockIndicator");
   if(Lock.isLocked()){
     const holder = Lock.holderName();
     const mine = Lock.amIHolder();
     b.hidden = false;
     b.classList.toggle("lb-me", mine);
     if(mine){
-      txt.textContent = "You are editing — the tracker is locked for everyone else. Save or release when done.";
+      if(ind) ind.textContent = "🟢";
+      txt.textContent = "🟢 You are the active editor — the tracker is locked for everyone else. Save or release when done.";
       btn.hidden = false;
     } else {
+      if(ind) ind.textContent = "🔴";
       const modeNote = Lock.getMode()==="local" ? " (same-browser mode)" : "";
-      txt.textContent = "🔒 " + (holder||"Another user") + " is editing — read-only mode" + modeNote;
+      txt.textContent = "🔴 Read-only — " + (holder||"Another user") + " is currently editing" + modeNote;
       btn.hidden = true;
     }
   } else {
@@ -1822,6 +2043,28 @@ function renderLockUI(){
     const disabled = Lock.isLocked() && !Lock.amIHolder();
     addBtn.disabled = disabled;
     addBtn.title = disabled ? "Read-only — " + (Lock.holderName()||"someone") + " is editing" : "Add Item";
+  }
+  // Disable form input fields in the modal for read-only users
+  const modalBody = $("#modalBody");
+  if(modalBody){
+    const readOnly = Lock.isLocked() && !Lock.amIHolder();
+    modalBody.querySelectorAll("input, select, textarea").forEach(el => {
+      if(readOnly){
+        el.disabled = true;
+        el.style.opacity = "0.6";
+        el.style.cursor = "not-allowed";
+      } else {
+        el.disabled = false;
+        el.style.opacity = "";
+        el.style.cursor = "";
+      }
+    });
+    // Also disable save button in modal for read-only
+    const saveBtn = $("#formSave");
+    if(saveBtn){
+      saveBtn.disabled = readOnly;
+      saveBtn.title = readOnly ? "Read-only — " + (Lock.holderName()||"someone") + " is editing" : "Save Item";
+    }
   }
 }
 function blockEditBanner(holder){
@@ -1917,9 +2160,12 @@ $("#formSave").addEventListener("click", async ()=>{
   const ok = await save();
   renderAll();
   if(ok){
-    // Lock releases only AFTER a successful save (per requirement).
-    Lock.release();
-    closeModal();
+    // BUG 2 FIX: Close the modal immediately after successful save.
+    // Release the lock first (await it), then close the modal with skipRelease=true
+    // to avoid a double-release race. The modal closes, form resets, and the
+    // new/updated item is visible in the table right away.
+    await Lock.release();
+    closeModal(true);
   } else {
     // Save failed — keep the lock so the editor can retry without losing the form.
     toast("Save failed — your form is kept open. Please try again.");
@@ -1985,7 +2231,15 @@ document.addEventListener("keydown", e=>{
   // Restore an existing auth session (persisted by supabase-js in localStorage)
   // and WAIT for it — auth checks must never run against a half-restored state.
   await syncAuthSession();
-  supabaseClient.auth.onAuthStateChange(()=>{ syncAuthSession(); });
+  supabaseClient.auth.onAuthStateChange((event)=>{
+    syncAuthSession();
+    // BUG 1 FIX: Auto-acquire the lock immediately after login (SIGNED_IN event),
+    // not just on page load. This ensures the "You are the active editor" banner
+    // appears right after clicking Sign In, without requiring Add/Edit/Save first.
+    if(event === "SIGNED_IN" && isAuthenticated() && !Lock.isLocked()){
+      Lock.acquire().then(()=>renderLockUI());
+    }
+  });
   await load();
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
@@ -1993,16 +2247,15 @@ document.addEventListener("keydown", e=>{
   guardSearchAutofill();
   renderUserBadge();
   renderAll();
-  Lock.init().then(()=>renderLockUI());
-  Lock.onChange(()=>renderLockUI());
-  window.addEventListener("beforeunload", ()=>{ Lock.release(); });
-  window.addEventListener("pagehide", ()=>{ Lock.release(); });
-  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") Lock.release(); });
-})();
-</script>
-  </body>
-</html>
-Lock.init().then(()=>renderLockUI());
+  Lock.init().then(()=>{
+    renderLockUI();
+    // BUG 1 FIX: Auto-acquire the lock if the user is authenticated and no one
+    // else holds it. This makes the "You are the active editor" banner appear
+    // IMMEDIATELY after login/page-load, without requiring Add/Edit/Save first.
+    if(isAuthenticated() && !Lock.isLocked()){
+      Lock.acquire().then(()=>renderLockUI());
+    }
+  });
   Lock.onChange(()=>renderLockUI());
   window.addEventListener("beforeunload", ()=>{ Lock.release(); });
   window.addEventListener("pagehide", ()=>{ Lock.release(); });
