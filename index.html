@@ -384,6 +384,10 @@ body.view-kanban .table-scroll{display:none}
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
       <span class="lbl" id="authBtnLabel">Sign In</span>
     </button>
+    <button class="btn ghost" id="pwdBtn" title="Change your password" style="display:none">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span class="lbl">Password</span>
+    </button>
     <div class="hdr-actions">
       <button class="btn ghost" id="exportBtn" title="Export filtered rows to CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -549,6 +553,35 @@ body.view-kanban .table-scroll{display:none}
     </div>
     <div class="modal-f">
       <span class="err" id="authErr"></span>
+      <span class="sp"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password overlay (first-time blocking + voluntary) -->
+<div class="overlay" id="pwdOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-h">
+      <h2 id="pwdTitle">Change Your Password</h2>
+      <button class="x" id="pwdClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-b" id="pwdBody">
+      <div class="auth-note" id="pwdHint" style="font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:12px">
+        For security, please set a new password before using the tracker.
+      </div>
+      <div class="fgrid">
+        <div class="f full"><label>Current Password</label><input id="pwdCurrent" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password"></div>
+        <div class="f full"><label>New Password</label><input id="pwdNew" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="new-password"></div>
+        <div class="f full"><label>Confirm New Password</label><input id="pwdConfirm" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="new-password"></div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn primary" id="pwdSubmit" style="width:100%">Change Password</button>
+      </div>
+    </div>
+    <div class="modal-f">
+      <span class="err" id="pwdErr"></span>
       <span class="sp"></span>
     </div>
   </div>
@@ -823,6 +856,7 @@ function currentUser(){
 function renderUserBadge(){
   const el = $("#userBadgeName"); if(!el) return;
   const btn = $("#authBtn"); const lbl = $("#authBtnLabel");
+  const pwdBtn = document.getElementById("pwdBtn");
   if(isAuthenticated()){
     const nm = getUser();
     el.textContent = nm || getUserEmail() || "Signed in";
@@ -831,6 +865,7 @@ function renderUserBadge(){
       lbl.textContent = "Sign Out";
       btn.title = "Sign out of your account";
     }
+    if(pwdBtn) pwdBtn.style.display = "";
     $("#userBadge").classList.add("signed-in");
   } else {
     el.textContent = authState.ready ? "Not signed in" : "…";
@@ -839,6 +874,7 @@ function renderUserBadge(){
       lbl.textContent = "Sign In";
       btn.title = "Sign in / sign up with your account";
     }
+    if(pwdBtn) pwdBtn.style.display = "none";
     $("#userBadge").classList.remove("signed-in");
   }
 }
@@ -946,6 +982,157 @@ function requireAuth(){
   if(isAuthenticated()) return true;
   toast("Please sign in first — use the Sign In button in the header (your identity comes from your account).");
   return false;
+}
+
+/* ---------- first-time / voluntary password change ---------- */
+let _pwdBlocking = false; // true = first-time (non-dismissable), false = voluntary
+
+function checkPasswordChanged(){
+  // Returns true if the user has already changed their password (metadata flag set).
+  // Uses Supabase user_metadata.password_changed — stored in auth.users, not in the CER database.
+  if(!isAuthenticated()) return true; // not logged in = no check needed
+  const u = authState.user;
+  if(!u) return true;
+  const md = u.user_metadata || {};
+  return md.password_changed === true;
+}
+
+function openPwdModal(mode){
+  // mode: 'first' = blocking (first-time), 'voluntary' = user-initiated
+  _pwdBlocking = (mode === 'first');
+  const title = $("pwdTitle") || document.getElementById("pwdTitle");
+  const hint = $("pwdHint") || document.getElementById("pwdHint");
+  const closeBtn = $("pwdClose") || document.getElementById("pwdClose");
+  const overlay = $("pwdOverlay") || document.getElementById("pwdOverlay");
+
+  if(title) title.textContent = _pwdBlocking ? "Set Your Password" : "Change Password";
+  if(hint) hint.textContent = _pwdBlocking
+    ? "For security, please set a new password before using the tracker. You must complete this step to continue."
+    : "Enter your current password and choose a new one.";
+  if(closeBtn) closeBtn.style.display = _pwdBlocking ? "none" : "";
+
+  // Clear fields
+  const c = document.getElementById("pwdCurrent"); if(c) c.value = "";
+  const n = document.getElementById("pwdNew"); if(n) n.value = "";
+  const cf = document.getElementById("pwdConfirm"); if(cf) cf.value = "";
+  const err = document.getElementById("pwdErr"); if(err) err.textContent = "";
+
+  if(overlay) overlay.classList.add("open");
+  setTimeout(()=>{
+    const el = document.getElementById("pwdCurrent") || document.getElementById("pwdNew");
+    if(el) el.focus();
+  }, 60);
+}
+
+function closePwdModal(){
+  const overlay = document.getElementById("pwdOverlay");
+  if(overlay) overlay.classList.remove("open");
+  _pwdBlocking = false;
+  const err = document.getElementById("pwdErr"); if(err) err.textContent = "";
+}
+
+async function handlePwdSubmit(){
+  const current = String(document.getElementById("pwdCurrent")?.value || "").trim();
+  const newPwd = String(document.getElementById("pwdNew")?.value || "").trim();
+  const confirm = String(document.getElementById("pwdConfirm")?.value || "").trim();
+  const errEl = document.getElementById("pwdErr");
+  if(!errEl) return;
+
+  // Validation
+  if(!_pwdBlocking && !current){ errEl.textContent = "Current password is required."; return; }
+  if(!newPwd){ errEl.textContent = "New password is required."; return; }
+  if(newPwd.length < 6){ errEl.textContent = "New password must be at least 6 characters."; return; }
+  if(newPwd !== confirm){ errEl.textContent = "New passwords do not match."; return; }
+
+  const btn = document.getElementById("pwdSubmit");
+  if(btn){ btn.disabled = true; btn.textContent = "Please wait…"; }
+
+  try {
+    // Step 1: Verify current password by re-authenticating (only for voluntary changes)
+    if(!_pwdBlocking && current){
+      const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+        email: authState.user.email,
+        password: current
+      });
+      if(signInError){
+        errEl.textContent = "Current password is incorrect.";
+        if(btn){ btn.disabled = false; btn.textContent = "Change Password"; }
+        return;
+      }
+    }
+
+    // Step 2: Update the password
+    const { error: updateError } = await supabaseClient.auth.updateUser({ password: newPwd });
+    if(updateError) throw updateError;
+
+    // Step 3: Set the metadata flag so we don't ask again
+    const { error: metaError } = await supabaseClient.auth.updateUser({
+      data: { password_changed: true }
+    });
+    if(metaError) throw metaError;
+
+    // Step 4: Refresh the local user object so checkPasswordChanged() sees the flag
+    const { data: { user: refreshedUser } } = await supabaseClient.auth.getUser();
+    if(refreshedUser && authState) authState.user = refreshedUser;
+
+    toast("Password changed successfully.");
+    closePwdModal();
+  } catch(e){
+    errEl.textContent = e?.message || e?.error_description || "Failed to change password. Please try again.";
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = "Change Password"; }
+  }
+}
+
+function checkAndEnforcePasswordChange(){
+  // Called after login / session restore. If the user hasn't changed their
+  // password yet, show the blocking modal.
+  if(!isAuthenticated()) return;
+  if(!checkPasswordChanged()){
+    openPwdModal('first');
+  }
+}
+
+// Wire up password change UI events (script runs at bottom of <body>, DOM is ready)
+(function(){
+  const pwdBtn = document.getElementById("pwdBtn");
+  if(pwdBtn){
+    pwdBtn.addEventListener("click", ()=>{
+      if(!isAuthenticated()){ requireAuth(); return; }
+      openPwdModal('voluntary');
+    });
+  }
+
+  const pwdClose = document.getElementById("pwdClose");
+  if(pwdClose) pwdClose.addEventListener("click", closePwdModal);
+
+  const pwdOverlay = document.getElementById("pwdOverlay");
+  if(pwdOverlay){
+    pwdOverlay.addEventListener("click", e=>{
+      if(e.target.id === "pwdOverlay" && !_pwdBlocking) closePwdModal();
+    });
+  }
+
+  const pwdSubmit = document.getElementById("pwdSubmit");
+  if(pwdSubmit) pwdSubmit.addEventListener("click", handlePwdSubmit);
+
+  ["pwdCurrent","pwdNew","pwdConfirm"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("keydown", e=>{ if(e.key==="Enter") handlePwdSubmit(); });
+  });
+})();
+
+// Override Escape key for blocking password modal
+const _origKeydown = document.addEventListener ? true : false;
+if(_origKeydown){
+  const existingHandler = document.onkeydown;
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && _pwdBlocking){
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }, true);
 }
 /* ---------- search-bar autofill guard ---------- */
 // The search bar must ALWAYS be empty unless the user actually typed a query.
@@ -2157,6 +2344,8 @@ document.addEventListener("keydown", e=>{
   // Restore an existing auth session (persisted by supabase-js in localStorage)
   // and WAIT for it — auth checks must never run against a half-restored state.
   await syncAuthSession();
+  // Check if the user needs to change their password (first-time login)
+  checkAndEnforcePasswordChange();
   supabaseClient.auth.onAuthStateChange((event)=>{
     syncAuthSession();
     // BUG 1 FIX: Auto-acquire the lock immediately after login (SIGNED_IN event),
@@ -2164,6 +2353,10 @@ document.addEventListener("keydown", e=>{
     // appears right after clicking Sign In, without requiring Add/Edit/Save first.
     if(event === "SIGNED_IN" && isAuthenticated() && !Lock.isLocked()){
       Lock.acquire().then(()=>renderLockUI());
+    }
+    // Check password change requirement after login
+    if(event === "SIGNED_IN"){
+      checkAndEnforcePasswordChange();
     }
   });
   await load();
