@@ -1078,20 +1078,15 @@ loadRates(); fetchLiveRates();
    If the shared backend is unreachable, it degrades to same-browser
    coordination (BroadcastChannel + localStorage) and shows a note.
    ============================================================ */
-const LOCK_KEY_LOCAL = "tsd_tracker_lock_v1";
-const LOCK_ID = "tsd-single-editor";
 const LOCK_TABLE = "editor_lock"; // separate table for the single-editor lock (NOT cer_records)
 const LOCK_TTL = 60000;          // ms until a lock is considered stale (idle/heartbeat timeout)
 const LOCK_HEARTBEAT = 20000;    // renew interval while the lock holder is editing
 const LOCK_REFRESH = 4000;       // how often readers re-poll the remote lock
 
 const Lock = (()=>{
-  const bc = ("BroadcastChannel" in window) ? new BroadcastChannel("tsd-lock") : null;
-  let remote = null;        // {user, uid, at, expire}
-  let local = null;         // {user, uid, at, expire}
-  let channelOk = true;     // false once a Supabase op fails (graceful degradation)
+  let remote = null;        // {user, uid, at, expire} — authoritative state from Supabase
   let me = null;            // {user, uid, at, expire} — this tab's own remote lock (if acquired)
-  let hbTimer = null, pollTimer = null, bcastTimer = null, rtUnsub = null;
+  let hbTimer = null, pollTimer = null, rtUnsub = null;
   const listeners = [];
   let mode = "remote";
 
@@ -1104,19 +1099,9 @@ const Lock = (()=>{
   function myUid(){ const u = authState.user; return (u && u.id) ? String(u.id) : ""; }
 
   function emit(){
-    listeners.forEach(f=>{ try{ f({remote, local, me, mode}); }catch(e){} });
+    listeners.forEach(f=>{ try{ f({remote, me, mode}); }catch(e){} });
   }
   function onChange(fn){ listeners.push(fn); emit(); }
-
-  function readLocal(){
-    try{ const s = localStorage.getItem(LOCK_KEY_LOCAL); if(s) local = JSON.parse(s); else local = null; }
-    catch(e){ local = null; }
-  }
-  function writeLocal(v){
-    try{ if(v) localStorage.setItem(LOCK_KEY_LOCAL, JSON.stringify(v)); else localStorage.removeItem(LOCK_KEY_LOCAL); }
-    catch(e){}
-    local = v;
-  }
 
   /* ---- remote: Supabase editor_lock table (separate from cer_records) ---- */
   const SB_URL = "https://igfvoqgeztzmgeebpdgu.supabase.co/rest/v1";
@@ -1147,78 +1132,47 @@ const Lock = (()=>{
   // PostgREST returns the matched rows with Prefer: return=representation.
   // If 0 rows matched, the guard condition failed — someone else holds a live lock.
   async function acquireRemote(){
-    const nowISO = new Date().toISOString();
-    const expireISO = new Date(now() + LOCK_TTL).toISOString();
-    const uid = myUid();
     const name = who();
+    const uid = myUid();
     if(!uid) return { ok:false, holder:"not logged in" };
 
-    // First, check current state
-    const row = await sbRead();
-    if(row && row.holder_uid){
-      const curExpire = new Date(row.expires_at).getTime();
-      if(now() < curExpire){
-        // Lock is live. If it belongs to THIS signed-in account, re-adopt.
-        if(row.holder_uid === uid){ me = { user: name, uid, at: row.acquired_at, expire: curExpire }; startHeartbeat(); return { ok:true, holder: name }; }
-        return { ok:false, holder: row.holder_name || "someone" };
-      }
-    }
-
-    // Atomic acquire via Supabase RPC (SECURITY DEFINER — bypasses RLS, handles atomicity server-side)
-    const { data: acquired, error: acquireErr } = await supabaseClient.rpc('acquire_lock', { p_name: name });
-    if(acquireErr){
-      console.warn("acquire_lock RPC error:", acquireErr);
-      return { ok:false, holder: (await sbRead().catch(()=>null))?.holder_name || "someone else" };
-    }
-    if(acquired === true){
-      // Successfully acquired — read back to get the authoritative state
-      const after = await sbRead().catch(()=>null);
-      if(after && after.holder_uid === uid){
-        const expireTime = new Date(after.expires_at).getTime();
-        me = { user: name, uid, at: after.acquired_at, expire: expireTime };
-        startHeartbeat();
-        return { ok:true, holder: name };
-      }
-      // RPC said yes but read-back doesn't match — treat as failure
-      return { ok:false, holder: (after&&after.holder_name)||"someone else" };
+    // Atomic acquire via Supabase RPC (SECURITY DEFINER — handles atomicity server-side)
+    const { data, error } = await supabaseClient.rpc('acquire_lock', { p_name: name });
+    if(error) throw error;
+    if(data === true){
+      // Successfully acquired — read back authoritative state
+      const row = await sbRead();
+      me = rowToLock(row);
+      startHeartbeat();
+      return { ok:true, holder: name };
     }
     // acquire_lock returned false — someone else holds the lock
-    const cur = await sbRead().catch(()=>null);
-    return { ok:false, holder: (cur&&cur.holder_name)||"someone else" };
+    const row = await sbRead();
+    remote = rowToLock(row);
+    return { ok:false, holder: remote ? remote.user : "" };
   }
   async function renewRemote(){
-    if(!me) return;
+    if(!amIHolder()) return;
     try{
-      const { data: ok, error: hbErr } = await supabaseClient.rpc('heartbeat_lock');
-      if(!hbErr && ok === true){
-        me.expire = now() + LOCK_TTL;
-      }
+      await supabaseClient.rpc('heartbeat_lock');
+      const row = await sbRead();
+      remote = rowToLock(row);
+      if(remote) me = remote;
     }catch(e){}
   }
   async function releaseRemote(){
-    if(!me) return;
-    me = null; stopHeartbeat();
     try{
       await supabaseClient.rpc('release_lock');
     }catch(e){}
+    remote = null;
+    me = null;
+    stopHeartbeat();
   }
   function startHeartbeat(){
     stopHeartbeat();
     hbTimer = setInterval(()=>{ renewRemote(); }, LOCK_HEARTBEAT);
   }
   function stopHeartbeat(){ if(hbTimer){ clearInterval(hbTimer); hbTimer = null; } }
-
-  /* ---- local (same-browser fallback + mirror) ---- */
-  function readLocalAndBcast(){
-    readLocal();
-    if(bc){ bc.postMessage({ type:"sync", local }); }
-  }
-  function bcastAcquire(){
-    if(!bc) return;
-    const expire = now() + LOCK_TTL;
-    writeLocal({ user: who(), uid: myUid(), at:new Date().toISOString(), expire });
-    bc.postMessage({ type:"acquire", entry: local });
-  }
 
   /* ---- polling loop (readers + holders keep remote fresh locally) ---- */
   function startPolling(){
@@ -1233,7 +1187,7 @@ const Lock = (()=>{
           if(!(remote && remote.uid && myUid() && remote.uid === myUid())){ me = null; stopHeartbeat(); }
         }
       }catch(e){
-        channelOk = false; // remote unreachable — degrade (readers fall back to local mode)
+        // remote unreachable — polling will retry
       }
       emit();
     }, LOCK_REFRESH);
@@ -1271,44 +1225,28 @@ const Lock = (()=>{
 
   /* ---- public API ---- */
   async function init(){
-    readLocal();
     try{
       const row = await sbRead();
       remote = rowToLock(row);
-      channelOk = true; mode = "remote";
+      mode = "remote";
     }catch(e){
-      channelOk = false; mode = "local";
-    }
-    if(bc){
-      bc.onmessage = ev=>{
-        const d = ev.data || {};
-        if(d.type === "sync" && d.local) local = d.local;
-        if(d.type === "acquire" && d.entry){ local = d.entry; }
-        if(d.type === "release"){ if(!d.entry){ local = null; } else if(local && local.uid === d.entry.uid){ local = null; } }
-        emit();
-      };
-      bcastTimer = setInterval(()=>{ if(bc) bc.postMessage({ type:"sync", local }); }, 6000);
+      // remote unreachable — will retry via polling
     }
     startPolling();
     startRealtime();
     emit();
   }
-  function isLocked(){ return fresh(remote) || fresh(local); }
+  function isLocked(){ return fresh(remote); }
   function holderName(){
     if(fresh(remote)) return remote.user || "someone";
-    if(fresh(local)) return local.user || "someone";
     return "";
   }
   function amIHolder(){
-    const u = who(); const uid = myUid();
-    // Remote: ours if the lock was acquired by this signed-in account (stable uid)
+    const uid = myUid();
+    // The lock decision comes SOLELY from Supabase (remote state).
+    // Only the user whose auth.uid() matches editor_lock.holder_uid is the editor.
     if(remote && fresh(remote)){
       if(uid && remote.uid && remote.uid === uid) return true;
-    }
-    // Local (same-browser fallback): only if it belongs to THIS user.
-    if(local && fresh(local)){
-      if(uid && local.uid && local.uid === uid) return true;
-      if(local.user === u) return true;
     }
     return false;
   }
@@ -1316,18 +1254,8 @@ const Lock = (()=>{
   async function acquire(){
     if(amIHolder()) return { ok:true, holder: who() };
     let r = { ok:false, holder:"" };
-    if(channelOk){
-      try{ r = await acquireRemote(); }
-      catch(e){ channelOk = false; }
-    }
-    if(!r.ok && !channelOk){
-      // degrade to same-browser lock
-      readLocalAndBcast();
-      if(fresh(local) && local.user !== who()){ return { ok:false, holder: local.user }; }
-      bcastAcquire();
-      r = { ok:true, holder: who() };
-      mode = "local";
-    }
+    try{ r = await acquireRemote(); }
+    catch(e){ /* remote unreachable — lock cannot be acquired */ }
     emit();
     return r;
   }
@@ -1335,11 +1263,10 @@ const Lock = (()=>{
     // Only the current holder may release.
     if(!amIHolder()){ return; }
     if(me){ await releaseRemote(); }
-    if(local && local.uid){ writeLocal(null); if(bc) bc.postMessage({ type:"release", entry:{ uid: local.uid } }); }
     stopHeartbeat();
     emit();
   }
-  return { init, onChange, isLocked, holderName, amIHolder, canEdit, acquire, release, getMode:()=>mode, getDebug:()=>({ remote, local, me: me ? { user: me.user, uid: me.uid } : null, channelOk, mode }) };
+  return { init, onChange, isLocked, holderName, amIHolder, canEdit, acquire, release, getMode:()=>mode, getDebug:()=>({ remote, me: me ? { user: me.user, uid: me.uid } : null, mode }) };
 })();
 window.__lockTest = Lock;   // exposed for automated browser testing only
 window.__sbClient = supabaseClient; // exposed for automated browser testing only
@@ -2024,8 +1951,7 @@ function renderLockUI(){
       btn.hidden = false;
     } else {
       if(ind) ind.textContent = "🔴";
-      const modeNote = Lock.getMode()==="local" ? " (same-browser mode)" : "";
-      txt.textContent = "🔴 Read-only — " + (holder||"Another user") + " is currently editing" + modeNote;
+      txt.textContent = "🔴 Read-only — " + (holder||"Another user") + " is currently editing";
       btn.hidden = true;
     }
   } else {
