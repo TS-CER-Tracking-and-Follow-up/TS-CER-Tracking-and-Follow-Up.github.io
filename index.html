@@ -162,8 +162,8 @@ tbody tr.detail-row td{padding:0;background:var(--bg2)}
 .det .v.note{color:var(--mut);font-style:italic}
 td{padding:5px 8px;vertical-align:middle}
 /* Frozen ITEM column: stays visible while the rest of the table scrolls horizontally */
-thead th:first-child{position:sticky;left:0;z-index:6;background:var(--bg2);width:130px;min-width:130px;max-width:130px;overflow:hidden;text-overflow:ellipsis}
-tbody tr.task-row td:first-child{position:sticky;left:0;z-index:4;background:var(--panel);width:130px;min-width:130px;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+thead th:first-child{position:sticky;left:0;z-index:6;background:var(--bg2);width:300px;min-width:300px;max-width:300px;white-space:normal;word-wrap:break-word}
+tbody tr.task-row td:first-child{position:sticky;left:0;z-index:4;background:var(--panel);width:300px;min-width:300px;max-width:300px;white-space:normal;word-wrap:break-word}
 tbody tr.task-row:hover td:first-child{background:rgba(59,130,246,.055)}
 tbody tr.task-row.row-open td:first-child{background:rgba(59,130,246,.08)}
 td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -465,7 +465,7 @@ body.view-kanban .table-scroll{display:none}
       <table id="mainTable">
         <thead>
           <tr>
-            <th data-sort="item" style="min-width:130px;max-width:130px">Item <span class="sort-ic"></span></th>
+            <th data-sort="item" style="min-width:300px;max-width:300px">Item <span class="sort-ic"></span></th>
             <th data-sort="cer_date" style="min-width:95px">CER Received</th>
             <th data-sort="order_value" style="min-width:95px">Ordered Value</th>
             <th data-sort="ov_bdt" style="min-width:105px">Value (BDT)</th>
@@ -1657,7 +1657,8 @@ function filtered(){
       [t.item,t.cer,t.tracking,t.manufacturer,t.agent,t.pr,t.po,t.lc,t.scm_note,t.owner,t.dept,t.unit_area,t.qty,t.cer_status,t.stage]
       .some(v => String(v??"").toLowerCase().includes(q)));
   }
-  if(filter.stage) list = list.filter(t=>t.stage===filter.stage);
+  if(filter.stage==="__blank__") list = list.filter(t=>!t.stage || !String(t.stage).trim());
+  else if(filter.stage) list = list.filter(t=>t.stage===filter.stage);
   if(filter.plant){ list = list.filter(t=> filter.plant==="(blank)" ? !t.plant : t.plant===filter.plant); }
   if(filter.owner) list = list.filter(t=>t.owner===filter.owner);
   if(filter.pf === "Overdue") list = list.filter(t=>{ const d=daysFrom(t.target); return t.stage!=="Delivered" && t.stage!=="Cancelled" && d!==null && d<0; });
@@ -1964,7 +1965,7 @@ function setView(v){
 /* ---------- filter controls ---------- */
 function initFilters(){
   const stageSel = $("#stageFilter");
-  stageSel.innerHTML = `<option value="">All stages</option>` + STAGES.map(s=>`<option>${s}</option>`).join("");
+  stageSel.innerHTML = `<option value="">All stages</option><option value="__blank__">Blank / Empty</option>` + STAGES.map(s=>`<option>${s}</option>`).join("");
   const owners = [...new Set(tasks.map(t=>t.owner).filter(Boolean))].sort();
   $("#ownerFilter").innerHTML = `<option value="">All owners</option>` + owners.map(o=>`<option>${esc(o)}</option>`).join("");
   const chips = document.querySelectorAll(".chips .chip");
