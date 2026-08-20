@@ -2311,16 +2311,33 @@ function askDelete(id){
   $("#confirmOverlay").classList.add("open");
 }
 $("#confirmYes").addEventListener("click", async ()=>{
-  if(pendingDelete){
+  const id = pendingDelete;
+  if(id){
     // Defensive: never delete while someone else holds the editing lock.
     if(Lock.isLocked() && !Lock.amIHolder()){
       toast("Read-only — " + (Lock.holderName() || "another user") + " is editing right now.");
+      pendingDelete = null;
+      $("#confirmOverlay").classList.remove("open");
       return;
     }
-    tasks = tasks.filter(x=>x.id!==pendingDelete);
+    // DELETE PERSISTENCE FIX: acquire the editing lock BEFORE removing the item.
+    // save() persists by UPDATING the shared Supabase row, and the RLS policy
+    // "cer_records_update_locked" only allows the holder of the active lock to
+    // UPDATE. Previously no lock was acquired here, so the UPDATE silently
+    // matched 0 rows — the item vanished from the UI but came back on refresh.
+    if(!Lock.amIHolder()){
+      const r = await Lock.acquire();
+      if(!r.ok){
+        toast("Read-only — " + (r.holder || "another user") + " is editing right now. Try again later.");
+        pendingDelete = null;
+        $("#confirmOverlay").classList.remove("open");
+        return;
+      }
+    }
+    tasks = tasks.filter(x=>x.id!==id);
     const ok = await save();
     renderAll();
-    if(ok){ Lock.release(); toast("Item deleted"); }
+    if(ok){ await Lock.release(); toast("Item deleted"); }
     else { toast("Delete failed — please try again."); }
   }
   pendingDelete = null;
