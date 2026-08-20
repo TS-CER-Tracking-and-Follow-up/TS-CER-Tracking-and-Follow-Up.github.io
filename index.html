@@ -1657,8 +1657,7 @@ function filtered(){
       [t.item,t.cer,t.tracking,t.manufacturer,t.agent,t.pr,t.po,t.lc,t.scm_note,t.owner,t.dept,t.unit_area,t.qty,t.cer_status,t.stage]
       .some(v => String(v??"").toLowerCase().includes(q)));
   }
-  if(filter.stage==="__blank__") list = list.filter(t=>!t.stage || !String(t.stage).trim());
-  else if(filter.stage) list = list.filter(t=>t.stage===filter.stage);
+  if(filter.stage) list = list.filter(t=>t.stage===filter.stage);
   if(filter.plant){ list = list.filter(t=> filter.plant==="(blank)" ? !t.plant : t.plant===filter.plant); }
   if(filter.owner) list = list.filter(t=>t.owner===filter.owner);
   if(filter.pf === "Overdue") list = list.filter(t=>{ const d=daysFrom(t.target); return t.stage!=="Delivered" && t.stage!=="Cancelled" && d!==null && d<0; });
@@ -1965,7 +1964,7 @@ function setView(v){
 /* ---------- filter controls ---------- */
 function initFilters(){
   const stageSel = $("#stageFilter");
-  stageSel.innerHTML = `<option value="">All stages</option><option value="__blank__">Blank / Empty</option>` + STAGES.map(s=>`<option>${s}</option>`).join("");
+  stageSel.innerHTML = `<option value="">All stages</option>` + STAGES.map(s=>`<option>${s}</option>`).join("");
   const owners = [...new Set(tasks.map(t=>t.owner).filter(Boolean))].sort();
   $("#ownerFilter").innerHTML = `<option value="">All owners</option>` + owners.map(o=>`<option>${esc(o)}</option>`).join("");
   const chips = document.querySelectorAll(".chips .chip");
