@@ -284,57 +284,6 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
 
-/* ---------- View toggle ---------- */
-.view-toggle{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:11px;border:1px solid var(--line2);
-  background:var(--bg2)}
-.view-toggle button{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:none;border-radius:8px;
-  background:transparent;color:var(--mut);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;
-  transition:all .15s ease;white-space:nowrap}
-.view-toggle button:hover{color:var(--txt)}
-.view-toggle button svg{width:14px;height:14px}
-.view-toggle button.on{background:var(--grad);color:#04121f;font-weight:700;box-shadow:0 4px 14px rgba(34,211,238,.25)}
-.view-toggle button.off{opacity:.75}
-
-/* ---------- Kanban ---------- */
-.kanban-wrap{display:none;overflow-x:auto;flex:1 1 auto;min-height:0;padding:14px;border-radius:0 0 var(--radius) var(--radius)}
-body.view-kanban .kanban-wrap{display:block}
-body.view-kanban .table-scroll{display:none}
-.kanban{display:flex;gap:13px;align-items:flex-start;min-width:max-content;padding-bottom:8px}
-.kcol{width:265px;flex:none;display:flex;flex-direction:column;border-radius:var(--radius);border:1px solid var(--line);
-  background:var(--bg2);overflow:hidden;max-height:100%;transition:border-color .15s,box-shadow .15s}
-.kcol.over{border-color:rgba(34,211,238,.65);box-shadow:0 0 0 3px rgba(34,211,238,.14),var(--shadow)}
-.kcol-h{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}
-.kcol-dot{width:9px;height:9px;border-radius:50%;flex:none}
-.kcol-h .kn{font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:.01em}
-.kcol-h .kc{margin-left:auto;min-width:24px;text-align:center;padding:1px 7px;border-radius:99px;background:rgba(148,163,184,.12);
-  color:var(--mut);font-size:11.5px;font-weight:700}
-.kcol-body{display:flex;flex-direction:column;gap:9px;padding:10px;min-height:70px;flex:1 1 auto;overflow-y:auto}
-.kcard{background:var(--panel);border:1px solid var(--line2);
-  border-radius:11px;padding:11px 12px;cursor:grab;transition:border-color .15s,transform .15s,box-shadow .15s,opacity .15s;
-  user-select:none;-webkit-user-select:none;position:relative}
-.kcard:hover{border-color:rgba(59,130,246,.45);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.5)}
-.kcard.dragging{opacity:.45;transform:rotate(2deg) scale(.98)}
-.kcard .k-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
-.kcard .k-cer{font-family:var(--mono);font-size:10.5px;color:var(--blue);background:rgba(59,130,246,.12);
-  border:1px solid rgba(59,130,246,.22);padding:1px 7px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
-.kcard .k-name{font-size:12.5px;font-weight:600;color:var(--txt);line-height:1.35;margin-bottom:9px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.kcard .k-meta{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
-.kcard .k-meta .tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px}
-.kcard .k-meta .tag.pl{background:rgba(34,211,238,.1);color:var(--cyan);border:1px solid rgba(34,211,238,.22)}
-.kcard .k-meta .tag.ow{background:rgba(139,92,246,.12);color:var(--violet);border:1px solid rgba(139,92,246,.24)}
-.kcard .k-val{margin-top:9px;font-size:11.5px;font-weight:700;color:var(--blue);font-family:var(--mono);letter-spacing:.01em}
-.kcard .k-acts{display:none;position:absolute;top:8px;right:8px;gap:4px}
-.kcard:hover .k-acts{display:flex}
-.kcard .k-acts .ia{width:22px;height:22px;border-radius:6px;border:1px solid var(--line2);background:var(--bg2);
-  color:var(--mut);cursor:pointer;display:grid;place-items:center}
-.kcard .k-acts .ia:hover{color:var(--txt);border-color:rgba(148,163,184,.45)}
-.kcard .k-acts .ia.del:hover{color:#fca5a5;border-color:rgba(248,113,113,.5)}
-.kcard .k-acts svg{width:11px;height:11px}
-.kcol-empty{display:none;padding:18px 10px;text-align:center;color:var(--dim);font-size:11.5px;border:1px dashed var(--line2);
-  border-radius:9px}
-.kcol-empty.show{display:block}
-
 /* print */
 @media print{
   body{background:#fff;color:#111}
@@ -342,7 +291,6 @@ body.view-kanban .table-scroll{display:none}
   .wrap{padding:0;max-width:none}
   .panel{border:none;box-shadow:none}
   .table-scroll{overflow:visible;max-height:none;flex:none}
-  .kanban-wrap{overflow:visible;flex:none}
   table{min-width:0;font-size:10.5px}
   thead th{position:static;background:var(--bg2);color:var(--txt)}
   tbody tr.task-row{page-break-inside:avoid}
@@ -423,16 +371,6 @@ body.view-kanban .table-scroll{display:none}
   <!-- Main panel -->
   <section class="panel">
     <div class="toolbar">
-      <div class="view-toggle" role="tablist" aria-label="View">
-        <button class="on" data-view="table" title="Table view">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-          Table
-        </button>
-        <button class="off" data-view="kanban" title="Kanban board view">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5.2" height="18" rx="1.2"/><rect x="9.4" y="3" width="5.2" height="13" rx="1.2"/><rect x="15.8" y="3" width="5.2" height="9" rx="1.2"/></svg>
-          Board
-        </button>
-      </div>
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <!-- HIDDEN DUMMY: tricks browser autofill into filling this instead of the real search bar -->
@@ -482,10 +420,6 @@ body.view-kanban .table-scroll{display:none}
         <h3>No items match your filters</h3>
         <p>Try clearing the search or switching filter chips.</p>
       </div>
-    </div>
-
-    <div class="kanban-wrap" id="kanbanWrap" aria-label="Kanban board">
-      <div class="kanban" id="kanbanBoard"></div>
     </div>
 
     <div class="foot">
@@ -802,10 +736,8 @@ function sanitizeDates(arr){
 let tasks = [];
 let filter = { q:"", stage:"", plant:"", owner:"", pf:"" };
 let sort = { key:"target", dir:"asc" };
-let view = "table";
 let editingId = null;
 let pendingDelete = null;
-let dragId = null;
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -1845,121 +1777,7 @@ function renderTable(){
   $("#footPipeline").textContent = STAGES.filter(s=>stages[s]).map(s=>`${s} ${stages[s]}`).join(" · ") || "—";
 }
 
-function renderAll(){ renderStats(); renderTable(); renderKanban(); }
-
-/* ---------- Kanban ---------- */
-const KANBAN_COLORS = {
-  "Not Ordered":"#f87171","Partially Ordered":"#fbbf24","Ordered":"#60a5fa","PR Done":"#a78bfa",
-  "PO Done":"#34d399","LC Done":"#22d3ee","Delivered":"#4ade80","Cancelled":"#64748b"
-};
-
-function kanbanCard(t, i){
-  const val = t.ov_bdt ? `<div class="k-val">${esc(fmtBDT(t.ov_bdt))}</div>` : "";
-  const meta = [];
-  if(t.plant) meta.push(`<span class="tag pl">${esc(t.plant)}</span>`);
-  if(t.owner) meta.push(`<span class="tag ow">${esc(t.owner)}</span>`);
-  return `<div class="kcard" draggable="true" data-id="${esc(t.id)}">
-    <div class="k-top">
-      <span class="k-cer" title="${esc(t.cer||"")}">${esc(t.cer||"No CER")}</span>
-    </div>
-    <div class="k-name" title="${esc(t.item||"")}">${esc(t.item || "(untitled)")}</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      ${progFill(t)}
-      ${dueTag(t)}
-    </div>
-    <div class="k-meta">${meta.join("")}</div>
-    ${val}
-    <div class="k-acts">
-      <button class="ia" data-act="edit" title="Edit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-      </button>
-      <button class="ia del" data-act="del" title="Delete">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-      </button>
-    </div>
-  </div>`;
-}
-
-function renderKanban(){
-  const board = $("#kanbanBoard");
-  if(!board) return;
-  const list = filtered();
-  const groups = {};
-  STAGES.forEach(s=>groups[s]=[]);
-  list.forEach(t=>{ (groups[t.stage] || groups["Not Ordered"]).push(t); });
-  const frag = document.createDocumentFragment();
-  STAGES.forEach(s=>{
-    const items = groups[s] || [];
-    const col = document.createElement("div");
-    col.className = "kcol"; col.dataset.stage = s;
-    col.innerHTML =
-      `<div class="kcol-h">
-        <span class="kcol-dot" style="background:${KANBAN_COLORS[s]||"#64748b"}"></span>
-        <span class="kn">${esc(s)}</span>
-        <span class="kc">${items.length}</span>
-      </div>
-      <div class="kcol-body">${items.map((t,i)=>kanbanCard(t,i)).join("") || `<div class="kcol-empty show">No items</div>`}</div>`;
-    frag.appendChild(col);
-  });
-  board.innerHTML = "";
-  board.appendChild(frag);
-  bindKanbanDrag();
-}
-
-function bindKanbanDrag(){
-  const board = $("#kanbanBoard");
-  if(!board) return;
-  board.querySelectorAll(".kcard").forEach(card=>{
-    card.addEventListener("dragstart", e=>{
-      dragId = card.dataset.id;
-      card.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-      try{ e.dataTransfer.setData("text/plain", dragId); }catch(err){}
-    });
-    card.addEventListener("dragend", ()=>{
-      dragId = null;
-      card.classList.remove("dragging");
-      board.querySelectorAll(".kcol").forEach(c=>c.classList.remove("over"));
-    });
-    card.addEventListener("click", e=>{
-      const act = e.target.closest("[data-act]");
-      if(act){ e.stopPropagation(); act.dataset.act==="edit" ? openEdit(card.dataset.id) : askDelete(card.dataset.id); return; }
-      if(!Lock.canEdit()){ blockEditBanner(); return; }
-      openEdit(card.dataset.id);
-    });
-  });
-  board.querySelectorAll(".kcol").forEach(col=>{
-    col.addEventListener("dragover", e=>{ e.preventDefault(); e.dataTransfer.dropEffect = "move"; col.classList.add("over"); });
-    col.addEventListener("dragleave", ()=>col.classList.remove("over"));
-    col.addEventListener("drop", e=>{
-      e.preventDefault();
-      col.classList.remove("over");
-      const id = dragId || (e.dataTransfer.getData("text/plain")) || null;
-      if(!id) return;
-      if(!Lock.canEdit()){ blockEditBanner(); return; }
-      const t = tasks.find(x=>x.id===id);
-      if(!t) return;
-      const to = col.dataset.stage;
-      if(t.stage === to){ return; }
-      t.stage = to;
-      t.autoPriority = false; t.autoProgress = false; t._autoTarget = false;
-      applySmart(t);
-      save();
-      toast(`Moved to ${to}`);
-      renderAll();
-    });
-  });
-}
-
-function setView(v){
-  view = v;
-  document.body.classList.toggle("view-kanban", v==="kanban");
-  document.querySelectorAll(".view-toggle button").forEach(b=>{
-    b.classList.toggle("on", b.dataset.view===v);
-    b.classList.toggle("off", b.dataset.view!==v);
-  });
-  if(v==="kanban") renderKanban();
-}
+function renderAll(){ renderStats(); renderTable(); }
 
 /* ---------- filter controls ---------- */
 function initFilters(){
@@ -2361,10 +2179,6 @@ $("#exportBtn").addEventListener("click", ()=>{
   toast(`Exported ${list.length} rows to CSV`);
 });
 $("#printBtn").addEventListener("click", ()=>window.print());
-
-document.querySelectorAll(".view-toggle button").forEach(b=>{
-  b.addEventListener("click", ()=>setView(b.dataset.view));
-});
 
 document.addEventListener("keydown", e=>{
   if(e.key==="Escape"){ if($("#modalOverlay").classList.contains("open")){ closeModal(); } if($("#confirmOverlay").classList.contains("open")){ $("#confirmOverlay").classList.remove("open"); pendingDelete=null; } }
