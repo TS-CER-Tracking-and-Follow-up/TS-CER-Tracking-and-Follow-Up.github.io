@@ -61,6 +61,20 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 2px 0
 .hdr-actions .sep{width:1px;height:22px;background:var(--line2);margin:0 3px;flex:none}
 .hdr-actions .btn.data{background:var(--panel2);border:1px solid var(--line2);color:var(--mut)}
 .hdr-actions .btn.data:hover{color:var(--txt);border-color:rgba(148,163,184,.4);background:var(--panel2)}
+/* Export ⋮ dropdown menu */
+.exp-menu{position:relative;display:inline-flex}
+.exp-menu .dots{font-size:15px;line-height:1;color:var(--mut);margin-left:1px}
+.exp-menu .btn.data .dots{color:var(--mut)}
+.exp-menu .btn.data:hover .dots{color:var(--txt)}
+.exp-drop{position:absolute;top:calc(100% + 6px);right:0;min-width:210px;z-index:60;
+  background:var(--panel);border:1px solid var(--line2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.35);
+  padding:5px;display:none;flex-direction:column;gap:2px}
+.exp-menu.open .exp-drop{display:flex}
+.exp-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:none;border-radius:8px;
+  background:transparent;color:var(--txt);font-family:var(--font);font-size:12.5px;font-weight:600;text-align:left;cursor:pointer;transition:background .12s}
+.exp-item svg{width:15px;height:15px;color:var(--mut);flex:none}
+.exp-item:hover{background:rgba(59,130,246,.12);color:var(--txt)}
+.exp-item:hover svg{color:var(--blue)}
 .user-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--txt);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
 .lock-banner{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--txt);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);margin-bottom:0;flex:none}
 .lock-banner.lb-me{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45)}
@@ -166,6 +180,11 @@ thead th:first-child{position:sticky;left:0;z-index:6;background:var(--bg2);widt
 tbody tr.task-row td:first-child{position:sticky;left:0;z-index:4;background:var(--panel);width:300px;min-width:300px;max-width:300px;white-space:normal;word-wrap:break-word}
 tbody tr.task-row:hover td:first-child{background:rgba(59,130,246,.055)}
 tbody tr.task-row.row-open td:first-child{background:rgba(59,130,246,.08)}
+/* Copy for SAP selection column */
+.sap-sel-col input,.sap-sel-cell input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue,#3b82f6)}
+.sap-selbar{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--line);background:rgba(59,130,246,.06);font-size:12.5px;color:var(--txt)}
+.sap-selbar .sap-sel-txt b{color:var(--blue)}
+.sap-selbar .btn.sm{padding:3px 10px;font-size:11.5px}
 td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 .t-name{font-weight:600;color:var(--txt);line-height:1.35}
 .t-sub{font-size:11.5px;color:var(--dim);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -350,14 +369,32 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     </button>
     <div class="hdr-actions">
       <span class="sep"></span>
-      <button class="btn ghost data" id="exportBtn" title="Export filtered rows to CSV">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span class="lbl">Export CSV</span>
-      </button>
+      <div class="exp-menu" id="expMenu">
+        <button class="btn ghost data" id="exportMenuBtn" title="Export / import data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span class="lbl">Export</span>
+          <span class="dots" aria-hidden="true">&#8942;</span>
+        </button>
+        <div class="exp-drop" id="expDrop">
+          <button class="exp-item" data-act="csv" title="Export filtered rows to CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export CSV
+          </button>
+          <button class="exp-item" data-act="sapExport" title="Export filtered rows to an SAP Excel (.xlsx) file matching the CER_CEVA_2026 template">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export SAP Excel
+          </button>
+          <button class="exp-item" data-act="sapImport" title="Import an SAP Excel (.xlsx) file into the tracker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            Import SAP Excel
+          </button>
+        </div>
+      </div>
       <button class="btn ghost data" id="printBtn" title="Print / save as PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         <span class="lbl">Print</span>
       </button>
+      <input type="file" id="sapImportFile" accept=".xlsx,.xls" style="display:none">
       <button class="btn primary" id="addBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span class="lbl">Add Item</span>
@@ -395,8 +432,19 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
         </select>
       </div>
       <div class="tb-right">
+        <button class="btn ghost sm" id="sapCopyBtn" title="Copy selected rows in SAP 25-column format to clipboard">Copy for SAP</button>
+        <button class="btn ghost sm" id="excelCopyBtn" title="Copy selected rows in 20-column Excel format to clipboard">Copy for Excel</button>
+        <select id="excelCopyMode" title="Copy for Excel mode" style="height:30px;font-size:12px;border:1px solid var(--border,#3a3f4b);border-radius:6px;background:var(--card,#1e222b);color:var(--text,#e6e8ee);padding:0 6px;cursor:pointer">
+          <option value="headers">With Headers</option>
+          <option value="data">Data Only</option>
+        </select>
         <div class="count-txt"><b id="shownCount">0</b> of <span id="totalCount">0</span> items</div>
       </div>
+    </div>
+    <div class="sap-selbar" id="sapSelBar" style="display:none">
+      <span class="sap-sel-txt"><b id="sapSelCount">0</b> selected</span>
+      <button class="btn ghost sm" id="sapSelectAllBtn" title="Select all visible rows">Select all</button>
+      <button class="btn ghost sm" id="sapClearBtn" title="Clear selection">Clear</button>
     </div>
 
     <div class="table-scroll">
@@ -411,6 +459,7 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
             <th data-sort="agent" style="min-width:115px">Local Agent</th>
             <th data-sort="cer_status" style="min-width:105px">CER Status</th>
             <th style="min-width:70px;text-align:right">Actions</th>
+            <th class="sap-sel-col" style="width:44px;min-width:44px;max-width:44px;text-align:center" title="Select rows for Copy for SAP"><input type="checkbox" id="sapSelectAll" title="Select all visible rows for Copy for SAP"></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -535,6 +584,7 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 <div id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <!--
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1696,13 +1746,14 @@ function nameCell(t){
   if(t.qty) chips.push(`<span class="badge b-st" style="font-size:10.5px">Qty ${esc(t.qty)}</span>`);
   if(t.cer) chips.push(`<span style="color:#8fb8ff;font-family:var(--mono);font-size:11px">${esc(t.cer)}</span>`);
   if(t.dept) chips.push(`<span>${esc(t.dept)}</span>`);
+  chips.push(sapReadyBadge(t));
   return `<div class="t-name">${esc(t.item || "(untitled)")}</div>
     <div class="t-sub">${chips.join("")}</div>`;
 }
 
 function detailRow(t){
   const grid = (k,v,mono,note) => `<div class="det"><div class="k">${k}</div><div class="v ${mono?"mono":""} ${note?"note":""}">${v||"—"}</div></div>`;
-  return `<tr class="detail-row" data-id="${esc(t.id)}"><td colspan="8">
+  return `<tr class="detail-row" data-id="${esc(t.id)}"><td colspan="9">
     <div class="detail">
       ${grid("CER", esc(t.cer), true)}
       ${grid("CER Received", fmtDate(t.cer_date))}
@@ -1754,7 +1805,8 @@ function renderTable(){
          <button class="ia del" data-act="del" title="Delete">
            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
          </button>
-       </div></td>`;
+       </div></td>
+       <td class="sap-sel-cell" style="text-align:center"><input type="checkbox" class="sap-row-cb" data-id="${esc(t.id)}" ${SAP_SELECTED.has(t.id)?"checked":""} title="Select for Copy for SAP"></td>`;
     tr.addEventListener("click", e=>{
       const act = e.target.closest("[data-act]");
       if(act){ e.stopPropagation(); act.dataset.act==="edit" ? openEdit(t.id) : askDelete(t.id); return; }
@@ -1841,15 +1893,14 @@ function buildForm(t){
   const vals = { item:"", cer:"", sl:"", qty:"", unit_area:"", dept:"", plant:"", cer_status:"Not Ordered",
     manufacturer:"", agent:"", currency:"", rate:"", order_value:"", ov_bdt:"", init_quoted:"", init_bdt:"", reduction:"",
     cer_date:"", tracking:"", submitted:"", pr:"", pr_date:"", po:"", lc:"", machine_status:"", machine_date:"",
-    notesheet_date:"", scm_note:"", owner:"", stage:"Not Ordered", priority:"Low", progress:5, target:"", created:"" };
+    notesheet_date:"", scm_note:"", owner:"", stage:"Not Ordered", priority:"Low", progress:5, target:"", created:"",
+    mat_group:"", origin:"", purpose:"", order_justification:"", delivery_date:"" };
   if(t) Object.assign(vals, t);
   return `
   <div class="fsec">
-    <div class="fsec-h"><span class="ln"></span><h3>Identity</h3></div>
+    <div class="fsec-h"><span class="ln"></span><h3>Basic Information</h3></div>
     <div class="fgrid">
       ${f("item","Item Name *","text",vals.item,"","e.g. HPLC System","", "full")}
-      ${f("cer","CER No.","text",vals.cer,"","e.g. AZ004133, AZ004002")}
-      ${f("cer_date","CER Receiving Date","date",vals.cer_date)}
       ${f("qty","Qty","text",vals.qty,"","e.g. 01 pc / 1 lot")}
       ${f("unit_area","Unit / Area","text",vals.unit_area)}
       ${f("dept","Department","text",vals.dept)}
@@ -1857,7 +1908,16 @@ function buildForm(t){
     </div>
   </div>
   <div class="fsec">
-    <div class="fsec-h"><span class="ln"></span><h3>Sourcing &amp; Value</h3></div>
+    <div class="fsec-h"><span class="ln"></span><h3>CER Information</h3></div>
+    <div class="fgrid">
+      ${f("cer","CER No.","text",vals.cer,"","e.g. AZ004133, AZ004002")}
+      ${f("cer_date","CER Receiving Date","date",vals.cer_date)}
+      ${f("cer_status","CER Status","select",vals.cer_status,["Not Ordered","Ordered","Partially Ordered","Cancelled"],"",FIELD_HELP.cer_status)}
+      ${f("owner","Responsibility","text",vals.owner,"","e.g. Raihan / Sadman / Shashi")}
+    </div>
+  </div>
+  <div class="fsec">
+    <div class="fsec-h"><span class="ln"></span><h3>Supplier / Manufacturer</h3></div>
     <div class="fgrid">
       ${f("manufacturer","Manufacturer","text",vals.manufacturer)}
       ${f("agent","Local Agent","text",vals.agent)}
@@ -1871,31 +1931,41 @@ function buildForm(t){
     </div>
   </div>
   <div class="fsec">
-    <div class="fsec-h"><span class="ln"></span><h3>Pipeline · CER → PR → PO → LC → Delivery</h3>
-      <span class="auto-hint">⚡ Stage auto-updates when you change the fields below</span></div>
+    <div class="fsec-h"><span class="ln"></span><h3>Purchase Information</h3>
+      <span class="auto-hint">\u26a1 Stage auto-updates when you change the fields below</span></div>
     <div class="fgrid">
-      ${f("cer_status","CER Status","select",vals.cer_status,["Not Ordered","Ordered","Partially Ordered","Cancelled"],"",FIELD_HELP.cer_status)}
       ${f("tracking","Tracking Number","text",vals.tracking,"","BX000799")}
       ${f("submitted","Submitted to Factory Accounts","date",vals.submitted)}
       ${f("pr","PR No.","text",vals.pr,"","19000697")}
       ${f("pr_date","PR Date","date",vals.pr_date)}
       ${f("po","PO No.","text",vals.po,"","4540010763")}
       ${f("lc","L/C No.","text",vals.lc,"","147526150332")}
-      ${f("machine_status","Machine Received Status","select",vals.machine_status,["","Received","Not Received","NA"])}
-      ${f("machine_date","Machine Received Date","date",vals.machine_date)}
       ${f("notesheet_date","NoteSheet Received (SCM)","date",vals.notesheet_date)}
       ${f("scm_note","SCM Note","text",vals.scm_note,"","e.g. LC shared on 05.03.2026")}
-      ${f("owner","Responsibility","text",vals.owner,"","e.g. Raihan / Sadman / Shashi")}
     </div>
   </div>
   <div class="fsec">
-    <div class="fsec-h"><span class="ln"></span><h3>Progress &amp; Tracking</h3></div>
+    <div class="fsec-h"><span class="ln"></span><h3>Delivery / Status</h3></div>
     <div class="fgrid">
+      ${f("machine_status","Machine Received Status","select",vals.machine_status,["","Received","Not Received","NA"])}
+      ${f("machine_date","Machine Received Date","date",vals.machine_date)}
       ${f("stage","Stage","select",vals.stage,STAGES,"",FIELD_HELP.stage)}
       ${f("progress","Progress %","range",vals.progress,null,"",FIELD_HELP.progress)}
       ${f("target","Deadline (target)","date",vals.target,"",FIELD_HELP.target)}
       ${f("created","Created date","date",vals.created)}
     </div>
+  </div>
+  <div class="fsec">
+    <div class="fsec-h"><span class="ln"></span><h3>SAP Information</h3>
+      <span class="auto-hint">\u26a1 These map to the SAP input columns (Mat Group, Origin, Purpose, Order justification, Delivery Date)</span></div>
+    <div class="fgrid">
+      ${f("mat_group","Mat Group","text",vals.mat_group,"","e.g. 240002")}
+      ${f("origin","Origin","text",vals.origin,"","e.g. India / China / Germany")}
+      ${f("delivery_date","Delivery Date","date",vals.delivery_date)}
+      ${f("purpose","Purpose / Requirement Justification","textarea",vals.purpose,"","e.g. 5 ton Boiler will replace the old one")}
+      ${f("order_justification","Order justification","textarea",vals.order_justification,"","e.g. Required for production capacity")}
+    </div>
+  </div>
   </div>`;
 }
 
@@ -2063,7 +2133,9 @@ function readForm(){
     po: g("po"), lc: g("lc"), machine_status: g("machine_status"), machine_date: g("machine_date"),
     notesheet_date: g("notesheet_date"), scm_note: g("scm_note"), owner: g("owner"),
     stage: g("stage") || "Not Ordered", priority: g("priority") || "Low",
-    progress: parseInt(g("progress")||"0"), target: g("target"), created: g("created"), rate: num("rate")
+    progress: parseInt(g("progress")||"0"), target: g("target"), created: g("created"), rate: num("rate"),
+    mat_group: g("mat_group"), origin: g("origin"), purpose: g("purpose"),
+    order_justification: g("order_justification"), delivery_date: g("delivery_date")
   };
   return t;
 }
@@ -2077,6 +2149,11 @@ $("#formSave").addEventListener("click", async ()=>{
   const t = readForm();
   if(!t.item){ $("#formErr").textContent = "Item Name is required."; return; }
   recomputeBDT(t);
+  const sapMissing = sapMissingFields(t);
+  if(sapMissing.length){
+    $("#formErr").textContent = "SAP required information is missing: " + sapMissing.join(", ");
+    return;
+  }
   if(editingId){
     const idx = tasks.findIndex(x=>x.id===editingId);
     if(idx<0) return;
@@ -2164,9 +2241,370 @@ $("#confirmYes").addEventListener("click", async ()=>{
 $("#confirmNo").addEventListener("click", ()=>{ pendingDelete=null; $("#confirmOverlay").classList.remove("open"); });
 $("#confirmOverlay").addEventListener("click", e=>{ if(e.target.id==="confirmOverlay"){ pendingDelete=null; $("#confirmOverlay").classList.remove("open"); } });
 
+/* ---------- Copy for SAP ---------- */
+// Set of selected record ids for the SAP copy feature (persists across re-renders).
+const SAP_SELECTED = new Set();
+
+// Split a tracker qty string like "02 pc", "850 sft", "1 set", "9pc", "1" into
+// {num, unit}. Returns {num:"", unit:""} when there is nothing usable.
+function splitQty(q){
+  const s = String(q ?? "").trim();
+  if(!s) return {num:"", unit:""};
+  const m = s.match(/^([0-9]+(?:\.[0-9]+)?)\s*([A-Za-z%]+)?$/);
+  if(m) return {num:m[1], unit:(m[2]||"").toLowerCase()};
+  // Fallback: leading number, rest as unit (e.g. "9pc" -> 9 / pc)
+  const n = s.match(/^([0-9]+(?:\.[0-9]+)?)/);
+  if(n){
+    const rest = s.slice(n[1].length).trim();
+    // Guard: if the remainder is not a clean alphabetic unit (e.g. compound
+    // "01+01", "04+01"), treat as a single numeric qty with NO unit.
+    const unit = /^[A-Za-z%]+$/.test(rest) ? rest.toLowerCase() : "";
+    return {num:n[1], unit};
+  }
+  return {num:"", unit:s.toLowerCase()};
+}
+
+// Convert an ISO date (YYYY-MM-DD) to SAP's DD.MM.YY text format.
+// Returns "" for empty/invalid input. e.g. "2026-01-05" -> "05.01.26"
+function sapDate(v){
+  if(!v) return "";
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return s; // already in some other format, pass through
+  return `${m[3]}.${m[2]}.${m[1].slice(2)}`;
+}
+
+// Exact 25-column header row, matching the CER_CEVA_2026.xlsx "2026" sheet
+// (row 2, columns B-Z). Column 18 (S) has no header -> empty string.
+const SAP_HEADERS = [
+  "PR", "??", "A", "B", "Materials",
+  "Item Description/ Particulars/ Item Name", "Required Qty", "Unit", "Blunk", "Delivery Date",
+  "Mat Group", "SAP Plant", "Sloc", "PGR", "CER Requisitioner",
+  "Tracking no.", "???", "", "Unit Value \n(Without Freight/VAT)", "Crncy",
+  "Vendor", "Purpose/Requirement Justification", "Origin", "Department", "Order justification"
+];
+
+// Build one SAP row (25 tab-separated columns) from a tracker record.
+// SAP column order: PR, ??, A, B, Materials, Item Description, Required Qty,
+// Unit, Blunk, Delivery Date, Mat Group, SAP Plant, Sloc, PGR, CER Requisitioner,
+// Tracking no., ???, (no header), Unit Value, Crncy, Vendor, Purpose, Origin,
+// Department, Order justification.
+function buildSapRow(t){
+  const q = splitQty(t.qty);
+  const cells = [
+    t.pr || "",            // 1  PR
+    "",                    // 2  ??
+    "",                    // 3  A
+    "",                    // 4  B
+    "",                    // 5  Materials
+    t.item || "",          // 6  Item Description
+    q.num,                 // 7  Required Qty (numeric part)
+    q.unit,                // 8  Unit (unit part)
+    "",                    // 9  Blunk
+    t.delivery_date ? sapDate(t.delivery_date) : "", // 10 Delivery Date (DD.MM.YY)
+    t.mat_group || "",     // 11 Mat Group
+    "",                    // 12 SAP Plant (left blank per user)
+    "",                    // 13 Sloc
+    "",                    // 14 PGR
+    t.owner || "",           // 15 Requisitioner
+    t.tracking || "",      // 16 Tracking no.
+    "",                    // 17 ???
+    "",                    // 18 (no header)
+    t.order_value ?? "",   // 19 Unit Value
+    t.currency || "",      // 20 Crncy
+    t.manufacturer || "",  // 21 Vendor
+    t.purpose || "",       // 22 Purpose
+    t.origin || "",        // 23 Origin
+    t.dept || "",          // 24 Department
+    t.order_justification || ""  // 25 Order justification
+  ];
+  return cells.join("\t");
+}
+
+function updateSapSelBar(){
+  const n = SAP_SELECTED.size;
+  $("#sapSelCount").textContent = n;
+  $("#sapSelBar").style.display = n ? "flex" : "none";
+  const all = document.querySelectorAll(".sap-row-cb");
+  const selAll = $("#sapSelectAll");
+  if(selAll) selAll.checked = all.length > 0 && all.length === SAP_SELECTED.size;
+}
+
+async function copyForSap(){
+  const list = filtered().filter(t => SAP_SELECTED.has(t.id));
+  if(!list.length){ toast("Select at least one row to copy for SAP"); return; }
+  const text = [SAP_HEADERS.join("\t"), ...list.map(buildSapRow)].join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`Copied ${list.length} row(s) for SAP`);
+  } catch(e) {
+    // Fallback for older browsers / non-secure contexts.
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(`Copied ${list.length} row(s) for SAP`); }
+    catch(err){ toast("Copy failed \u2014 please select rows and try again"); }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------- Copy for Excel ---------- */
+// Exact 20-column header row for the user's SAP-preparation Excel order.
+const EXCEL_HEADERS = [
+  "PR", "A / B", "Materials", "Item Description", "Required Qty",
+  "Unit", "Delivery Date", "Mat Group", "SAP Plant", "Sloc",
+  "PGR", "CER Requisitioner", "Tracking No.", "Unit Value", "Currency",
+  "Vendor", "Purpose/Requirement Justification", "Origin", "Department", "Order Justification"
+];
+
+// Build one Excel row (20 tab-separated columns) from a tracker record.
+// Preserves blanks as empty slots so columns never shift; keeps original
+// stored values exactly (no truncation, no leading-zero removal).
+function buildExcelRow(t){
+  const q = splitQty(t.qty);
+  const cells = [
+    t.pr || "",                       // 1  PR
+    "",                               // 2  A / B
+    "",                               // 3  Materials
+    t.item || "",                     // 4  Item Description
+    q.num,                            // 5  Required Qty (numeric part)
+    q.unit,                           // 6  Unit (unit part)
+    t.delivery_date ? sapDate(t.delivery_date) : "", // 7  Delivery Date (DD.MM.YY)
+    t.mat_group || "",                // 8  Mat Group
+    "",                               // 9  SAP Plant (left blank per user)
+    "",                               // 10 Sloc
+    "",                               // 11 PGR
+    t.owner || "",                    // 12 CER Requisitioner
+    t.tracking || "",                 // 13 Tracking No.
+    t.order_value ?? "",              // 14 Unit Value
+    t.currency || "",                 // 15 Currency
+    t.manufacturer || "",             // 16 Vendor
+    t.purpose || "",                  // 17 Purpose/Requirement Justification
+    t.origin || "",                   // 18 Origin
+    t.dept || "",                     // 19 Department
+    t.order_justification || ""       // 20 Order Justification
+  ];
+  return cells.join("\t");
+}
+
+async function copySelectedRecordsForExcel(){
+  const list = filtered().filter(t => SAP_SELECTED.has(t.id));
+  if(!list.length){ toast("Select at least one row to copy for Excel"); return; }
+  const withHeaders = $("#excelCopyMode").value !== "data";
+  const rows = list.map(buildExcelRow);
+  const text = withHeaders ? [EXCEL_HEADERS.join("\t"), ...rows].join("\n") : rows.join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`Copied ${list.length} row(s) for Excel`);
+  } catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(`Copied ${list.length} row(s) for Excel`); }
+    catch(err){ toast("Copy failed — please select rows and try again"); }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------- SAP data-entry system ---------- */
+// Mandatory SAP fields. A record is "SAP READY" only when all of these are
+// filled. SAP Plant is intentionally NOT required (left blank per user).
+const SAP_REQUIRED = [
+  { key:"pr", label:"PR" },
+  { key:"item", label:"Item Description" },
+  { key:"qty", label:"Required Qty" },
+  { key:"delivery_date", label:"Delivery Date" },
+  { key:"mat_group", label:"Mat Group" },
+  { key:"owner", label:"CER Requisitioner" },
+  { key:"tracking", label:"Tracking no." },
+  { key:"order_value", label:"Unit Value" },
+  { key:"currency", label:"Crncy" },
+  { key:"manufacturer", label:"Vendor" },
+  { key:"purpose", label:"Purpose" },
+  { key:"origin", label:"Origin" },
+  { key:"dept", label:"Department" },
+  { key:"order_justification", label:"Order justification" }
+];
+
+// Return the list of missing mandatory SAP field labels for a record.
+function sapMissingFields(t){
+  const missing = [];
+  SAP_REQUIRED.forEach(f=>{
+    const v = t ? t[f.key] : "";
+    if(v === undefined || v === null || String(v).trim() === "") missing.push(f.label);
+  });
+  return missing;
+}
+
+// Per-record SAP readiness indicator: "✓ SAP READY" or "⚠ SAP DATA INCOMPLETE — N FIELDS MISSING".
+// Clicking the warning shows the exact missing fields.
+function sapReadyBadge(t){
+  const missing = sapMissingFields(t);
+  if(!missing.length){
+    return `<span class="badge b-ord" title="All SAP-required fields are filled in" style="cursor:default">✓ SAP READY</span>`;
+  }
+  const n = missing.length;
+  const detail = missing.join(", ");
+  return `<span class="badge b-can" title="Click to see missing fields" style="cursor:pointer" onclick="alert('SAP DATA INCOMPLETE — ${n} field(s) missing:\\n\\n${detail}')">⚠ SAP DATA INCOMPLETE — ${n} FIELD${n>1?"S":""} MISSING</span>`;
+}
+
+// Build one SAP row (25 columns) as an array of cell values (for xlsx export).
+// Mirrors buildSapRow() but returns an array instead of a tab-joined string.
+function buildSapRowArray(t){
+  const q = splitQty(t.qty);
+  return [
+    t.pr || "",            // 1  PR
+    "",                    // 2  ??
+    "",                    // 3  A
+    "",                    // 4  B
+    "",                    // 5  Materials
+    t.item || "",          // 6  Item Description
+    q.num,                 // 7  Required Qty (numeric part)
+    q.unit,                // 8  Unit (unit part)
+    "",                    // 9  Blunk
+    t.delivery_date ? sapDate(t.delivery_date) : "", // 10 Delivery Date (DD.MM.YY)
+    t.mat_group || "",     // 11 Mat Group
+    "",                    // 12 SAP Plant (left blank per user)
+    "",                    // 13 Sloc
+    "",                    // 14 PGR
+    t.owner || "",         // 15 Requisitioner
+    t.tracking || "",      // 16 Tracking no.
+    "",                    // 17 ???
+    "",                    // 18 (no header)
+    t.order_value ?? "",   // 19 Unit Value
+    t.currency || "",      // 20 Crncy
+    t.manufacturer || "",  // 21 Vendor
+    t.purpose || "",       // 22 Purpose
+    t.origin || "",        // 23 Origin
+    t.dept || "",          // 24 Department
+    t.order_justification || ""  // 25 Order justification
+  ];
+}
+
+// Export filtered rows to a real .xlsx file matching the CER_CEVA_2026 template:
+// exact 25 column headers (B-Z), exact order, correct values/formats.
+function exportSapExcel(){
+  const list = filtered();
+  if(!list.length){ toast("No rows to export"); return; }
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
+  const header = SAP_HEADERS.map(h=>h.replace(/\n/g," "));
+  const rows = list.map(buildSapRowArray);
+  const aoa = [header, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  // Set column widths for readability (optional, does not affect data).
+  ws["!cols"] = header.map(h=>({ wch: Math.max(10, (h||"").length+2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "2026");
+  XLSX.writeFile(wb, "CER_CEVA_2026.xlsx");
+  toast(`Exported ${list.length} rows to SAP Excel`);
+}
+
+// Map an SAP Excel row (25 columns, B-Z) back into a website record.
+// The same mapping works in both directions (export and import).
+function sapRowToRecord(cells){
+  const get = i => (cells[i] === undefined || cells[i] === null) ? "" : String(cells[i]).trim();
+  const qtyNum = get(6);   // Required Qty (numeric part)
+  const unit = get(7);     // Unit
+  const qty = qtyNum ? (unit ? qtyNum + " " + unit : qtyNum) : (unit || "");
+  return {
+    pr: get(0),
+    item: get(5),
+    qty: qty,
+    delivery_date: get(9) ? sapDateToIso(get(9)) : "",
+    mat_group: get(10),
+    owner: get(14),
+    tracking: get(15),
+    order_value: get(18) ? parseFloat(get(18)) : null,
+    currency: get(19),
+    manufacturer: get(20),
+    purpose: get(21),
+    origin: get(22),
+    dept: get(23),
+    order_justification: get(24)
+  };
+}
+
+// Convert SAP's DD.MM.YY text back to ISO YYYY-MM-DD (for the date input).
+function sapDateToIso(v){
+  const m = String(v).trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if(!m) return "";
+  let y = m[3]; if(y.length===2) y = "20"+y;
+  const mm = String(m[2]).padStart(2,"0");
+  const dd = String(m[1]).padStart(2,"0");
+  return `${y}-${mm}-${dd}`;
+}
+
+// Import an SAP Excel file: read all rows, map each into a website record,
+// and add them to the tracker (preserving all information).
+function importSapExcel(file){
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:"array" });
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
+      if(!aoa.length){ toast("No data found in the Excel file"); return; }
+      // Skip the header row (row 2 in the template). Detect it: if the first
+      // row's first cell is "PR" (the header), skip it.
+      let start = 0;
+      if(String(aoa[0][0]||"").trim().toUpperCase() === "PR") start = 1;
+      let added = 0;
+      for(let i=start; i<aoa.length; i++){
+        const cells = aoa[i];
+        // Skip fully-empty rows.
+        if(!cells || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
+        const rec = sapRowToRecord(cells);
+        if(!rec.item && !rec.pr) continue; // skip rows with no meaningful data
+        rec.id = uid();
+        rec.sl = String(nextSl());
+        rec.cer = "";
+        rec.cer_date = "";
+        rec.unit_area = "";
+        rec.plant = "";
+        rec.cer_status = "Not Ordered";
+        rec.agent = "";
+        rec.rate = null;
+        rec.ov_bdt = null;
+        rec.init_quoted = null;
+        rec.init_bdt = null;
+        rec.reduction = "";
+        rec.submitted = "";
+        rec.pr_date = "";
+        rec.po = "";
+        rec.lc = "";
+        rec.machine_status = "";
+        rec.machine_date = "";
+        rec.notesheet_date = "";
+        rec.scm_note = "";
+        rec.stage = "Not Ordered";
+        rec.priority = "Low";
+        rec.progress = 5;
+        rec.target = "";
+        rec.created = nowLocalStamp();
+        rec.autoPriority = true; rec.autoProgress = true; rec._autoTarget = true;
+        rec.lastEditedBy = currentUser();
+        rec.lastEditedAt = new Date().toISOString();
+        tasks.unshift(rec);
+        added++;
+      }
+      if(added){
+        save().then(ok=>{ renderAll(); toast(`Imported ${added} row(s) from SAP Excel`); });
+      } else {
+        toast("No importable rows found in the Excel file");
+      }
+    } catch(err){
+      console.error("SAP import failed:", err);
+      toast("Import failed — " + (err?.message || String(err)));
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
-$("#exportBtn").addEventListener("click", ()=>{
+function exportCsv(){
   const list = filtered();
   const cols = ["SL No","CER","Item Name","Qty","Unit/Area","Department","Site/Plant","CER Status","Manufacturer","Local Agent","Order Value","Currency","Tracking Number","Order Value (BDT)","Initial Quoted Value","Initial Value (BDT)","% Reduction","Submitted to Factory Accounts","PR","PR Date","PO","LC","Responsibility","NoteSheet (SCM)","SCM Note","Machine Status","Machine Date","Stage","Priority","Progress %","Deadline","Created"];
   const get = t => [t.sl,t.cer,t.item,t.qty,t.unit_area,t.dept,t.plant,t.cer_status,t.manufacturer,t.agent,t.order_value,t.currency,t.tracking,t.ov_bdt,t.init_quoted,t.init_bdt,t.reduction,t.submitted,t.pr,t.pr_date,t.po,t.lc,t.owner,t.notesheet_date,t.scm_note,t.machine_status,t.machine_date,t.stage,t.priority,t.progress,t.target,t.created,t.order_value,t.cer_date];
@@ -2177,8 +2615,64 @@ $("#exportBtn").addEventListener("click", ()=>{
   a.download = "tsd-follow-up-cer-ceva-2026.csv";
   a.click(); URL.revokeObjectURL(a.href);
   toast(`Exported ${list.length} rows to CSV`);
-});
+}
 $("#printBtn").addEventListener("click", ()=>window.print());
+$("#sapImportFile").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) importSapExcel(f);
+  e.target.value = "";
+});
+
+/* ---------- Export ⋮ dropdown menu ---------- */
+const expMenu = $("#expMenu"), expDrop = $("#expDrop");
+function closeExpMenu(){ expMenu.classList.remove("open"); }
+function openExpMenu(){ expMenu.classList.add("open"); }
+$("#exportMenuBtn").addEventListener("click", e=>{
+  e.stopPropagation();
+  expMenu.classList.contains("open") ? closeExpMenu() : openExpMenu();
+});
+expDrop.addEventListener("click", e=>{
+  const item = e.target.closest(".exp-item");
+  if(!item) return;
+  const act = item.getAttribute("data-act");
+  if(act === "csv") exportCsv();
+  else if(act === "sapExport") exportSapExcel();
+  else if(act === "sapImport") $("#sapImportFile").click();
+  closeExpMenu();
+});
+document.addEventListener("click", e=>{
+  if(!expMenu.contains(e.target)) closeExpMenu();
+});
+document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeExpMenu(); });
+
+/* ---------- Copy for SAP event wiring ---------- */
+$("#sapCopyBtn").addEventListener("click", copyForSap);
+$("#excelCopyBtn").addEventListener("click", copySelectedRecordsForExcel);
+$("#sapSelectAll").addEventListener("change", e=>{
+  const on = e.target.checked;
+  document.querySelectorAll(".sap-row-cb").forEach(cb=>{
+    if(on) SAP_SELECTED.add(cb.dataset.id); else SAP_SELECTED.delete(cb.dataset.id);
+    cb.checked = on;
+  });
+  updateSapSelBar();
+});
+$("#sapSelectAllBtn").addEventListener("click", ()=>{
+  document.querySelectorAll(".sap-row-cb").forEach(cb=>{ SAP_SELECTED.add(cb.dataset.id); cb.checked = true; });
+  updateSapSelBar();
+});
+$("#sapClearBtn").addEventListener("click", ()=>{
+  SAP_SELECTED.clear();
+  document.querySelectorAll(".sap-row-cb").forEach(cb=>{ cb.checked = false; });
+  updateSapSelBar();
+});
+// Delegate row-checkbox clicks (rows are re-rendered on every filter/sort).
+document.addEventListener("click", e=>{
+  const cb = e.target.closest(".sap-row-cb");
+  if(!cb) return;
+  e.stopPropagation();
+  if(cb.checked) SAP_SELECTED.add(cb.dataset.id); else SAP_SELECTED.delete(cb.dataset.id);
+  updateSapSelBar();
+});
 
 document.addEventListener("keydown", e=>{
   if(e.key==="Escape"){ if($("#modalOverlay").classList.contains("open")){ closeModal(); } if($("#confirmOverlay").classList.contains("open")){ $("#confirmOverlay").classList.remove("open"); pendingDelete=null; } }
