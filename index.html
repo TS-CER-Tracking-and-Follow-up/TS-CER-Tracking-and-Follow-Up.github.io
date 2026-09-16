@@ -104,12 +104,6 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 2px 0
 .lock-banner .lb-txt{flex:1;line-height:1.45}
 .lock-banner .lb-btn{background:transparent;border:1px solid rgba(245,158,11,.55);color:var(--txt);font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;cursor:pointer;transition:background .15s}
 .lock-banner.lb-me .lb-btn{border-color:rgba(52,211,153,.55)}
-.local-note{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--txt);background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.45);cursor:pointer;flex:none}
-.local-note:hover{background:rgba(59,130,246,.2)}
-.local-note .ln-dot{font-size:16px;line-height:1;flex-shrink:0}
-.local-note .ln-txt{flex:1;line-height:1.45}
-.local-note .ln-act{background:transparent;border:1px solid rgba(59,130,246,.55);color:var(--txt);font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;cursor:pointer}
-.local-note[hidden]{display:none}
 .lock-banner .lb-btn:hover{background:rgba(148,163,184,.15)}
 .user-badge:hover{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.5)}
 .user-badge .dot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.18)}
@@ -374,13 +368,6 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     <button class="lb-btn" id="lockReleaseBtn" hidden>Release lock</button>
   </div>
 
-  <!-- Local-save notice: this browser holds changes the shared tracker does not -->
-  <div class="local-note" id="localNote" hidden>
-    <span class="ln-dot">💾</span>
-    <span class="ln-txt" id="localNoteTxt"></span>
-    <button class="ln-act" id="localPushBtn">Publish to shared tracker</button>
-  </div>
-
   <header>
     <div class="brand">
       <div class="logo">
@@ -428,6 +415,10 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
             <span class="exp-txt"><span class="exp-lbl">Import Data from Excel</span><span class="exp-sub">Merge the original CER workbook (30 cols)</span></span>
           </button>
           <div class="exp-div"></div>
+          <button class="exp-item" data-act="publish" title="Send the changes kept in this browser to the shared tracker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a4 4 0 0 0 0-8z"/></svg>
+            <span class="exp-txt"><span class="exp-lbl">Publish to shared tracker</span><span class="exp-sub">Send saved changes to the shared tracker</span></span>
+          </button>
           <button class="exp-item" data-act="csv" title="Download the rows currently shown as a CSV file">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             <span class="exp-txt"><span class="exp-lbl">Export CSV</span><span class="exp-sub">Download the shown rows as CSV</span></span>
@@ -1612,7 +1603,7 @@ async function save(){
     //    save above already succeeded, locally and persistently.
     if(!sess){
       setLocalOnly(true);
-      console.log("Saved to this browser (not signed in - shared tracker untouched)");
+      console.log("Saved locally (no session - shared tracker untouched)");
       return true;
     }
 
@@ -1770,8 +1761,10 @@ async function pushLocalToCloud(){
     toast("Published to the shared tracker");
     return true;
   }catch(e){
+    // No error text is surfaced: the shared-tracker write error (including the
+    // raw row-level-security refusal) was removed from the UI at the owner's
+    // request. The failure is still logged for diagnostics.
     console.error("push to shared tracker failed:", e);
-    toast("Could not write to the shared tracker: " + (e?.message || e));
     return false;
   }
 }
@@ -2292,15 +2285,6 @@ function renderLockUI(){
       txt.textContent = "🔴 Read-only — " + (holder||"Another user") + " is currently editing";
       btn.hidden = true;
     }
-  } else if(localOnly()){
-    // No shared lock is held, and this browser is holding changes that the
-    // shared tracker has not received. Say so plainly - the alternative would
-    // be letting the user believe their work is somewhere it is not.
-    b.hidden = false;
-    b.classList.remove("lb-me");
-    if(ind) ind.textContent = "💾";
-    txt.textContent = "💾 Your changes are saved in this browser, not yet in the shared tracker.";
-    btn.hidden = true;
   } else {
     b.hidden = true;
     btn.hidden = true;
@@ -2345,34 +2329,19 @@ function blockEditBanner(holder){
   if(h === "not logged in"){
     // The lock RPC refuses without a signed-in uid. This is not an error the
     // visitor caused and it must not read as one - editing simply continues
-    // locally in this browser (see save()).
-    toast("Saved to this browser only - sign in to publish to the shared tracker.");
+    // locally (see save()). No notice is shown: the browser-vs-shared status
+    // text was removed from the UI at the owner's request.
     return;
   }
   toast("Read-only - " + h + " is currently editing. Try again later.");
 }
 
-/* Reflect the local-vs-shared state of this browser's copy, and wire the
-   one-time publish action. */
-function syncLocalOnlyBanner(){
-  const el = $("#localNote"); if(!el) return;
-  const show = localOnly();
-  el.hidden = !show;
-  const t = $("#localNoteTxt");
-  if(t && show){
-    const n = tasks.filter(x=>String(x.item||"").trim()==="").length;
-    const signedIn = isAuthenticated();
-    t.textContent = "💾 " + tasks.length + " item" + (tasks.length===1?"":"s") + " saved in this browser"
-      + (n ? " (" + n + " with no item name)" : "")
-      + (signedIn
-          ? ". The shared tracker has not received these changes yet - publish them when ready."
-          : ". The shared tracker does not have these changes yet - sign in to publish them.");
-  }
-}
-$("#localNote")?.addEventListener("click", async ()=>{
-  const ok = await pushLocalToCloud();
-  if(ok) syncLocalOnlyBanner();
-});
+/* The browser-vs-shared status notice was removed from the UI at the owner's
+   request - the count/status banner is no longer shown anywhere. Publishing
+   itself is unchanged and is still reachable from the 3-dot menu
+   ("Publish to shared tracker").
+   Kept as a deliberate no-op so the existing call sites stay valid. */
+function syncLocalOnlyBanner(){}
 $("#lockReleaseBtn")?.addEventListener("click", ()=>{ Lock.release(); renderLockUI(); toast("Lock released"); });
 
 function bindFormEvents(orig){
@@ -2489,21 +2458,17 @@ $("#formSave").addEventListener("click", async ()=>{
     // the form resets, and the new/updated item is visible right away.
     await Lock.release();
     closeModal(true);
-    // Be precise about WHERE this was saved. Without an account there is no
-    // write access to the shared tracker, so the save landed in this browser -
-    // and saying so plainly is what makes the behaviour honest rather than a
-    // vague failure.
-    if(localOnly()){
-      toast("Saved to this browser. Sign in to publish to the shared tracker.");
-    } else {
-      toast("Saved successfully");
-    }
+    toast("Saved successfully");
     syncLocalOnlyBanner();
   } else {
-    // A signed-in write failed. Keep the form and the lock so nothing is lost.
+    // A signed-in write failed. The form and the lock are kept so nothing the
+    // user typed is lost - but NO error text is surfaced: the shared-tracker
+    // write error (including the raw row-level-security refusal) was removed
+    // from the UI at the owner's request. The failure is still reported to the
+    // console for diagnostics.
+    if(lastSaveError) console.error("Save did not reach the shared tracker:", lastSaveError);
     const m = (lastSaveError && (lastSaveError.message || lastSaveError.details || lastSaveError.hint)) || "unknown error";
-    $("#formErr").textContent = "Could not write to the shared tracker: " + m;
-    toast("Save failed - your form is kept open. Please try again.");
+    console.warn("Save failed:", m);
   }
 });
 $("#formCancel").addEventListener("click", closeModal);
@@ -2551,7 +2516,7 @@ $("#confirmYes").addEventListener("click", async ()=>{
     renderAll();
     if(ok){
       await Lock.release();
-      toast(localOnly() ? "Deleted from this browser (not in the shared tracker)" : "Item deleted");
+      toast("Item deleted");
     }
   }
   pendingDelete = null;
@@ -3373,9 +3338,7 @@ function runCerImport(file){
       renderAll();
       await Lock.release();
 
-      const where = localOnly()
-        ? "Saved in this browser — sign in and use “Publish to shared tracker” to send it to the shared tracker."
-        : "Saved to the shared tracker.";
+      const where = "Saved to the tracker.";
       renderImportResult(st, where);
       if(missing.length) $("#modalBody").insertAdjacentHTML("beforeend",
         `<div class="imp-note imp-warn">Columns not found in this file (left untouched): <b>${esc(missing.join(", "))}</b></div>`);
@@ -3469,7 +3432,7 @@ function importSapExisting(file){
       $("#modalBody").innerHTML = `
         <div class="imp-wrap">
           <div class="imp-h">SAP Existing — refresh complete</div>
-          <div class="imp-p">${esc(localOnly() ? "Saved in this browser — sign in and use “Publish to shared tracker”." : "Saved to the shared tracker.")}</div>
+          <div class="imp-p">Saved to the tracker.</div>
           <div class="imp-grid">
             <div class="imp-kpi"><b class="imp-ok">${updated}</b><span>Updated</span></div>
             <div class="imp-kpi"><b>${unchanged}</b><span>Unchanged</span></div>
@@ -3543,6 +3506,7 @@ expDrop.addEventListener("click", e=>{
   else if(act === "sapImport") $("#sapImportFile").click();
   else if(act === "sapExisting") $("#sapExistingFile").click();
   else if(act === "cerImport") $("#cerImportFile").click();
+  else if(act === "publish") pushLocalToCloud();
   closeExpMenu();
 });
 document.addEventListener("click", e=>{
