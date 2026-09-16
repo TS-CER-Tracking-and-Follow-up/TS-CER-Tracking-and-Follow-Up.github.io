@@ -75,6 +75,28 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 2px 0
 .exp-item svg{width:15px;height:15px;color:var(--mut);flex:none}
 .exp-item:hover{background:rgba(59,130,246,.12);color:var(--txt)}
 .exp-item:hover svg{color:var(--blue)}
+/* 3-dot data menu: label + sub-label rows */
+.exp-item .exp-txt{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left}
+.exp-item .exp-lbl{font-weight:700;font-size:12.5px;line-height:1.25}
+.exp-item .exp-sub{font-weight:500;font-size:10.5px;line-height:1.3;color:var(--dim);white-space:nowrap}
+.exp-item:hover .exp-sub{color:var(--mut)}
+.exp-div{height:1px;background:var(--line2);margin:4px 6px}
+/* Import progress + result sheet */
+.imp-wrap{padding:2px 0}
+.imp-h{font-weight:800;font-size:14px;margin-bottom:3px;color:var(--txt)}
+.imp-p{font-size:12px;color:var(--mut);line-height:1.5;margin-bottom:8px}
+.imp-bar{height:8px;border-radius:99px;background:rgba(148,163,184,.18);overflow:hidden;margin:8px 0 6px}
+.imp-bar > i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3b82f6,#34d399);transition:width .15s ease}
+.imp-pct{font-size:11.5px;font-weight:800;color:var(--mut);margin-bottom:10px}
+.imp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:10px 0 4px}
+.imp-kpi{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 11px}
+.imp-kpi b{display:block;font-size:18px;font-weight:800;line-height:1.15;color:var(--txt)}
+.imp-kpi span{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.imp-note{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:9px}
+.imp-note b{color:var(--txt)}
+.imp-ok{color:#34d399}.imp-warn{color:#f59e0b}.imp-bad{color:#f87171}
+.overlay.import-open .modal-f{display:none}
+.overlay.import-open .modal{max-width:560px}
 .user-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--txt);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
 .lock-banner{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--txt);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);margin-bottom:0;flex:none}
 .lock-banner.lb-me{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45)}
@@ -389,17 +411,26 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
           <span class="dots" aria-hidden="true">&#8942;</span>
         </button>
         <div class="exp-drop" id="expDrop">
-          <button class="exp-item" data-act="csv" title="Export filtered rows to CSV">
+          <button class="exp-item" data-act="sapExport" title="Export the rows currently shown to an SAP Excel (.xlsx) file matching the CER CEVA 2026 template">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            Export CSV
+            <span class="exp-txt"><span class="exp-lbl">Export</span><span class="exp-sub">Download the shown rows (SAP Excel)</span></span>
           </button>
-          <button class="exp-item" data-act="sapExport" title="Export filtered rows to an SAP Excel (.xlsx) file matching the CER_CEVA_2026 template">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            Export SAP Excel
-          </button>
-          <button class="exp-item" data-act="sapImport" title="Import an SAP Excel (.xlsx) file into the tracker">
+          <button class="exp-item" data-act="sapImport" title="Add rows from an SAP Excel (.xlsx) file as new items">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-            Import SAP Excel
+            <span class="exp-txt"><span class="exp-lbl">SAP Import</span><span class="exp-sub">Add new items from an SAP Excel file</span></span>
+          </button>
+          <button class="exp-item" data-act="sapExisting" title="Refresh the items that already exist from an SAP Excel (.xlsx) file, matched on PR / tracking number">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+            <span class="exp-txt"><span class="exp-lbl">SAP Existing</span><span class="exp-sub">Refresh existing items from an SAP file</span></span>
+          </button>
+          <button class="exp-item" data-act="cerImport" title="Read the original CER workbook (30 columns) and merge it into the tracker, matched on CER number">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            <span class="exp-txt"><span class="exp-lbl">Import Data from Excel</span><span class="exp-sub">Merge the original CER workbook (30 cols)</span></span>
+          </button>
+          <div class="exp-div"></div>
+          <button class="exp-item" data-act="csv" title="Download the rows currently shown as a CSV file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <span class="exp-txt"><span class="exp-lbl">Export CSV</span><span class="exp-sub">Download the shown rows as CSV</span></span>
           </button>
         </div>
       </div>
@@ -408,6 +439,8 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
         <span class="lbl">Print</span>
       </button>
       <input type="file" id="sapImportFile" accept=".xlsx,.xls" style="display:none">
+      <input type="file" id="cerImportFile" accept=".xlsx,.xls,.csv" style="display:none">
+      <input type="file" id="sapExistingFile" accept=".xlsx,.xls" style="display:none">
       <button class="btn primary" id="addBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span class="lbl">Add Item</span>
@@ -2234,7 +2267,7 @@ function openEdit(id){
   });
 }
 function closeModal(skipRelease){
-  $("#modalOverlay").classList.remove("open");
+  $("#modalOverlay").classList.remove("open","import-open");
   $("#formErr").textContent="";
   editingId=null;
   if(!skipRelease){ Lock.release(); }
@@ -2853,6 +2886,613 @@ function importSapExcel(file){
   reader.readAsArrayBuffer(file);
 }
 
+/* ============================================================
+   "Import Data from Excel" - read the ORIGINAL CER workbook
+   (the 30-column "2026" sheet) and MERGE it into the tracker.
+
+   DESIGN CONTRACT (why this is not a column-splitter):
+     * One Excel row  ->  ONE tracker record (the same object shape the
+       form and the shared table already use). No row is ever created
+       per column, and the 30 columns are not stored individually.
+     * CER number is the unique key. A record whose CER already exists
+       is UPDATED in place (its id, sl and edit stamps are preserved so
+       nothing else in the tracker renumbers or breaks). A record whose
+       CER is new is INSERTED. Matching is token-wise, because a single
+       tracker record legitimately carries several CER numbers in one
+       field (e.g. "AZ004181, AZ004182").
+     * Rows with no CER and no item name carry nothing to key on, so
+       they are SKIPPED and reported - never silently invented.
+     * The whole merged set is written through the SAME save() path the
+       Add/Edit form uses, so the Supabase connection, auth and the
+       single-editor lock behave exactly as they already do.
+   ============================================================ */
+
+// The 30 data columns of the original workbook, in order (sheet "2026",
+// header row 2, columns B..AE). Verified against the real file.
+const CER_FIELDS = [
+  { label:"SL No",                                             key:"sl",                  kind:"text" },
+  { label:"CER",                                               key:"cer",                 kind:"text" },
+  { label:"CER received Date",                                 key:"cer_date",            kind:"date" },
+  { label:"Item Name",                                         key:"item",                kind:"text" },
+  { label:"Qty",                                               key:"qty",                 kind:"text" },
+  { label:"Unit/Area",                                         key:"unit_area",           kind:"text" },
+  { label:"Department",                                        key:"dept",                kind:"text" },
+  { label:"Site/Plant",                                        key:"plant",               kind:"text" },
+  { label:"CER status (Ordered/Not Ordered)",                   key:"cer_status",          kind:"text" },
+  { label:"Manufacturer Name",                                 key:"manufacturer",        kind:"text" },
+  { label:"Local Agent",                                       key:"agent",               kind:"text" },
+  { label:"Order Value",                                       key:"order_value",         kind:"num"  },
+  { label:"Currency",                                          key:"currency",            kind:"text" },
+  { label:"Tracking Number",                                   key:"tracking",            kind:"text" },
+  { label:"Order Value (BDT)",                                 key:"ov_bdt",              kind:"num"  },
+  { label:"Initial Quoted Value",                              key:"init_quoted",         kind:"num"  },
+  { label:"Initial Value (BDT)",                               key:"init_bdt",            kind:"num"  },
+  { label:"% reduction cost (BDT)",                            key:"reduction",           kind:"text" },
+  { label:"Submitted to Factory Accounts",                     key:"submitted",           kind:"date" },
+  { label:"PR",                                                key:"pr",                  kind:"text" },
+  { label:"PR  date",                                          key:"pr_date",             kind:"date" },
+  { label:"PO",                                                key:"po",                  kind:"text" },
+  { label:"LC",                                                key:"lc",                  kind:"text" },
+  { label:"Responsibility",                                    key:"owner",               kind:"text" },
+  { label:"NoteSheet Received Date (SCM)",                     key:"notesheet_date",      kind:"date" },
+  { label:"SCM 07.04.2026",                                    key:"scm_note",            kind:"text" },
+  { label:"Machine Received Status",                           key:"machine_status",      kind:"text" },
+  { label:"Machine Received Date",                             key:"machine_date",        kind:"date" },
+  { label:"Installation Status",                               key:"install_status",      kind:"text" },
+  { label:"Installation Date",                                 key:"install_date",        kind:"date" }
+];
+
+const IMPORT_MARK_KEY = STORE_KEY + "_importnote";
+
+/* ---------- small readers: Excel -> tracker value ---------- */
+const normHdr = s => String(s===null||s===undefined?"":s)
+  .replace(/[\u00a0]/g," ").replace(/\s+/g," ").trim().toLowerCase();
+
+// A tracker record may legitimately hold several CER numbers in one field,
+// separated by commas / newlines / semicolons. Matching is per token.
+function splitCers(v){
+  return String(v===null||v===undefined?"":v)
+    .split(/[,\n;\/]+/).map(s=>s.trim()).filter(Boolean);
+}
+
+function cellToText(v){
+  if(v===null||v===undefined) return "";
+  if(v instanceof Date) return isoDate(v);          // never the UTC-shifted form
+  if(typeof v === "number"){
+    // Excel mangles long identifiers into exponential notation. Recover the
+    // integer form so a PR/PO/LC number still matches on the next import.
+    if(Number.isInteger(v) && Math.abs(v) >= 1e11) return v.toFixed(0);
+    return String(v);
+  }
+  return String(v).replace(/\s+/g," ").trim();
+}
+
+function cellToDate(v){
+  if(v===null||v===undefined||v==="") return "";
+  if(v instanceof Date) return isoDate(v);
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);                 // ISO (or ISO+time)
+  if(m) return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+  m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);          // 07.04.2026 / 7/4/26
+  if(m){
+    let y = m[3]; if(y.length===2) y = "20"+y;
+    return `${y}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  }
+  if(/^\d+(\.\d+)?$/.test(s)){                                     // Excel serial date
+    const n = parseFloat(s);
+    if(n > 20000 && n < 80000){
+      const d = new Date(Date.UTC(1899,11,30) + n*86400000);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+    }
+  }
+  return "";                                                       // unparseable -> blank, never invented
+}
+
+function cellToNum(v){
+  if(v===null||v===undefined||v==="") return null;
+  if(typeof v === "number") return isFinite(v) ? v : null;
+  const s = String(v).replace(/[,\s\u00a0]/g,"").replace(/[৳$€£]/g,"");
+  if(s==="" || /^#/.test(s)) return null;                          // "#DIV/0!" and friends -> blank
+  const n = parseFloat(s.replace(/%$/,""));
+  return isNaN(n) ? null : n;
+}
+
+// The workbook's 30 columns are NOT always in the same order, so every column
+// is resolved by HEADER TEXT rather than by position.
+function mapColumnsFromHeaders(headerCells){
+  const map = {};                       // field key -> column index (0-based)
+  const used = {};                      // guard: never let two fields claim one column
+  CER_FIELDS.forEach(fd=>{ if(used[fd.key]) return; used[fd.key] = true; map[fd.key] = -1; });
+  const fields = CER_FIELDS.slice();
+  const taken = new Set();
+  fields.forEach(fd=>{
+    const want = normHdr(fd.label);
+    const wantBare = want.replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();
+    for(let i=0;i<headerCells.length;i++){
+      if(taken.has(i)) continue;
+      const h = normHdr(headerCells[i]);
+      if(!h) continue;
+      const hBare = h.replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();
+      if(h === want || hBare === wantBare || (wantBare.length>4 && (hBare.startsWith(wantBare) || wantBare.startsWith(hBare)))){
+        map[fd.key] = i; taken.add(i); return;
+      }
+    }
+  });
+  return map;
+}
+
+// Reject "files" that cannot possibly be the CER workbook.
+function detectCerHeaderRow(aoa){
+  const scan = Math.min(aoa.length, 12);
+  for(let r=0; r<scan; r++){
+    const row = aoa[r] || [];
+    const hasItem = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "item name");
+    const hasQty  = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "qty");
+    const hasCer  = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "cer");
+    if(hasItem && hasCer && hasQty) return r;
+  }
+  return -1;
+}
+
+// The workbook holds 13 sheets and the CER sheet is NOT the first one
+// (order: "2024 ", "Sheet1", "2026", "August", ...). Reading SheetNames[0]
+// silently imports the WRONG sheet, so every sheet is examined and the real
+// CER sheet is chosen by content - a sheet named "2026" wins, otherwise the
+// first sheet whose header row carries CER + Item Name + Qty.
+function pickCerSheet(wb){
+  const norm = s => String(s||"").replace(/[\s\u00a0]+/g,"").trim().toLowerCase();
+  const conv = n => { try{ return XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:"", blankrows:false }); }catch(e){ return []; } };
+  // Prefer the sheet literally named "2026" (the CER year sheet of this
+  // workbook) so only one sheet has to be parsed in the normal case.
+  const named = (wb.SheetNames || []).find(n=>norm(n) === "2026");
+  if(named){
+    const aoa = conv(named);
+    const hRow = detectCerHeaderRow(aoa);
+    if(hRow >= 0) return { name:named, aoa:aoa, hRow:hRow };
+  }
+  for(const n of (wb.SheetNames || [])){
+    if(norm(n) === "2026") continue;
+    const aoa = conv(n);
+    const hRow = detectCerHeaderRow(aoa);
+    if(hRow >= 0) return { name:n, aoa:aoa, hRow:hRow };
+  }
+  return null;
+}
+
+// One Excel row -> one tracker record (same shape the form produces).
+function cerRowToRecord(cells, col){
+  const raw = k => (col[k] >= 0 && col[k] < cells.length) ? cells[col[k]] : "";
+  const t = {
+    sl: cellToText(raw("sl")),
+    cer: cellToText(raw("cer")),
+    cer_date: cellToDate(raw("cer_date")),
+    item: cellToText(raw("item")),
+    qty: cellToText(raw("qty")),
+    unit_area: cellToText(raw("unit_area")),
+    dept: cellToText(raw("dept")),
+    plant: cellToText(raw("plant")),
+    cer_status: cellToText(raw("cer_status")),
+    manufacturer: cellToText(raw("manufacturer")),
+    agent: cellToText(raw("agent")),
+    order_value: cellToNum(raw("order_value")),
+    currency: cellToText(raw("currency")),
+    tracking: cellToText(raw("tracking")),
+    ov_bdt: cellToNum(raw("ov_bdt")),
+    init_quoted: cellToNum(raw("init_quoted")),
+    init_bdt: cellToNum(raw("init_bdt")),
+    reduction: cellToText(raw("reduction")),
+    submitted: cellToDate(raw("submitted")),
+    pr: cellToText(raw("pr")),
+    pr_date: cellToDate(raw("pr_date")),
+    po: cellToText(raw("po")),
+    lc: cellToText(raw("lc")),
+    owner: cellToText(raw("owner")),
+    notesheet_date: cellToDate(raw("notesheet_date")),
+    scm_note: cellToText(raw("scm_note")),
+    machine_status: cellToText(raw("machine_status")),
+    machine_date: cellToDate(raw("machine_date")),
+    /* The workbook carries two extra columns the tracker form does not show
+       (Installation Status / Installation Date). They are stored on the record
+       so no information is lost in the round trip. */
+    install_status: cellToText(raw("install_status")),
+    install_date: cellToDate(raw("install_date")),
+    rate: null
+  };
+  return t;
+}
+
+// Keep the tracker's own vocabulary. Anything outside it is folded to a value
+// the dropdowns already know, so an import can never create a stage/filter that
+// the UI cannot display.
+function tidyCerRecord(t){
+  t.cer_status = t.cer_status.replace(/[\s.]+$/,"").trim();
+  if(!/^(Ordered|Not Ordered|Partially Ordered|Cancelled)$/i.test(t.cer_status)){
+    t.cer_status = t.cer_status ? "Ordered" : "Not Ordered";
+  } else {
+    t.cer_status = t.cer_status.toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+  }
+  const ms = t.machine_status.toLowerCase();
+  if(/received/.test(ms) && !/not/.test(ms)) t.machine_status = "Received";
+  else if(/not\s*received/.test(ms)) t.machine_status = "Not Received";
+  else if(/^n\/?a$/.test(ms)) t.machine_status = "NA";
+  else if(/^delivered$/.test(ms)) t.machine_status = "Received";
+  else t.machine_status = "";
+
+  const cur = t.currency.toUpperCase().trim();
+  t.currency = ["BDT","USD","EURO","GBP","CHF"].indexOf(cur) >= 0 ? cur : "";
+  t.plant = /dhamrai/i.test(t.plant) ? "Dhamrai" : (/zirabo/i.test(t.plant) ? "Zirabo" : t.plant);
+  // Excel error text is not data.
+  if(/%/.test(t.reduction)) t.reduction = t.reduction;
+  else if(t.reduction && !/^-?\d*\.?\d+$/.test(t.reduction)) t.reduction = "";
+  return t;
+}
+
+// Merge the workbook into `tasks`, keyed on CER number.
+//
+// IDEMPOTENCY is built in, not bolted on: the workbook rows are first collapsed
+// into ONE GROUP PER IDENTITY (a group is every row sharing any CER number),
+// and every token a group has ever seen is retained on it. A group is then
+// matched against the tracker on ANY of its tokens - so re-importing the same
+// file updates the same records instead of inserting copies.
+const noCerKey = t => "NOCER|" + [t.item, t.unit_area, t.plant, t.tracking, t.qty]
+  .map(v=>String(v||"").replace(/\s+/g," ").trim().toLowerCase()).join("|");
+
+function groupCerRows(records){
+  const groups = [], byKey = new Map(), skipped = [];
+  records.forEach((raw, n)=>{
+    const rowNo = n + 1;
+    if(!raw.item && !raw.cer){ skipped.push({ row:rowNo, why:"no CER and no item name" }); return; }
+    tidyCerRecord(raw);
+    const keys = splitCers(raw.cer);
+    if(!keys.length){
+      // Real data carrying no CER at all: give it a composite identity so it is
+      // imported rather than discarded, yet still recognised on a later run.
+      const nk = noCerKey(raw);
+      if(byKey.has(nk)){
+        const g = byKey.get(nk);
+        const patch = cerPatchFrom(g.rec, raw);
+        if(Object.keys(patch).length) Object.assign(g.rec, patch);
+        g.merged++;
+        return;
+      }
+      const g = { keys:[nk], rec: raw, rowNo: rowNo, merged: 1 };
+      groups.push(g); byKey.set(nk, g);
+      return;
+    }
+    let g = null;
+    for(const k of keys){ if(byKey.has(k)){ g = byKey.get(k); break; } }
+    if(!g){
+      g = { keys: keys.slice(), rec: raw, rowNo: rowNo, merged: 1 };
+      groups.push(g);
+    } else {
+      const patch = cerPatchFrom(g.rec, raw);
+      if(Object.keys(patch).length) Object.assign(g.rec, patch);
+      g.merged++;
+      keys.forEach(k=>{ if(g.keys.indexOf(k) < 0) g.keys.push(k); });
+    }
+    // Keep EVERY CER number this group carries, so the record stays matchable by
+    // any of them. Losing a token here is exactly what let earlier runs
+    // duplicate records.
+    g.rec.cer = g.keys.filter(k=>k.indexOf("NOCER|") !== 0).join(", ");
+    g.keys.forEach(k=>{ if(!byKey.has(k)) byKey.set(k, g); });
+  });
+  return { groups: groups, skipped: skipped };
+}
+
+// Merge the workbook into `tasks`, keyed on CER number.
+function cerMerge(records){
+  const { groups, skipped } = groupCerRows(records);
+
+  // Index what the tracker already holds: every CER token, plus the composite
+  // identity for records that carry no CER at all.
+  const byCer = new Map();
+  tasks.forEach((t,i)=>{
+    const keys = splitCers(t.cer);
+    if(keys.length){ keys.forEach(k=>{ if(!byCer.has(k)) byCer.set(k, i); }); }
+    else { const nk = noCerKey(t); if(!byCer.has(nk)) byCer.set(nk, i); }
+  });
+
+  const newRecords = [], updates = [], skipRows = skipped.slice();
+  const claimed = new Set();
+  let updated = 0, unchanged = 0;
+
+  groups.forEach(g=>{
+    const rec = g.rec;
+    let idx = -1;
+    for(const k of g.keys){ if(byCer.has(k)){ idx = byCer.get(k); break; } }
+
+    if(idx < 0){
+      // Genuinely new -> insert once, as ONE complete record.
+      rec.id = uid();
+      rec.autoPriority = true; rec.autoProgress = true; rec._autoTarget = true;
+      rec.lastEditedBy = currentUser(); rec.lastEditedAt = new Date().toISOString();
+      rec.created = rec.created || todayLocalISO();
+      applySmart(rec);
+      newRecords.push(rec);
+      return;
+    }
+
+    if(claimed.has(idx)){ unchanged++; return; }
+    claimed.add(idx);
+    const patch = cerPatchFrom(tasks[idx], rec);
+    if(Object.keys(patch).length){ updates.push({ idx: idx, patch: patch }); updated++; }
+    else unchanged++;
+  });
+
+  return {
+    total: records.length,
+    added: newRecords.length,
+    updated: updated,
+    skipped: skipRows.length,
+    unchanged: unchanged,
+    newRecords: newRecords,
+    updates: updates,
+    skipRows: skipRows
+  };
+}
+
+// Fields the workbook is authoritative for. A blank Excel cell NEVER erases a
+// value the tracker already holds - imports only ever fill or refresh.
+const CER_IMPORT_WINS = ["sl","cer","cer_date","item","qty","unit_area","dept","plant","cer_status",
+  "manufacturer","agent","order_value","currency","tracking","ov_bdt","init_quoted","init_bdt",
+  "reduction","submitted","pr","pr_date","po","lc","owner","notesheet_date","scm_note",
+  "machine_status","machine_date","install_status","install_date"];
+
+function sameVal(a,b){
+  if(a===null||a===undefined||a==="") return (b===null||b===undefined||b==="");
+  if(b===null||b===undefined||b==="") return false;
+  if(typeof a === "number" || typeof b === "number") return parseFloat(a) === parseFloat(b);
+  return String(a).trim() === String(b).trim();
+}
+
+function cerPatchFrom(old, rec){
+  const patch = {};
+  CER_IMPORT_WINS.forEach(k=>{
+    if(k === "sl") return;                    // existing records keep their own number
+    const nv = rec[k];
+    const blank = nv === null || nv === undefined || nv === "";
+    if(blank) return;                         // never blank out what is already there
+    if(!sameVal(old[k], nv)) patch[k] = nv;
+  });
+  return patch;
+}
+
+/* ---------- import UI: progress, then the result sheet ---------- */
+function importSheet(){
+  const o = $("#modalOverlay");
+  o.classList.add("import-open");
+  $("#modalTitle").textContent = "Importing…";
+  $("#modalBody").innerHTML = "";
+  o.classList.add("open");
+}
+function renderImportProgress(pct, label){
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  $("#modalBody").innerHTML = `
+    <div class="imp-wrap">
+      <div class="imp-h">Import Data from Excel</div>
+      <div class="imp-p">${esc(label || "Working…")}</div>
+      <div class="imp-bar"><i style="width:${p}%"></i></div>
+      <div class="imp-pct">${p}%</div>
+    </div>`;
+}
+function renderImportResult(st, extra){
+  $("#modalTitle").textContent = "Import complete";
+  const skipped = st.skipped;
+  const rows = [
+    { k:"Added",        v:st.added,     cls:"imp-ok"   },
+    { k:"Updated",      v:st.updated,   cls:""         },
+    { k:"Skipped",      v:skipped,      cls: skipped ? "imp-warn" : "" },
+    { k:"In file",      v:st.total,     cls:""         }
+  ];
+  $("#modalBody").innerHTML = `
+    <div class="imp-wrap">
+      <div class="imp-h">Import complete</div>
+      <div class="imp-p">${esc(extra || "")}</div>
+      <div class="imp-grid">
+        ${rows.map(r=>`<div class="imp-kpi"><b class="${r.cls}">${r.v}</b><span>${r.k}</span></div>`).join("")}
+      </div>
+      <div class="imp-note">
+        <b>${st.added}</b> new row(s) inserted, <b>${st.updated}</b> existing CER(s) refreshed in place,
+        <b>${skipped}</b> skipped, <b>${st.unchanged}</b> already up to date.<br>
+        The tracker now holds <b>${tasks.length}</b> record(s) in total.
+        ${skipped ? `<br>Rows with neither a CER number nor an item name carry nothing to import, so they were left out - no data was invented.` : ""}
+      </div>
+    </div>`;
+}
+
+/* ---------- run the CER workbook import ---------- */
+function runCerImport(file){
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
+  const reader = new FileReader();
+  reader.onerror = ()=> toast("Could not read that file.");
+  reader.onload = async e => {
+    try{
+      importSheet();
+      renderImportProgress(5, "Reading the workbook…");
+      await new Promise(r=>setTimeout(r,60));
+
+      const wb  = XLSX.read(new Uint8Array(e.target.result), { type:"array", cellDates:true });
+
+      renderImportProgress(20, "Finding the CER sheet and checking its columns…");
+      await new Promise(r=>setTimeout(r,60));
+
+      const picked = pickCerSheet(wb);
+      const hRow = picked ? picked.hRow : -1;
+      const aoa  = picked ? picked.aoa  : [];
+      if(hRow < 0){
+        $("#modalBody").innerHTML = `<div class="imp-wrap"><div class="imp-h imp-bad">This is not the CER workbook</div>
+          <div class="imp-p">The file must contain a header row with <b>CER</b>, <b>Item Name</b> and <b>Qty</b> columns
+          (the original "TSD Follow Up (CER &amp; CEVA) 2026" workbook). The sheets found were:
+          <b>${esc((wb.SheetNames || []).join(", ") || "none")}</b>.</div>
+          <div class="imp-note">Nothing was imported and nothing was changed.</div></div>`;
+        $("#modalTitle").textContent = "Import stopped";
+        return;
+      }
+
+      const col = mapColumnsFromHeaders(aoa[hRow]);
+      const missing = CER_FIELDS.filter(fd=>col[fd.key] < 0).map(fd=>fd.label);
+      const body = [];
+      for(let i=hRow+1; i<aoa.length; i++){
+        const cells = aoa[i] || [];
+        if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
+        body.push(cerRowToRecord(cells, col));
+      }
+
+      renderImportProgress(35, `Sheet “${picked.name}” — mapped ${CER_FIELDS.length - missing.length} of ${CER_FIELDS.length} columns, merging ${body.length} row(s) on CER number…`);
+      await new Promise(r=>setTimeout(r,80));
+
+      const st = cerMerge(body);
+      // Fresh sequential numbers for the inserted records: the workbook's own
+      // SL No column would otherwise collide with numbers already in use. The
+      // counter is advanced here because the new records are not in `tasks` yet
+      // - calling nextSl() per record would hand them all the same number.
+      let slSeq = nextSl();
+      st.newRecords.forEach(r=>{ r.sl = String(slSeq++); });
+      tasks = tasks.concat(st.newRecords);
+
+      renderImportProgress(60, `Applying ${st.updated} update(s)…`);
+      await new Promise(r=>setTimeout(r,80));
+      // Each update is a field-level merge on ONE existing record. Its id, sl,
+      // edit stamps and every auto flag are untouched, so the merge cannot
+      // disturb sorting, filtering, stats or the editing lock.
+      st.updates.forEach(u=>{
+        const t = tasks[u.idx];
+        if(!t) return;
+        Object.assign(t, u.patch);
+        t.lastEditedBy = currentUser();
+        t.lastEditedAt = new Date().toISOString();
+        applySmart(t);
+      });
+
+      renderImportProgress(72, "Saving to the tracker…");
+      const ok = await save();
+
+      renderImportProgress(92, "Finishing…");
+      await new Promise(r=>setTimeout(r,80));
+
+      renderAll();
+      await Lock.release();
+
+      const where = localOnly()
+        ? "Saved in this browser — sign in and use “Publish to shared tracker” to send it to the shared tracker."
+        : "Saved to the shared tracker.";
+      renderImportResult(st, where);
+      if(missing.length) $("#modalBody").insertAdjacentHTML("beforeend",
+        `<div class="imp-note imp-warn">Columns not found in this file (left untouched): <b>${esc(missing.join(", "))}</b></div>`);
+
+      toast(`Excel import: ${st.added} added, ${st.updated} updated, ${st.skipped} skipped${ok ? "" : " (not saved)"}`);
+      try{ localStorage.setItem(IMPORT_MARK_KEY, JSON.stringify({ at:new Date().toISOString(), name:file.name, ...st, newRecords:[], updates:[], skipRows:[] })); }catch(err){}
+    }catch(err){
+      console.error("CER Excel import failed:", err);
+      $("#modalTitle").textContent = "Import failed";
+      $("#modalBody").innerHTML = `<div class="imp-wrap"><div class="imp-h imp-bad">Import failed</div>
+        <div class="imp-p">${esc(explainImportError(err))}</div>
+        <div class="imp-note">Nothing was written. Your existing data is unchanged.</div></div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Turn a raw library/database error into something a user can act on.
+function explainImportError(err){
+  const m = (err && (err.message || err.details || err.hint)) ? String(err.message || err.details || err.hint) : String(err || "Unknown error");
+  if(/row-level security|42501|permission denied/i.test(m))
+    return "The shared tracker refused the write. Sign in with your tracker account and try again.";
+  if(/File is not a zip|Corrupt|Unsupported|Bad /.test(m))
+    return "That file could not be read as an Excel workbook. Save it as .xlsx and try again.";
+  return m;
+}
+
+/* ---------- SAP Existing: refresh, never duplicate ---------- */
+// Rows from an SAP 25-column file are matched against records the tracker
+// already has, on PR first and tracking number second. Only matched records are
+// refreshed; unmatched rows are reported instead of being added, which is
+// exactly what "SAP Existing" means.
+function importSapExisting(file){
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
+  const reader = new FileReader();
+  reader.onerror = ()=> toast("Could not read that file.");
+  reader.onload = async e => {
+    try{
+      importSheet();
+      renderImportProgress(8, "Reading the SAP file…");
+      await new Promise(r=>setTimeout(r,60));
+      const wb  = XLSX.read(new Uint8Array(e.target.result), { type:"array", cellDates:true });
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", blankrows:false });
+      let start = 0;
+      if(String((aoa[0]||[])[0]||"").trim().toUpperCase() === "PR") start = 1;
+
+      const byPr = new Map(), byTrk = new Map();
+      tasks.forEach((t,i)=>{
+        const pr = String(t.pr||"").trim();  if(pr) byPr.set(pr, i);
+        const tr = String(t.tracking||"").trim(); if(tr) byTrk.set(tr, i);
+      });
+
+      let scanned = 0, updated = 0, unmatched = 0, unchanged = 0;
+      const misses = [];
+      for(let i=start; i<aoa.length; i++){
+        const cells = aoa[i] || [];
+        if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
+        scanned++;
+        if(scanned % 25 === 0){
+          renderImportProgress(10 + (i/aoa.length)*55, `Matching ${scanned} row(s)…`);
+          await new Promise(r=>setTimeout(r,0));
+        }
+        const rec = sapRowToRecord(cells);
+        const pr = String(rec.pr||"").trim(), tr = String(rec.tracking||"").trim();
+        const idx = (pr && byPr.has(pr)) ? byPr.get(pr) : ((tr && byTrk.has(tr)) ? byTrk.get(tr) : -1);
+        if(idx < 0){ unmatched++; if(misses.length < 8) misses.push(pr || tr || `row ${i+1}`); continue; }
+        const t = tasks[idx];
+        const patch = {};
+        ["pr","pr_date","qty","delivery_date","mat_group","owner","tracking","order_value","currency",
+         "manufacturer","purpose","origin","dept","order_justification","item"].forEach(k=>{
+          const nv = rec[k];
+          if(nv === null || nv === undefined || nv === "") return;
+          if(!sameVal(t[k], nv)) patch[k] = nv;
+        });
+        if(Object.keys(patch).length){
+          Object.assign(t, patch);
+          t.lastEditedBy = currentUser(); t.lastEditedAt = new Date().toISOString();
+          applySmart(t);
+          updated++;
+        } else unchanged++;
+      }
+
+      renderImportProgress(72, "Saving to the tracker…");
+      const ok = await save();
+      renderImportProgress(92, "Finishing…");
+      await new Promise(r=>setTimeout(r,80));
+      renderAll();
+      await Lock.release();
+
+      $("#modalTitle").textContent = "SAP refresh complete";
+      $("#modalBody").innerHTML = `
+        <div class="imp-wrap">
+          <div class="imp-h">SAP Existing — refresh complete</div>
+          <div class="imp-p">${esc(localOnly() ? "Saved in this browser — sign in and use “Publish to shared tracker”." : "Saved to the shared tracker.")}</div>
+          <div class="imp-grid">
+            <div class="imp-kpi"><b class="imp-ok">${updated}</b><span>Updated</span></div>
+            <div class="imp-kpi"><b>${unchanged}</b><span>Unchanged</span></div>
+            <div class="imp-kpi"><b class="${unmatched ? "imp-warn" : ""}">${unmatched}</b><span>Not found</span></div>
+            <div class="imp-kpi"><b>${scanned}</b><span>In file</span></div>
+          </div>
+          <div class="imp-note">Matched on <b>PR</b> first, then <b>tracking number</b>.
+          Rows that matched no existing item were <b>not added</b> — that is what “SAP Existing” means.
+          Use <b>SAP Import</b> if you want those rows added as new items.
+          ${misses.length ? `<br>Not matched, for example: <b>${esc(misses.join(", "))}</b>` : ""}</div>
+        </div>`;
+      toast(`SAP refresh: ${updated} updated, ${unmatched} not found${ok ? "" : " (not saved)"}`);
+    }catch(err){
+      console.error("SAP existing refresh failed:", err);
+      $("#modalTitle").textContent = "Refresh failed";
+      $("#modalBody").innerHTML = `<div class="imp-wrap"><div class="imp-h imp-bad">Refresh failed</div>
+        <div class="imp-p">${esc(explainImportError(err))}</div>
+        <div class="imp-note">Nothing was written. Your existing data is unchanged.</div></div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
 function exportCsv(){
@@ -2873,6 +3513,18 @@ $("#sapImportFile").addEventListener("change", e=>{
   if(f) importSapExcel(f);
   e.target.value = "";
 });
+/* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
+$("#cerImportFile").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) runCerImport(f);
+  e.target.value = "";
+});
+/* 3-dot menu: "SAP Existing" — refresh records that already exist. */
+$("#sapExistingFile").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) importSapExisting(f);
+  e.target.value = "";
+});
 
 /* ---------- Export ⋮ dropdown menu ---------- */
 const expMenu = $("#expMenu"), expDrop = $("#expDrop");
@@ -2889,6 +3541,8 @@ expDrop.addEventListener("click", e=>{
   if(act === "csv") exportCsv();
   else if(act === "sapExport") exportSapExcel();
   else if(act === "sapImport") $("#sapImportFile").click();
+  else if(act === "sapExisting") $("#sapExistingFile").click();
+  else if(act === "cerImport") $("#cerImportFile").click();
   closeExpMenu();
 });
 document.addEventListener("click", e=>{
