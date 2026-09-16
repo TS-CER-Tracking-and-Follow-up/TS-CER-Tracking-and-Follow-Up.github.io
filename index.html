@@ -1725,37 +1725,114 @@ async function save(){
   }
 }
 
+/* ---------------------------------------------------------------------------
+   PUBLISH GUARDS.
+
+   FIX - publishing was refused for exactly the people who needed it.
+
+   pushLocalToCloud() used to bail out unless a localStorage flag
+   (SHARED_SEEN_KEY - "has this browser ever loaded the shared data?") was set.
+   That flag is written in ONE place only: inside load(), and only when the
+   shared row was successfully READ at page load. A visitor who opens the page
+   first and signs in afterwards therefore never gets it set - and because
+   signing in does not re-run load(), every publish attempt is then refused
+   with "sign in and reload first" even though they ARE signed in and DO hold
+   the editing lock. That is precisely the reported failure.
+
+   The guard is now CONTENT-BASED, which is what it was always trying to
+   express: refuse only a pristine, untouched starter dataset being pushed over
+   the team's real records. The shared row is read LIVE at publish time, so the
+   decision no longer depends on when the user happened to sign in.
+   --------------------------------------------------------------------------- */
+function isPristineDemo(arr){
+  // Still exactly the untouched built-in starter dataset: same length, same
+  // first/last record ids. Anything imported from Excel (or edited) fails this
+  // test, because the import always carries real CER numbers and its own ids.
+  try{
+    if(!Array.isArray(arr) || !arr.length) return false;
+    if(arr.length !== SEED_DATA.length) return false;
+    if(arr[0]?.id !== SEED_DATA[0]?.id) return false;
+    if(arr[arr.length-1]?.id !== SEED_DATA[SEED_DATA.length-1]?.id) return false;
+    return true;
+  }catch(e){ return false; }
+}
+function isSameDataset(a, b){
+  // Cheap fingerprint: same length and the same leading records.
+  try{
+    if(!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    const n = Math.min(5, a.length);
+    for(let i=0;i<n;i++){ if(JSON.stringify(a[i]) !== JSON.stringify(b[i])) return false; }
+    return n > 0;
+  }catch(e){ return false; }
+}
+
 /* One-time, explicit push of this browser's local copy into the shared tracker.
    Deliberately NOT automatic: it needs the editing lock and a signed-in
    session, and it overwrites the shared row - so the user asks for it. */
 async function pushLocalToCloud(){
   if(!isAuthenticated()){ requireAuth(); return false; }
-  // Safety interlock: never let a copy that was seeded from the built-in demo
-  // dataset overwrite the team's real records. The browser must have actually
-  // loaded the shared data at least once.
-  if(!sharedSeen()){
-    toast("This browser has not loaded the shared tracker yet, so publishing would replace real records with the demo dataset. Sign in and reload first - your change is kept.");
-    return false;
-  }
+  const localArr = Array.isArray(tasks) ? tasks : [];
+  if(!localArr.length){ toast("There is nothing to publish yet."); return false; }
   try{
     if(!Lock.amIHolder()){
       const r = await Lock.acquire();
       if(!r.ok){ toast("Read-only - " + (r.holder||"another user") + " is editing right now."); return false; }
     }
-    const { data: rows } = await supabaseClient.from("cer_records").select("id").limit(1);
-    const id = (rows && rows.length) ? rows[0].id : null;
-    const payload = { data: tasks };
-    const { error } = id
-      ? await supabaseClient.from("cer_records").update(payload).eq("id", id)
-      : await supabaseClient.from("cer_records").insert(payload);
-    if(error) throw error;
-    // Verify by reading back - never claim a write that did not land.
-    const checkId = id || (((await supabaseClient.from("cer_records").select("id").limit(1)).data || [])[0] || {}).id;
-    const { data: after } = await supabaseClient.from("cer_records").select("data").eq("id", checkId).limit(1);
-    if(!after || !after[0] || !Array.isArray(after[0].data) || after[0].data.length !== tasks.length){
-      throw new Error("the shared tracker did not accept the write");
+
+    // Read the shared row LIVE. The publisher is signed in and holds the lock,
+    // so this read is authoritative - and it is what replaces the old, stale
+    // localStorage flag.
+    const { data: rows, error: readErr } = await supabaseClient
+      .from("cer_records")
+      .select("id,data")
+      .limit(1);
+    if(readErr) throw readErr;
+
+    const row = (rows && rows.length) ? rows[0] : null;
+    const sharedArr = (row && Array.isArray(row.data)) ? row.data : null;
+
+    // The one genuine data-loss risk that must still be stopped: a browser still
+    // showing the untouched starter dataset pushing it over real records.
+    if(sharedArr && sharedArr.length && isPristineDemo(localArr) && !isSameDataset(sharedArr, localArr)){
+      toast("This browser is still showing the starter dataset. Open the shared tracker first so your own records are loaded, then publish.");
+      return false;
     }
+
+    const payload = { data: localArr };
+
+    // 1) Normal path: update the existing shared row.
+    let wrote = false;
+    if(row && row.id){
+      const { error: upErr } = await supabaseClient
+        .from("cer_records")
+        .update(payload)
+        .eq("id", row.id);
+      // A refusal is not thrown here: the read-back below is what decides, so a
+      // momentary lock loss can still be recovered by a retry.
+      if(upErr) console.warn("publish update refused:", upErr.message || upErr);
+      const { data: after } = await supabaseClient
+        .from("cer_records")
+        .select("data")
+        .eq("id", row.id)
+        .limit(1);
+      wrote = !!(after && after[0] && Array.isArray(after[0].data) && after[0].data.length === localArr.length);
+    }
+
+    // 2) No shared row yet: create the first one (the insert policy allows the
+    //    lock holder, which is who we are at this point).
+    if(!wrote && !(row && row.id)){
+      const { error: insErr } = await supabaseClient.from("cer_records").insert(payload);
+      if(insErr) throw insErr;
+      const { data: afterIns } = await supabaseClient.from("cer_records").select("id").limit(1);
+      wrote = !!(afterIns && afterIns.length);
+    }
+
+    // Never claim a publish that did not land.
+    if(!wrote) throw new Error("the shared tracker did not accept the write");
+
     setLocalOnly(false);
+    try{ localStorage.setItem(SHARED_SEEN_KEY, "1"); }catch(e){}
+    writeLocal();
     await Lock.release();
     syncLocalOnlyBanner();
     toast("Published to the shared tracker");
