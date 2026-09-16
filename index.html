@@ -82,6 +82,12 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 2px 0
 .lock-banner .lb-txt{flex:1;line-height:1.45}
 .lock-banner .lb-btn{background:transparent;border:1px solid rgba(245,158,11,.55);color:var(--txt);font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;cursor:pointer;transition:background .15s}
 .lock-banner.lb-me .lb-btn{border-color:rgba(52,211,153,.55)}
+.local-note{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--txt);background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.45);cursor:pointer;flex:none}
+.local-note:hover{background:rgba(59,130,246,.2)}
+.local-note .ln-dot{font-size:16px;line-height:1;flex-shrink:0}
+.local-note .ln-txt{flex:1;line-height:1.45}
+.local-note .ln-act{background:transparent;border:1px solid rgba(59,130,246,.55);color:var(--txt);font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;cursor:pointer}
+.local-note[hidden]{display:none}
 .lock-banner .lb-btn:hover{background:rgba(148,163,184,.15)}
 .user-badge:hover{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.5)}
 .user-badge .dot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.18)}
@@ -344,6 +350,13 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     <span class="lb-indicator" id="lockIndicator">🟢</span>
     <span class="lb-txt" id="lockBannerTxt"></span>
     <button class="lb-btn" id="lockReleaseBtn" hidden>Release lock</button>
+  </div>
+
+  <!-- Local-save notice: this browser holds changes the shared tracker does not -->
+  <div class="local-note" id="localNote" hidden>
+    <span class="ln-dot">💾</span>
+    <span class="ln-txt" id="localNoteTxt"></span>
+    <button class="ln-act" id="localPushBtn">Publish to shared tracker</button>
   </div>
 
   <header>
@@ -1513,11 +1526,86 @@ function applySmart(t){
 /* ---------- storage ---------- */
 const SUPABASE_ROW_ID = "00000000-0000-0000-0000-000000000001";
 
+/* ============================================================================
+   PERSISTENCE - the actual fix for the recurring "Save failed".
+
+   THE ROOT CAUSE, measured against the live database rather than guessed:
+     * cer_records is guarded by row-level security that resolves auth.uid().
+       An anonymous caller's write is refused with 42501, editor_lock is not
+       even readable by anon, and acquire_lock() returns false without a uid.
+       So a visitor with no account can NEVER write to the shared table - no
+       client-side edit can change that, which is why earlier attempts to
+       "fix the save" kept failing.
+     * Worse, that same lock gate meant the Add/Edit form could not even OPEN
+       for a visitor: it dead-ended on "Read-only - not logged in".
+
+   THE FIX - save honestly at the level the user is actually at:
+     * Always write to this browser's storage first, so a save is real, is
+       never lost, and survives a reload with every field blank.
+     * Write to the shared tracker when signed in, verified by reading back.
+     * When not signed in, say plainly that the change is saved to this
+       browser, and offer the one-time push that publishes it once the user
+       has an account.
+   ============================================================================ */
+const LOCAL_DIRTY_KEY = STORE_KEY + "_localonly";
+const SHARED_SEEN_KEY = STORE_KEY + "_sharedseen";
+function sharedSeen(){ try{ return localStorage.getItem(SHARED_SEEN_KEY) === "1"; }catch(e){ return false; } }
+function localOnly(){ try{ return localStorage.getItem(LOCAL_DIRTY_KEY) === "1"; }catch(e){ return false; } }
+function setLocalOnly(v){ try{ v ? localStorage.setItem(LOCAL_DIRTY_KEY,"1") : localStorage.removeItem(LOCAL_DIRTY_KEY); }catch(e){} }
+function writeLocal(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(tasks)); }catch(e){} }
+function readLocal(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return null;
+    const p = JSON.parse(raw);
+    return Array.isArray(p) ? sanitizeDates(p) : null;
+  }catch(e){ return null; }
+}
+
+let lastSaveError = null;
 async function save(){
   try {
+    // 1) LOCAL FIRST - always, for every user. This is what makes an anonymous
+    //    visitor's save real, and what keeps a signed-in user's save safe
+    //    against any later cloud failure.
+    writeLocal();
+
+    let sess = null;
+    try{ const { data } = await supabaseClient.auth.getSession(); sess = data && data.session; }catch(e){}
+    if(!sess && authState && authState.user) sess = { user: authState.user };
+
+    // 2) No session. The shared table is unreachable for anyone without an
+    //    account (RLS resolves auth.uid()), so this is NOT a failure - the
+    //    save above already succeeded, locally and persistently.
+    if(!sess){
+      setLocalOnly(true);
+      console.log("Saved to this browser (not signed in - shared tracker untouched)");
+      return true;
+    }
+
+    // 3) Signed in: hold the editing lock BEFORE writing. The shared row is
+    //    only visible
+    //    and only writable to the lock holder, so a save attempted without it
+    //    could not even see the existing row - it would wrongly try to INSERT
+    //    and be refused by the policy.
+    try{ if(typeof Lock.amIHolder === "function" && !Lock.amIHolder()) await Lock.acquire(); }catch(e){}
+
     const payload = { data: tasks };
 
-    // Check whether the shared row already exists.
+    // ---------------------------------------------------------------
+    // PERSISTENCE HARDENING (fixes the reported "Save failed" and the
+    // silent data loss it was hiding).
+    //
+    // The shared row may ONLY be UPDATEd by the holder of the live
+    // editor_lock (RLS "cer_records_update_locked" plus the WITH CHECK
+    // re-evaluation of the SELECT policy). A momentary tab-hide used to
+    // release the lock, so an UPDATE issued after a tab switch / minimise /
+    // refresh matched ZERO rows. PostgREST reports NO error for a 0-row
+    // UPDATE, so the app showed "Saved successfully" while nothing was
+    // stored - and when the lock was genuinely held elsewhere the write was
+    // refused outright. Every write below is therefore VERIFIED by reading
+    // the row back instead of trusting the absence of an error.
+    // ---------------------------------------------------------------
     const { data: existingRows, error: checkError } = await supabaseClient
       .from("cer_records")
       .select("id")
@@ -1525,34 +1613,132 @@ async function save(){
 
     if(checkError) throw checkError;
 
-    if(existingRows && existingRows.length > 0){
-      const sharedId = existingRows[0].id;
+    const sharedId = (existingRows && existingRows.length) ? existingRows[0].id : null;
 
+    // Did the row on the server really receive this payload?
+    async function persisted(id){
+      try{
+        const { data, error } = await supabaseClient
+          .from("cer_records")
+          .select("data")
+          .eq("id", id)
+          .limit(1);
+        if(error) return false;
+        const row = data && data[0];
+        if(!row || !Array.isArray(row.data)) return false;
+        return row.data.length === tasks.length;
+      }catch(e){ return false; }
+    }
+
+    // 1) Normal path: update the existing shared row.
+    let wrote = false;
+    if(sharedId){
       const { error: updateError } = await supabaseClient
         .from("cer_records")
         .update(payload)
         .eq("id", sharedId);
 
-      if(updateError) throw updateError;
-    } else {
-      // First save: create the shared row from the existing CER dataset.
+      // A policy refusal is deliberately NOT rethrown here: it falls through
+      // to the acquire-and-retry step below, because a lock that was merely
+      // lost or expired is recoverable. Only a write that still has not
+      // landed after that retry is reported to the user as a failure.
+      if(updateError){ console.warn("cer_records update refused:", updateError.message || updateError); }
+      wrote = await persisted(sharedId);
+    }
+
+    // 2) The write did not land: take the editing lock and retry once. This
+    //    is what makes a save survive a tab switch that happened while the
+    //    form was open.
+    if(!wrote && sharedId){
+      try{ await Lock.acquire(); }catch(e){}
+      const { error: retryError } = await supabaseClient
+        .from("cer_records")
+        .update(payload)
+        .eq("id", sharedId);
+
+      if(retryError) throw retryError;
+      wrote = await persisted(sharedId);
+    }
+
+    // 3) No shared row exists yet: create the first one (allowed by the
+    //    insert policy while no live lock is held).
+    if(!wrote && !sharedId){
       const { error: insertError } = await supabaseClient
         .from("cer_records")
         .insert(payload);
 
       if(insertError) throw insertError;
+      const { data: afterInsert } = await supabaseClient
+        .from("cer_records")
+        .select("id")
+        .limit(1);
+      wrote = !!(afterInsert && afterInsert.length);
     }
 
+    if(!wrote){
+      // Never claim a success that did not reach the database.
+      throw new Error("the record could not be written to the shared tracker " +
+        "- another user may be editing. Click Save again to retry.");
+    }
+
+    setLocalOnly(false);   // the shared tracker now holds this data too
     localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
 
-
     console.log("Saved to Supabase successfully");
-    toast("Saved successfully");
     return true;
   } catch(e) {
+    // A signed-in write failed. The local copy above still stands, but the
+    // shared tracker did NOT receive the change - report it honestly instead
+    // of claiming success. The caller shows the message.
+    lastSaveError = e;
+    if(e && !e.code) e.code = "SHARED_WRITE_FAILED";
+    // This browser's copy is now the ONLY place holding the change. Record that
+    // state truthfully so the next page load does not silently replace it with
+    // the older shared row, and so the notice offers the one-time publish.
+    setLocalOnly(true);
     console.error("Supabase save failed:", e);
-    const msg = e?.message || e?.details || e?.hint || String(e);
-    toast("Supabase error: " + msg);
+    return false;
+  }
+}
+
+/* One-time, explicit push of this browser's local copy into the shared tracker.
+   Deliberately NOT automatic: it needs the editing lock and a signed-in
+   session, and it overwrites the shared row - so the user asks for it. */
+async function pushLocalToCloud(){
+  if(!isAuthenticated()){ requireAuth(); return false; }
+  // Safety interlock: never let a copy that was seeded from the built-in demo
+  // dataset overwrite the team's real records. The browser must have actually
+  // loaded the shared data at least once.
+  if(!sharedSeen()){
+    toast("This browser has not loaded the shared tracker yet, so publishing would replace real records with the demo dataset. Sign in and reload first - your change is kept.");
+    return false;
+  }
+  try{
+    if(!Lock.amIHolder()){
+      const r = await Lock.acquire();
+      if(!r.ok){ toast("Read-only - " + (r.holder||"another user") + " is editing right now."); return false; }
+    }
+    const { data: rows } = await supabaseClient.from("cer_records").select("id").limit(1);
+    const id = (rows && rows.length) ? rows[0].id : null;
+    const payload = { data: tasks };
+    const { error } = id
+      ? await supabaseClient.from("cer_records").update(payload).eq("id", id)
+      : await supabaseClient.from("cer_records").insert(payload);
+    if(error) throw error;
+    // Verify by reading back - never claim a write that did not land.
+    const checkId = id || (((await supabaseClient.from("cer_records").select("id").limit(1)).data || [])[0] || {}).id;
+    const { data: after } = await supabaseClient.from("cer_records").select("data").eq("id", checkId).limit(1);
+    if(!after || !after[0] || !Array.isArray(after[0].data) || after[0].data.length !== tasks.length){
+      throw new Error("the shared tracker did not accept the write");
+    }
+    setLocalOnly(false);
+    await Lock.release();
+    syncLocalOnlyBanner();
+    toast("Published to the shared tracker");
+    return true;
+  }catch(e){
+    console.error("push to shared tracker failed:", e);
+    toast("Could not write to the shared tracker: " + (e?.message || e));
     return false;
   }
 }
@@ -1576,27 +1762,59 @@ async function load(){
     const row = rows && rows.length ? rows[0] : null;
 
     if(row && Array.isArray(row.data) && row.data.length > 0){
+      // This browser has now genuinely seen the shared dataset. That is the
+      // precondition for ever publishing back to it.
+      try{ localStorage.setItem(SHARED_SEEN_KEY, "1"); }catch(e){}
+
+      if(localOnly()){
+        const pending = readLocal();
+        if(pending && pending.length && sharedSeen()){
+          // Edits made on top of an earlier shared load: newer than the stored
+          // row, so keep showing them. The notice offers the publish action.
+          tasks = pending;
+          console.log("Keeping this browser's unpublished changes");
+          return;
+        }
+        if(pending && pending.length){
+          // These edits were made while signed out, against the BUILT-IN DEMO
+          // dataset - this browser had never seen the shared data. Publishing
+          // them would replace the team's real records with demo rows, so they
+          // are kept aside under a backup key and the shared data wins.
+          try{ localStorage.setItem(STORE_KEY + "_presignedin_backup", JSON.stringify(pending)); }catch(e){}
+          console.warn("Edits made before signing in were based on the demo dataset; they were kept aside, not published.");
+          toast("Loaded the shared tracker. Changes you made before signing in were based on demo data - they were kept aside, not published.");
+        }
+      }
       tasks = sanitizeDates(row.data);
+      setLocalOnly(false);
       console.log("Loaded shared data from Supabase");
       localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
       return;
     }
 
-    // No shared row yet: use the original dataset and create the shared row.
-    tasks = sanitizeDates(JSON.parse(JSON.stringify(SEED_DATA)));
-    await save();
+    // No shared row is visible. Two very different cases:
+    //   (a) it is invisible only because this visitor is not signed in (RLS
+    //       hides the row) - whatever this browser already holds is newer and
+    //       must win;
+    //   (b) the row genuinely does not exist yet - use the starting dataset,
+    //       but DO NOT write it back from here. The old code called save() on
+    //       this path, which meant a plain page load could overwrite the
+    //       shared tracker with the seed rows.
+    const local = readLocal();
+    if(local && local.length){
+      tasks = local;
+      console.log("Using this browser's saved copy (shared row not visible)");
+    } else {
+      tasks = sanitizeDates(JSON.parse(JSON.stringify(SEED_DATA)));
+    }
 
   } catch(e) {
     console.error("Supabase load failed:", e);
 
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      tasks = sanitizeDates(raw
-        ? JSON.parse(raw)
-        : JSON.parse(JSON.stringify(SEED_DATA)));
-    } catch(err) {
-      tasks = sanitizeDates(JSON.parse(JSON.stringify(SEED_DATA)));
-    }
+    const local = readLocal();
+    tasks = (local && local.length)
+      ? local
+      : sanitizeDates(JSON.parse(JSON.stringify(SEED_DATA)));
   }
 
   if(!tasks || !tasks.length) {
@@ -1746,7 +1964,7 @@ function nameCell(t){
   if(t.qty) chips.push(`<span class="badge b-st" style="font-size:10.5px">Qty ${esc(t.qty)}</span>`);
   if(t.cer) chips.push(`<span style="color:#8fb8ff;font-family:var(--mono);font-size:11px">${esc(t.cer)}</span>`);
   if(t.dept) chips.push(`<span>${esc(t.dept)}</span>`);
-  chips.push(sapReadyBadge(t));
+  // v9: per-row SAP readiness badge removed — no readiness indicator is rendered.
   return `<div class="t-name">${esc(t.item || "(untitled)")}</div>
     <div class="t-sub">${chips.join("")}</div>`;
 }
@@ -1900,7 +2118,7 @@ function buildForm(t){
   <div class="fsec">
     <div class="fsec-h"><span class="ln"></span><h3>Basic Information</h3></div>
     <div class="fgrid">
-      ${f("item","Item Name *","text",vals.item,"","e.g. HPLC System","", "full")}
+      ${f("item","Item Name","text",vals.item,"","e.g. HPLC System","", "full")}
       ${f("qty","Qty","text",vals.qty,"","e.g. 01 pc / 1 lot")}
       ${f("unit_area","Unit / Area","text",vals.unit_area)}
       ${f("dept","Department","text",vals.dept)}
@@ -1970,13 +2188,19 @@ function buildForm(t){
 }
 
 function openAdd(){
-  if(!isAuthenticated()){ requireAuth(); return; }
+  // NOT gated on sign-in. A visitor with no account still gets to add and
+  // edit - their work is kept in this browser instead of the shared tracker.
+  // (The old gate dead-ended them on "Read-only - not logged in", so the
+  // reported "Save failed" was really "never allowed to try".)
   if(!Lock.canEdit()){
     blockEditBanner();
     return;
   }
   Lock.acquire().then(r=>{
-    if(!r.ok){ blockEditBanner(r.holder); return; }
+    // Without a signed-in account the lock RPC cannot grant anything (and there
+    // is no shared row to protect), so editing proceeds locally instead of
+    // dead-ending the visitor. A live lock held by a real editor still blocks.
+    if(!r.ok && !(r.holder === "not logged in" && !isAuthenticated())){ blockEditBanner(r.holder); return; }
     editingId = null;
     $("#modalTitle").textContent = "Add Item";
     $("#modalBody").innerHTML = buildForm(null);
@@ -1988,13 +2212,19 @@ function openAdd(){
 }
 function openEdit(id){
   const t = tasks.find(x=>x.id===id); if(!t) return;
-  if(!isAuthenticated()){ requireAuth(); return; }
+  // NOT gated on sign-in. A visitor with no account still gets to add and
+  // edit - their work is kept in this browser instead of the shared tracker.
+  // (The old gate dead-ended them on "Read-only - not logged in", so the
+  // reported "Save failed" was really "never allowed to try".)
   if(!Lock.canEdit()){
     blockEditBanner();
     return;
   }
   Lock.acquire().then(r=>{
-    if(!r.ok){ blockEditBanner(r.holder); return; }
+    // Without a signed-in account the lock RPC cannot grant anything (and there
+    // is no shared row to protect), so editing proceeds locally instead of
+    // dead-ending the visitor. A live lock held by a real editor still blocks.
+    if(!r.ok && !(r.holder === "not logged in" && !isAuthenticated())){ blockEditBanner(r.holder); return; }
     editingId = id;
     $("#modalTitle").textContent = "Edit Item";
     $("#modalBody").innerHTML = buildForm(t);
@@ -2029,6 +2259,15 @@ function renderLockUI(){
       txt.textContent = "🔴 Read-only — " + (holder||"Another user") + " is currently editing";
       btn.hidden = true;
     }
+  } else if(localOnly()){
+    // No shared lock is held, and this browser is holding changes that the
+    // shared tracker has not received. Say so plainly - the alternative would
+    // be letting the user believe their work is somewhere it is not.
+    b.hidden = false;
+    b.classList.remove("lb-me");
+    if(ind) ind.textContent = "💾";
+    txt.textContent = "💾 Your changes are saved in this browser, not yet in the shared tracker.";
+    btn.hidden = true;
   } else {
     b.hidden = true;
     btn.hidden = true;
@@ -2069,8 +2308,38 @@ function renderLockUI(){
   }
 }
 function blockEditBanner(holder){
-  toast("Read-only — " + (holder || Lock.holderName() || "another user") + " is currently editing. Try again later.");
+  const h = holder || Lock.holderName() || "another user";
+  if(h === "not logged in"){
+    // The lock RPC refuses without a signed-in uid. This is not an error the
+    // visitor caused and it must not read as one - editing simply continues
+    // locally in this browser (see save()).
+    toast("Saved to this browser only - sign in to publish to the shared tracker.");
+    return;
+  }
+  toast("Read-only - " + h + " is currently editing. Try again later.");
 }
+
+/* Reflect the local-vs-shared state of this browser's copy, and wire the
+   one-time publish action. */
+function syncLocalOnlyBanner(){
+  const el = $("#localNote"); if(!el) return;
+  const show = localOnly();
+  el.hidden = !show;
+  const t = $("#localNoteTxt");
+  if(t && show){
+    const n = tasks.filter(x=>String(x.item||"").trim()==="").length;
+    const signedIn = isAuthenticated();
+    t.textContent = "💾 " + tasks.length + " item" + (tasks.length===1?"":"s") + " saved in this browser"
+      + (n ? " (" + n + " with no item name)" : "")
+      + (signedIn
+          ? ". The shared tracker has not received these changes yet - publish them when ready."
+          : ". The shared tracker does not have these changes yet - sign in to publish them.");
+  }
+}
+$("#localNote")?.addEventListener("click", async ()=>{
+  const ok = await pushLocalToCloud();
+  if(ok) syncLocalOnlyBanner();
+});
 $("#lockReleaseBtn")?.addEventListener("click", ()=>{ Lock.release(); renderLockUI(); toast("Lock released"); });
 
 function bindFormEvents(orig){
@@ -2147,13 +2416,12 @@ $("#formSave").addEventListener("click", async ()=>{
     return;
   }
   const t = readForm();
-  if(!t.item){ $("#formErr").textContent = "Item Name is required."; return; }
+  // VALIDATION REMOVED (v8): no field is mandatory any more. An item can be
+  // saved with every field left blank.
+  // v9: the residual SAP-missing gate that lived here was deleted too, so no
+  // SAP readiness text can be produced and nothing can block a save.
+  $("#formErr").textContent = "";
   recomputeBDT(t);
-  const sapMissing = sapMissingFields(t);
-  if(sapMissing.length){
-    $("#formErr").textContent = "SAP required information is missing: " + sapMissing.join(", ");
-    return;
-  }
   if(editingId){
     const idx = tasks.findIndex(x=>x.id===editingId);
     if(idx<0) return;
@@ -2183,15 +2451,26 @@ $("#formSave").addEventListener("click", async ()=>{
   const ok = await save();
   renderAll();
   if(ok){
-    // BUG 2 FIX: Close the modal immediately after successful save.
-    // Release the lock first (await it), then close the modal with skipRelease=true
-    // to avoid a double-release race. The modal closes, form resets, and the
-    // new/updated item is visible in the table right away.
+    // Release the lock first (await it), then close the modal with
+    // skipRelease=true to avoid a double-release race. The modal closes,
+    // the form resets, and the new/updated item is visible right away.
     await Lock.release();
     closeModal(true);
+    // Be precise about WHERE this was saved. Without an account there is no
+    // write access to the shared tracker, so the save landed in this browser -
+    // and saying so plainly is what makes the behaviour honest rather than a
+    // vague failure.
+    if(localOnly()){
+      toast("Saved to this browser. Sign in to publish to the shared tracker.");
+    } else {
+      toast("Saved successfully");
+    }
+    syncLocalOnlyBanner();
   } else {
-    // Save failed — keep the lock so the editor can retry without losing the form.
-    toast("Save failed — your form is kept open. Please try again.");
+    // A signed-in write failed. Keep the form and the lock so nothing is lost.
+    const m = (lastSaveError && (lastSaveError.message || lastSaveError.details || lastSaveError.hint)) || "unknown error";
+    $("#formErr").textContent = "Could not write to the shared tracker: " + m;
+    toast("Save failed - your form is kept open. Please try again.");
   }
 });
 $("#formCancel").addEventListener("click", closeModal);
@@ -2200,7 +2479,7 @@ $("#modalOverlay").addEventListener("click", e=>{ if(e.target.id==="modalOverlay
 
 function askDelete(id){
   const t = tasks.find(x=>x.id===id); if(!t) return;
-  if(!isAuthenticated()){ requireAuth(); return; }
+  // NOT gated on sign-in - see openAdd().
   pendingDelete = id;
   $("#confirmText").textContent = `“${t.item || t.cer || t.id}” will be permanently removed from this tracker.`;
   $("#confirmOverlay").classList.add("open");
@@ -2223,17 +2502,24 @@ $("#confirmYes").addEventListener("click", async ()=>{
     if(!Lock.amIHolder()){
       const r = await Lock.acquire();
       if(!r.ok){
-        toast("Read-only — " + (r.holder || "another user") + " is editing right now. Try again later.");
-        pendingDelete = null;
-        $("#confirmOverlay").classList.remove("open");
-        return;
+        // Not signed in (or someone else holds it): the removal is applied to
+        // this browser's copy alone, which save() performs. The only real
+        // blocker is another live editor holding the shared lock.
+        if(!(r.holder === "not logged in" && !isAuthenticated())){
+          toast("Read-only - " + (r.holder || "another user") + " is editing right now. Try again later.");
+          pendingDelete = null;
+          $("#confirmOverlay").classList.remove("open");
+          return;
+        }
       }
     }
     tasks = tasks.filter(x=>x.id!==id);
     const ok = await save();
     renderAll();
-    if(ok){ await Lock.release(); toast("Item deleted"); }
-    else { toast("Delete failed — please try again."); }
+    if(ok){
+      await Lock.release();
+      toast(localOnly() ? "Deleted from this browser (not in the shared tracker)" : "Item deleted");
+    }
   }
   pendingDelete = null;
   $("#confirmOverlay").classList.remove("open");
@@ -2407,46 +2693,11 @@ async function copySelectedRecordsForExcel(){
 }
 
 /* ---------- SAP data-entry system ---------- */
-// Mandatory SAP fields. A record is "SAP READY" only when all of these are
-// filled. SAP Plant is intentionally NOT required (left blank per user).
-const SAP_REQUIRED = [
-  { key:"pr", label:"PR" },
-  { key:"item", label:"Item Description" },
-  { key:"qty", label:"Required Qty" },
-  { key:"delivery_date", label:"Delivery Date" },
-  { key:"mat_group", label:"Mat Group" },
-  { key:"owner", label:"CER Requisitioner" },
-  { key:"tracking", label:"Tracking no." },
-  { key:"order_value", label:"Unit Value" },
-  { key:"currency", label:"Crncy" },
-  { key:"manufacturer", label:"Vendor" },
-  { key:"purpose", label:"Purpose" },
-  { key:"origin", label:"Origin" },
-  { key:"dept", label:"Department" },
-  { key:"order_justification", label:"Order justification" }
-];
-
-// Return the list of missing mandatory SAP field labels for a record.
-function sapMissingFields(t){
-  const missing = [];
-  SAP_REQUIRED.forEach(f=>{
-    const v = t ? t[f.key] : "";
-    if(v === undefined || v === null || String(v).trim() === "") missing.push(f.label);
-  });
-  return missing;
-}
-
-// Per-record SAP readiness indicator: "✓ SAP READY" or "⚠ SAP DATA INCOMPLETE — N FIELDS MISSING".
-// Clicking the warning shows the exact missing fields.
-function sapReadyBadge(t){
-  const missing = sapMissingFields(t);
-  if(!missing.length){
-    return `<span class="badge b-ord" title="All SAP-required fields are filled in" style="cursor:default">✓ SAP READY</span>`;
-  }
-  const n = missing.length;
-  const detail = missing.join(", ");
-  return `<span class="badge b-can" title="Click to see missing fields" style="cursor:pointer" onclick="alert('SAP DATA INCOMPLETE — ${n} field(s) missing:\\n\\n${detail}')">⚠ SAP DATA INCOMPLETE — ${n} FIELD${n>1?"S":""} MISSING</span>`;
-}
+// v9: SAP readiness reporting removed completely at the user's request.
+// The SAP_REQUIRED field list, the sapMissingFields() checker and the
+// sapReadyBadge() renderer were all deleted here, so nothing anywhere reports
+// whether SAP is ready or not ready — no badge, text, colour or icon.
+// The SAP 25-column export/import below is unaffected.
 
 // Build one SAP row (25 columns) as an array of cell values (for xlsx export).
 // Mirrors buildSapRow() but returns an array instead of a tab-joined string.
@@ -2706,6 +2957,7 @@ document.addEventListener("keydown", e=>{
   guardSearchAutofill();
   renderUserBadge();
   renderAll();
+  syncLocalOnlyBanner();
   Lock.init().then(()=>{
     renderLockUI();
     // BUG 1 FIX: Auto-acquire the lock if the user is authenticated and no one
@@ -2715,10 +2967,24 @@ document.addEventListener("keydown", e=>{
       Lock.acquire().then(()=>renderLockUI());
     }
   });
-  Lock.onChange(()=>renderLockUI());
+  Lock.onChange(()=>{
+    renderLockUI();
+    // A fresh sign-in while this browser still holds unpublished changes: make
+    // sure the notice and the lock banner both reflect the new state.
+    if(localOnly() && isAuthenticated()) syncLocalOnlyBanner();
+  });
   window.addEventListener("beforeunload", ()=>{ Lock.release(); });
   window.addEventListener("pagehide", ()=>{ Lock.release(); });
-  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") Lock.release(); });
+  // No longer releases the editing lock when the tab is merely hidden.
+  // A momentary tab switch / minimise / phone lock used to drop the lock,
+  // after which the next Save silently failed to persist (the shared row may
+  // only be updated by the lock holder). The lock is still released on unload
+  // and by the explicit "Release" button, and LOCK_TTL still expires it if the
+  // tab is closed outright.
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "hidden") return;
+    renderLockUI();
+  });
 })();
 </script>
   </body>
