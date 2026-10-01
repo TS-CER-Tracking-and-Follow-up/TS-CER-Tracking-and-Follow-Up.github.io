@@ -422,25 +422,31 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 .pr-chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .pr-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut,#b6bdca);background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:9px;padding:4px 9px;cursor:pointer}
 .pr-chip b{color:var(--txt,#e6e8ee);font-weight:700}
+.pr-ro{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#f0b775;background:rgba(240,183,117,.14);border:1px solid rgba(240,183,117,.32);border-radius:7px;padding:3px 8px;white-space:nowrap}
 .pr-panel{border-top:1px solid var(--line2,#2a2f3a);padding:10px 12px;background:rgba(0,0,0,.14)}
 .pr-panel-h{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
 .pr-panel-h b{font-size:12.5px}
 .pr-panel-note{font-size:11px;color:var(--dim,#8b93a3)}
 .pr-group{margin:6px 0 10px}
 .pr-group-h{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--mut,#b6bdca);text-transform:uppercase;margin:6px 0 5px}
-.pr-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
-.pr-row{display:flex;align-items:center;gap:9px;background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:9px;padding:7px 9px}
+.pr-list{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow:auto}
+.pr-row{display:block;background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:10px;padding:10px 12px}
+.pr-row .pr-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .pr-row .pr-ic{flex:none;font-size:13px}
-.pr-row .pr-main{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
-.pr-row .pr-t{font-size:12.5px;color:var(--txt,#e6e8ee);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pr-row .pr-s{font-size:11px;color:var(--dim,#8b93a3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-row .pr-t{font-size:13px;color:var(--txt,#e6e8ee);font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pr-row .pr-head .sp{flex:1}
+.pr-detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px 14px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line2,#2a2f3a)}
+.pr-detail .d{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pr-detail .d .k{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--dim,#8b93a3)}
+.pr-detail .d .v{font-size:12px;color:var(--txt,#e6e8ee);word-break:break-word}
+.pr-detail .d.wide{grid-column:1/-1}
 .pr-empty{font-size:12px;color:var(--dim,#8b93a3);padding:6px 0}
 .pr-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap;vertical-align:middle}
 .pr-badge.pend{background:rgba(240,150,60,.16);color:#f0b775;border:1px solid rgba(240,150,60,.35)}
 .pr-badge.rel{background:rgba(80,200,140,.14);color:#6fd3a1;border:1px solid rgba(80,200,140,.3)}
 .pr-badge.new{background:rgba(90,150,255,.18);color:#8fb8ff;border:1px solid rgba(90,150,255,.35)}
 @media print{.pr-alert{display:none !important}}
-@media (max-width:640px){.pr-chips{margin-left:0}.pr-row .pr-s{display:none}}
+@media (max-width:640px){.pr-chips{margin-left:0}.pr-detail{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -469,6 +475,7 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     </div>
     <div class="user-badge" id="userBadge" title="Signed-in user (from your account)">
       <span class="dot"></span><span class="nm" id="userBadgeName"></span>
+      <span class="uid" id="userBadgeId" style="display:none;font-size:10px;color:var(--dim,#8b93a3);margin-left:6px"></span>
     </div>
     <button class="btn ghost" id="authBtn" title="Sign in / sign up with your account">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
@@ -522,7 +529,7 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
   <!-- Procurement workflow: PR release dashboard (additive) -->
   <section class="pr-alert" id="prAlert">
     <div class="pr-alert-head">
-      <button class="pr-alert-main" id="prAlertBtn" title="Show every record that still needs a procurement action">
+      <button class="pr-alert-main" id="prAlertBtn" title="Show every item whose PR is created but not yet released">
         <span class="pr-alert-ic">&#128276;</span>
         <span class="pr-alert-txt">
           <span class="pr-alert-lbl">PR RELEASE REQUIRED</span>
@@ -534,8 +541,8 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     </div>
     <div class="pr-panel" id="prPanel" hidden>
       <div class="pr-panel-h">
-        <b>Next action required</b>
-        <span class="pr-panel-note">Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
+        <b>PR Release Required &mdash; item details</b>
+        <span class="pr-panel-note">Every item whose PR is created but not yet released. Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
         <span style="flex:1"></span>
         <button class="btn ghost sm" id="prPanelClose" type="button">Close</button>
       </div>
@@ -929,6 +936,26 @@ let sort = { key:"target", dir:"asc" };
 let editingId = null;
 let pendingDelete = null;
 
+/* ============================================================
+   PR RELEASE PERMISSIONS  (EDIT THIS ONE LINE)
+   ------------------------------------------------------------
+   Only the Supabase auth user IDs listed here may RELEASE a PR
+   (and edit PR-release data). Everyone else can still VIEW the
+   PR Release section, but the "Release PR" button is hidden and
+   a read-only notice is shown instead.
+
+   HOW TO FILL IT IN:
+     1. Sign in as the boss in this tracker.
+     2. Open the browser console (F12) and run:  tsdWhoAmI()
+        -> it prints the exact ID to paste below.
+        (The ID is also shown next to the name in the header.)
+     3. Paste it here, e.g.  const PR_RELEASE_ADMIN_IDS = ["a1b2c3d4-...."];
+   Leave the array EMPTY to allow any signed-in user (current default).
+   NOTE: this is a client-side UI gate. For real enforcement add the
+   Supabase RLS policy given in the delivery notes.
+   ============================================================ */
+const PR_RELEASE_ADMIN_IDS = [];
+
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1041,13 +1068,50 @@ function currentUser(){
   }
   return "";
 }
+/* ---------- PR release permission gate ----------
+   The boss's Supabase auth user ID goes in PR_RELEASE_ADMIN_IDS (top of file).
+   While that list is EMPTY the gate stays open to any signed-in user, so the
+   tracker keeps working before the ID is supplied. */
+function currentUserId(){
+  const u = authState && authState.user;
+  return (u && u.id) ? String(u.id) : "";
+}
+function canReleasePr(){
+  if(!isAuthenticated()) return false;                 // must be signed in
+  if(!PR_RELEASE_ADMIN_IDS.length) return true;        // allowlist not set yet -> open
+  return PR_RELEASE_ADMIN_IDS.indexOf(currentUserId()) !== -1;
+}
+/* Console helper: prints the signed-in user's ID so it can be pasted into
+   PR_RELEASE_ADMIN_IDS. Also exposed on window as tsdWhoAmI(). */
+function whoAmI(){
+  const id = currentUserId();
+  const em = getUserEmail();
+  const nm = getUser();
+  if(!id){
+    console.log("[TSD] Not signed in. Sign in first, then run tsdWhoAmI() again.");
+    return { signedIn:false, id:"", email:"", name:"" };
+  }
+  console.log("%c[TSD] Signed-in user ID (paste into PR_RELEASE_ADMIN_IDS):", "font-weight:bold");
+  console.log(id);
+  console.log("[TSD] name:", nm || "(none)", "| email:", em || "(none)");
+  console.log("[TSD] canReleasePr():", canReleasePr());
+  return { signedIn:true, id:id, email:em, name:nm };
+}
+window.tsdWhoAmI = whoAmI;
 function renderUserBadge(){
   const el = $("#userBadgeName"); if(!el) return;
   const btn = $("#authBtn"); const lbl = $("#authBtnLabel");
+  const idEl = $("#userBadgeId");
   if(isAuthenticated()){
     const nm = getUser();
     el.textContent = nm || getUserEmail() || "Signed in";
     el.title = "Signed in as " + getUserEmail() + " — your identity is used for Last Edited By";
+    if(idEl){
+      const uid = currentUserId();
+      idEl.textContent = uid ? "ID: " + uid : "";
+      idEl.style.display = uid ? "inline" : "none";
+      idEl.title = "Your Supabase user ID — copy this into PR_RELEASE_ADMIN_IDS to grant PR-release rights";
+    }
     if(btn){
       lbl.textContent = "Sign Out";
       btn.title = "Sign out of your account";
@@ -1056,12 +1120,15 @@ function renderUserBadge(){
   } else {
     el.textContent = authState.ready ? "Not signed in" : "…";
     el.title = "Sign in with your account to edit — identity is set from your login";
+    if(idEl){ idEl.textContent = ""; idEl.style.display = "none"; }
     if(btn){
       lbl.textContent = "Sign In";
       btn.title = "Sign in / sign up with your account";
     }
     $("#userBadge").classList.remove("signed-in");
   }
+  // Keep the PR Release section's permission state in sync with the account.
+  if(typeof renderPrDashboard === "function") renderPrDashboard();
 }
 /* ---------- Supabase Auth ---------- */
 let authMode = "signin";
@@ -2348,57 +2415,44 @@ function renderTable(){
 function renderAll(){ renderStats(); renderTable(); renderPrDashboard(); }
 
 /* ============================================================
-   PR RELEASE DASHBOARD  (additive procurement workflow layer)
-   Answers one question at a glance: what needs action next?
-     PR entered  -> pending release   (orange)
-     PR released -> PO follow-up      (blue)
-     PO raised   -> LC follow-up      (violet)
-     Delivered                        (green)
+   PR RELEASE DASHBOARD  (PR-release only)
+   Shows every item whose PR number is entered but whose PR has NOT yet
+   been released. Nothing else (no PO / LC follow-up) lives here — the
+   main tracker table keeps its own stage filters and sorting.
    Read-only: it derives everything from the records. The only action it
    performs is Release PR, which writes pr_released/_date/_by and clears the
    item from the pending list. It never deletes the PR number.
    ============================================================ */
-const PR_ACTIONS = [
-  { key:"pr",  dot:"\ud83d\udfe0", label:"PR release",   stage:"PR Release Pending", pending:prPending },
-  { key:"po",  dot:"\ud83d\udd35", label:"PO follow-up", stage:"PR Done",            pending:function(t){ return t.stage === "PR Done"; } },
-  { key:"lc",  dot:"\ud83d\udfe3", label:"LC follow-up", stage:"PO Done",            pending:function(t){ return t.stage === "PO Done"; } }
-];
 let prPanelOpen = false;
 let _prHooksWired = false;
 
+function prPendingList(){ return tasks.filter(prPending); }
+
 function renderPrDashboard(){
   const box = $("#prAlert"); if(!box) return;
-  const groups = {};
-  PR_ACTIONS.forEach(a => { groups[a.key] = tasks.filter(a.pending); });
-  const nPr = groups.pr.length;
-  const parts = PR_ACTIONS.map(a => groups[a.key].length);
-  const anyAction = parts.some(n => n > 0);
+  const rows = prPendingList();
+  const nPr = rows.length;
 
   // headline
   const lbl = document.querySelector(".pr-alert-lbl");
-  if(lbl) lbl.textContent = nPr > 0 ? "PR RELEASE REQUIRED" : (anyAction ? "NEXT PROCUREMENT ACTION" : "NO PROCUREMENT ACTION PENDING");
+  if(lbl) lbl.textContent = nPr > 0 ? "PR RELEASE REQUIRED" : "NO PR RELEASE PENDING";
   const cnt = $("#prAlertCount");
-  const focus = nPr || parts[1] || parts[2] || 0;
   if(cnt){
-    cnt.textContent = nPr ? nPr : (anyAction ? focus : "0");
-    cnt.classList.toggle("zero", !anyAction);
+    cnt.textContent = nPr;
+    cnt.classList.toggle("zero", nPr === 0);
   }
   const sub = $("#prAlertSub");
   if(sub){
-    const bits = [];
-    if(nPr) bits.push(nPr + (nPr===1 ? " PR waiting for release" : " PRs waiting for release"));
-    if(parts[1]) bits.push(parts[1] + " awaiting PO");
-    if(parts[2]) bits.push(parts[2] + " awaiting LC");
-    sub.textContent = bits.length ? bits.join(" \u00b7 ") : "Nothing awaiting action \u2014 everything is released / delivered";
+    sub.textContent = nPr
+      ? nPr + (nPr === 1 ? " PR waiting for release" : " PRs waiting for release")
+      : "Every PR has been released";
   }
 
-  // chips -> jump straight to a filtered view
+  // single chip -> jump straight to the PR-release-pending view
   const chips = $("#prAlertChips");
   if(chips){
-    chips.innerHTML = PR_ACTIONS.filter(a => groups[a.key].length).map(a =>
-      `<button class="pr-chip" type="button" data-prfilter="${a.key}">${a.dot} <b>${groups[a.key].length}</b> ${esc(a.label)}</button>`
-    ).join("") + (tasks.length
-      ? `<button class="pr-chip" type="button" data-prfilter="clear" title="Show every record again">\u21ba <b>${tasks.length}</b> all records</button>` : "");
+    chips.innerHTML = `<button class="pr-chip" type="button" data-prfilter="pr">\ud83d\udfe0 <b>${nPr}</b> PR release pending</button>`
+      + (canReleasePr() ? "" : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only</span>`);
   }
 
   // expandable panel
@@ -2407,43 +2461,74 @@ function renderPrDashboard(){
   const list = $("#prList");
   if(!list || !prPanelOpen) return;
   let html = "";
-  PR_ACTIONS.forEach(a => {
-    const rows = groups[a.key]; if(!rows.length) return;
-    html += `<div class="pr-group"><div class="pr-group-h">${a.dot} ${esc(a.label)} \u2014 ${rows.length}</div><div class="pr-list">`;
-    rows.forEach(t => { html += prRowHtml(t, a.key); });
+  if(nPr){
+    html += `<div class="pr-group"><div class="pr-group-h">\ud83d\udfe0 PR release required \u2014 ${nPr}</div><div class="pr-list">`;
+    rows.forEach(t => { html += prRowHtml(t); });
     html += `</div></div>`;
-  });
-  if(!html) html = `<div class="pr-empty">Nothing is waiting for a procurement action right now.</div>`;
+  } else {
+    html = `<div class="pr-empty">No PR is waiting for release right now.</div>`;
+  }
   list.innerHTML = html;
 }
 
-function prRowHtml(t, kind){
+/* Full item-level detail for one pending PR. */
+function prRowHtml(t){
   const pr = String(t.pr || "\u2014");
-  const item = t.item || t.cer || t.id;
-  const val = t.ov_bdt ? fmtBDT(t.ov_bdt) : (t.order_value ? (fmtNum(t.order_value) + " " + (t.currency || "")) : "\u2014");
-  const own = t.owner || "\u2014";
+  const item = t.item || t.cer || t.id || "\u2014";
+  const qty = t.qty || "\u2014";
+  const unit = t.unit_area || "\u2014";
+  const dept = t.dept || "\u2014";
+  const plant = t.plant || "\u2014";
+  const manu = t.manufacturer || "\u2014";
+  const agent = t.agent || "\u2014";
+  const ov = t.order_value ? (fmtNum(t.order_value) + " " + (t.currency || "")) : "\u2014";
+  const bdt = t.ov_bdt ? fmtBDT(t.ov_bdt) : "\u2014";
+  const prDate = t.pr_date ? fmtDate(t.pr_date) : "\u2014";
+  const owner = t.owner || "\u2014";
   const age = t.pr_created_at ? waitingFor(t.pr_created_at) : (t.pr_date ? waitingFor(t.pr_date) : "");
-  const when = kind === "pr"
-    ? "Waiting for release" + (age ? " \u00b7 " + age : "")
-    : (kind === "po" ? "PR released \u2014 raise the PO" : "PO raised \u2014 open the L/C");
-  const by = kind === "pr" ? (t.pr_by || "") : (t.pr_released_by || "");
-  const btn = kind === "pr"
+  const wait = age ? age : "\u2014";
+  const status = prPending(t) ? "\ud83d\udfe0 Waiting for release" : "\ud83d\udfe2 Released";
+  const by = t.pr_by || t.pr_created_by || "";
+  const btn = canReleasePr()
     ? `<button class="btn ghost sm" type="button" data-release="${esc(t.id)}" title="Mark this PR as released">Release PR</button>`
-    : "";
+    : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`;
+  const d = (k,v,wide) => `<div class="d${wide?" wide":""}"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`;
   return `<div class="pr-row">
-    <span class="pr-ic">\ud83d\udfe0</span>
-    <span class="pr-main">
+    <div class="pr-head">
+      <span class="pr-ic">\ud83d\udfe0</span>
       <span class="pr-t">PR ${esc(pr)} \u2014 ${esc(item)}</span>
-      <span class="pr-s">${esc(when)} \u00b7 ${esc(own)} \u00b7 ${esc(val)}${by ? " \u00b7 entered by " + esc(by) : ""} \u00b7 ${esc(t.stage || "")}</span>
-    </span>
-    ${btn}
+      <span class="sp"></span>
+      ${btn}
+    </div>
+    <div class="pr-detail">
+      ${d("CER", t.cer || "\u2014")}
+      ${d("Item", item, true)}
+      ${d("Qty", qty)}
+      ${d("Unit / Area", unit)}
+      ${d("Department", dept)}
+      ${d("Plant", plant)}
+      ${d("Manufacturer", manu)}
+      ${d("Agent", agent)}
+      ${d("Order Value", ov)}
+      ${d("BDT Value", bdt)}
+      ${d("PR No.", pr)}
+      ${d("PR Date", prDate)}
+      ${d("Owner", owner)}
+      ${d("Waiting Time", wait)}
+      ${d("Status", status)}
+      ${by ? d("PR Created By", by) : ""}
+    </div>
   </div>`;
 }
 
-/* ----- Release PR (authorized: signed-in user) ----- */
+/* ----- Release PR (authorized user only) ----- */
 async function releasePr(id){
   const t = tasks.find(x => x.id === id); if(!t) return;
   if(!prPending(t)){ toast("This PR is already released."); return; }
+  if(!canReleasePr()){
+    toast("Read-only \u2014 only the authorized user can release PRs.");
+    return;
+  }
   const prNum = String(t.pr || "").trim();
   if(!confirm("Release PR " + prNum + "?\n\n" + (t.item || t.cer || t.id) + "\n\nThis records the release date and the releasing user, and removes the item from the PR Release Required list. The PR number is kept.")) return;
   if(Lock.isLocked() && !Lock.amIHolder()){
@@ -2494,18 +2579,14 @@ function wirePrDashboard(){
   if(chips) chips.addEventListener("click", e=>{
     const c = e.target.closest("[data-prfilter]"); if(!c) return;
     const key = c.getAttribute("data-prfilter");
-    const sel = $("#sortSel"), stg = $("#stageFilter");
-    if(key === "clear"){
-      filter.stage = ""; if(stg) stg.value = "";
-      if(sel) sel.value = "cer_date-desc";
-      sort.key = "cer_date"; sort.dir = "desc";
-      renderAll(); return;
+    const stg = $("#stageFilter");
+    if(key === "pr"){
+      // Focus the main table on the PR-release-pending stage. The toolbar's own
+      // sort / Header-Data controls are left exactly as the user set them.
+      filter.stage = "PR Release Pending";
+      if(stg) stg.value = "PR Release Pending";
+      renderAll();
     }
-    const a = PR_ACTIONS.find(x => x.key === key); if(!a) return;
-    filter.stage = a.stage; if(stg) stg.value = a.stage;
-    if(key === "pr" && sel) sel.value = "pr_pending-desc";
-    if(key === "pr"){ sort.key = "pr_pending"; sort.dir = "desc"; }
-    renderAll();
   });
 
   const list = $("#prList");
@@ -4158,6 +4239,17 @@ document.addEventListener("keydown", e=>{
   // A momentary tab switch / minimise / phone lock used to drop the lock,
   // after which the next Save silently failed to persist (the shared row may
   // only be updated by the lock holder). The lock is still released on unload
+  // and by the explicit "Release" button, and LOCK_TTL still expires it if the
+  // tab is closed outright.
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "hidden") return;
+    renderLockUI();
+  });
+})();
+</script>
+  </body>
+</html>
+ted by the lock holder). The lock is still released on unload
   // and by the explicit "Release" button, and LOCK_TTL still expires it if the
   // tab is closed outright.
   document.addEventListener("visibilitychange", ()=>{
