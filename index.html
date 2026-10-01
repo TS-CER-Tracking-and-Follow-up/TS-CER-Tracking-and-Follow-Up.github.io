@@ -1,6 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script data-tmly-media-guard="1">(function(){"use strict";
+var T=window.__tmly||(window.__tmly=(function(){
+var o={},n=String(window.name||"");
+if(n.slice(0,5)==="tmly:"){n.slice(5).split("&").forEach(function(kv){
+var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
+return o})());
+if(T.presentation!=="preview"){return}
+var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
+var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
+var gestured=false;
+["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
+document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
+function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
+function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
+function harden(el){
+el.autoplay=false;el.removeAttribute("autoplay");
+if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
+if(muted){el.muted=true}
+if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
+var play=HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play=function(){
+if(!gestured){announcePaused(this);
+return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false);this.muted=false}
+return play.apply(this,arguments)};
+var acProtos=[];
+function guardAC(n){
+var N=window[n];if(!N||!N.prototype){return}
+if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
+var res=N.prototype.resume;
+if(typeof res==="function"){N.prototype.resume=function(){
+if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false)}
+return res.apply(this,arguments)}}}
+var W=function(o){var c=arguments.length?new N(o):new N();
+if(!gestured){try{c.suspend()}catch(e){}}return c};
+W.prototype=N.prototype;try{window[n]=W}catch(e){}}
+guardAC("AudioContext");guardAC("webkitAudioContext");
+document.addEventListener("play",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&!gestured){try{el.pause()}catch(err){}}},true);
+document.addEventListener("pause",function(e){
+if(e.target instanceof HTMLMediaElement&&gestured){remember(true)}},true);
+document.addEventListener("volumechange",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&gestured){remember(el.muted||el.volume===0)}},true);
+function sweep(n){if(n&&n.querySelectorAll){var l=n.querySelectorAll("audio,video");
+for(var i=0;i<l.length;i++){harden(l[i])}}}
+new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var a=rs[i].addedNodes;
+for(var j=0;j<a.length;j++){var n=a[j];
+if(n instanceof HTMLMediaElement){harden(n)}else{sweep(n)}}}})
+.observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){sweep(document)});
+sweep(document)})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TSD Follow-Up Tracker — CER &amp; CEVA 2026</title>
@@ -356,6 +407,40 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
   .modal-b{max-height:calc(100vh - 190px)}
   .table-scroll{max-height:none}
 }
+
+/* ============ Procurement workflow: PR release dashboard (additive) ============ */
+.pr-alert{margin:0 0 14px;border:1px solid var(--line2,#2a2f3a);border-radius:12px;background:var(--panel,#141821);overflow:hidden}
+.pr-alert-head{display:flex;align-items:center;gap:10px;padding:9px 12px;flex-wrap:wrap}
+.pr-alert-main{display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;padding:4px 6px;border-radius:9px;color:inherit;font:inherit;text-align:left}
+.pr-alert-main:hover{background:rgba(148,163,184,.08)}
+.pr-alert-ic{font-size:16px;line-height:1}
+.pr-alert-txt{display:flex;flex-direction:column;gap:1px}
+.pr-alert-lbl{font-size:12px;font-weight:800;letter-spacing:.04em;color:#f0b775}
+.pr-alert-sub{font-size:11.5px;color:var(--dim,#8b93a3)}
+.pr-alert-count{min-width:26px;height:22px;padding:0 8px;border-radius:11px;background:rgba(240,183,117,.18);color:#f0b775;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.pr-alert-count.zero{background:rgba(148,163,184,.14);color:var(--dim,#8b93a3)}
+.pr-chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.pr-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut,#b6bdca);background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:9px;padding:4px 9px;cursor:pointer}
+.pr-chip b{color:var(--txt,#e6e8ee);font-weight:700}
+.pr-panel{border-top:1px solid var(--line2,#2a2f3a);padding:10px 12px;background:rgba(0,0,0,.14)}
+.pr-panel-h{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.pr-panel-h b{font-size:12.5px}
+.pr-panel-note{font-size:11px;color:var(--dim,#8b93a3)}
+.pr-group{margin:6px 0 10px}
+.pr-group-h{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--mut,#b6bdca);text-transform:uppercase;margin:6px 0 5px}
+.pr-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.pr-row{display:flex;align-items:center;gap:9px;background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:9px;padding:7px 9px}
+.pr-row .pr-ic{flex:none;font-size:13px}
+.pr-row .pr-main{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.pr-row .pr-t{font-size:12.5px;color:var(--txt,#e6e8ee);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-row .pr-s{font-size:11px;color:var(--dim,#8b93a3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-empty{font-size:12px;color:var(--dim,#8b93a3);padding:6px 0}
+.pr-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap;vertical-align:middle}
+.pr-badge.pend{background:rgba(240,150,60,.16);color:#f0b775;border:1px solid rgba(240,150,60,.35)}
+.pr-badge.rel{background:rgba(80,200,140,.14);color:#6fd3a1;border:1px solid rgba(80,200,140,.3)}
+.pr-badge.new{background:rgba(90,150,255,.18);color:#8fb8ff;border:1px solid rgba(90,150,255,.35)}
+@media print{.pr-alert{display:none !important}}
+@media (max-width:640px){.pr-chips{margin-left:0}.pr-row .pr-s{display:none}}
 </style>
 </head>
 <body>
@@ -434,6 +519,30 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
   <!-- Stats -->
   <section class="stats" id="statsRow"></section>
 
+  <!-- Procurement workflow: PR release dashboard (additive) -->
+  <section class="pr-alert" id="prAlert">
+    <div class="pr-alert-head">
+      <button class="pr-alert-main" id="prAlertBtn" title="Show every record that still needs a procurement action">
+        <span class="pr-alert-ic">&#128276;</span>
+        <span class="pr-alert-txt">
+          <span class="pr-alert-lbl">PR RELEASE REQUIRED</span>
+          <span class="pr-alert-sub" id="prAlertSub">&mdash;</span>
+        </span>
+        <span class="pr-alert-count zero" id="prAlertCount">0</span>
+      </button>
+      <div class="pr-chips" id="prAlertChips"></div>
+    </div>
+    <div class="pr-panel" id="prPanel" hidden>
+      <div class="pr-panel-h">
+        <b>Next action required</b>
+        <span class="pr-panel-note">Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
+        <span style="flex:1"></span>
+        <button class="btn ghost sm" id="prPanelClose" type="button">Close</button>
+      </div>
+      <div id="prList"></div>
+    </div>
+  </section>
+
   <!-- Main panel -->
   <section class="panel">
     <div class="toolbar">
@@ -458,6 +567,8 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
           <option value="value-asc">Value ▼</option>
           <option value="cer_date-desc">Newest</option>
           <option value="cer_date-asc">Oldest</option>
+          <option value="pr_pending-desc">PR release pending</option>
+          <option value="stage-asc">Workflow stage</option>
         </select>
       </div>
       <div class="tb-right">
@@ -837,6 +948,61 @@ const isoDate = d => {
 const addDays = (iso,n) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate()+n); return isoDate(d); };
 
 function uid(){ return "T" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---------- creation timestamp (reliable "newest" ordering) ----------
+   'created' is written as a LOCAL ISO stamp (see nowLocalStamp) so a brand
+   new item sorts to the very top even when every date field is blank. A
+   date-only value is midnight; anything unparseable -> 0. */
+function createdMs(t){
+  if(!t) return 0;
+  const c = String(t.created || "").trim();
+  if(!c) return 0;
+  const m = c.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if(!m) return 0;
+  const d = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  const v = d.getTime();
+  return isNaN(v) ? 0 : v;
+}
+
+/* ---------- PR release state ----------
+   A PR number is NOT proof of release. Release is its own workflow event,
+   recorded explicitly with pr_released (+ who/when), so "PR created" and
+   "PR released" stay separate states and the full PR history is retained. */
+function prReleased(t){
+  if(!t) return false;
+  const v = t.pr_released;
+  return v === true || v === "true" || v === 1 || v === "1" || v === "TRUE";
+}
+function prPending(t){
+  return !!String(t && t.pr || "").trim() && !prReleased(t);
+}
+
+/* ---------- local time helpers (Bangladesh = the browser's own clock) ---------- */
+function localStamp(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if(isNaN(d)) return "";
+  const p = n => String(n).padStart(2,"0");
+  return `${p(d.getDate())} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function waitingFor(iso){
+  if(!iso) return "";
+  const d = new Date(String(iso).length === 10 ? iso + "T00:00:00" : iso);
+  if(isNaN(d)) return "";
+  const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+  if(days === 0) return "today";
+  if(days === 1) return "1 day";
+  return days + " days";
+}
+function actName(){
+  const n = currentUser();
+  return n || "anonymous (this browser)";
+}
+/* The PR release event is its own history record, not a new array record. */
+function makePrEvent(prNum){
+  return { pr: String(prNum||"").trim(), status: "Waiting for PR Release",
+    created_at: nowLocalStamp(), created_by: actName(),
+    released_at: "", released_by: "" };
+}
 
 /* ---------- current user identity (Supabase Auth, Last Edited By) ---------- */
 /* Identity ALWAYS comes from the signed-in Supabase account. It is never
@@ -1494,8 +1660,8 @@ function toast(msg){ $("#toastMsg").textContent = msg; $("#toast").classList.add
   clearTimeout(toast._t); toast._t = setTimeout(()=>$("#toast").classList.remove("show"), 2400); }
 
 /* ---------- stage / priority / progress derivation ---------- */
-const STAGES = ["Not Ordered","Partially Ordered","Ordered","PR Done","PO Done","LC Done","Delivered","Cancelled"];
-const STAGE_PROG = {"Not Ordered":5,"Partially Ordered":15,"Ordered":35,"PR Done":55,"PO Done":75,"LC Done":90,"Delivered":100,"Cancelled":0};
+const STAGES = ["Not Ordered","Partially Ordered","Ordered","PR Release Pending","PR Done","PO Done","LC Done","Delivered","Cancelled"];
+const STAGE_PROG = {"Not Ordered":5,"Partially Ordered":15,"Ordered":35,"PR Release Pending":45,"PR Done":55,"PO Done":75,"LC Done":90,"Delivered":100,"Cancelled":0};
 
 function smartStage(t){
   if(t.cer_status === "Cancelled") return "Cancelled";
@@ -1503,7 +1669,11 @@ function smartStage(t){
   if(ms === "received" || ms === "delivered") return "Delivered";
   if(t.lc) return "LC Done";
   if(t.po) return "PO Done";
-  if(t.pr) return "PR Done";
+  // A PR number alone means the PR exists but may still be awaiting release.
+  // "PR Release Pending" and "PR Done (released)" are deliberately separate
+  // states; PRs recorded before this feature existed have no release record,
+  // so they default to the pending state (the data was not changed).
+  if(t.pr) return prReleased(t) ? "PR Done" : "PR Release Pending";
   if(t.cer_status === "Ordered") return "Ordered";
   if(t.cer_status === "Partially Ordered") return "Partially Ordered";
   return "Not Ordered";
@@ -1512,6 +1682,7 @@ function smartPriority(t, stage){
   stage = stage || smartStage(t);
   if(stage === "Cancelled" || stage === "Delivered" || stage === "LC Done" || stage === "PO Done") return "Low";
   if(stage === "PR Done") return "Medium";
+  if(stage === "PR Release Pending") return "High";
   const ds = daysFrom(t.cer_date);
   if(stage === "Not Ordered" || stage === "Partially Ordered"){
     if(ds !== null && ds > 90) return "High";
@@ -1527,6 +1698,7 @@ function smartTarget(t, stage){
   if(stage === "Delivered") return t.machine_date || t.target || "";
   if(stage === "Not Ordered" && t.cer_date) return addDays(t.cer_date, 90);
   if((stage === "Ordered" || stage === "Partially Ordered") && t.cer_date) return addDays(t.cer_date, 60);
+  if(stage === "PR Release Pending" && t.pr_date) return addDays(t.pr_date, 15);
   if((stage === "PR Done" || stage === "PO Done" || stage === "LC Done") && t.pr_date) return addDays(t.pr_date, 45);
   return t.target || "";
 }
@@ -1949,7 +2121,8 @@ function filtered(){
   const q = filter.q.trim().toLowerCase();
   if(q){
     list = list.filter(t =>
-      [t.item,t.cer,t.tracking,t.manufacturer,t.agent,t.pr,t.po,t.lc,t.scm_note,t.owner,t.dept,t.unit_area,t.qty,t.cer_status,t.stage]
+      [t.item,t.cer,t.tracking,t.manufacturer,t.agent,t.pr,t.po,t.lc,t.scm_note,t.owner,t.dept,t.unit_area,t.qty,t.cer_status,t.stage,
+       t.pr_by,t.pr_released_by,t.mat_group,t.origin,t.purpose,t.order_justification,t.delivery_date]
       .some(v => String(v??"").toLowerCase().includes(q)));
   }
   if(filter.stage) list = list.filter(t=>t.stage===filter.stage);
@@ -2000,7 +2173,19 @@ function filtered(){
       }
     }
     else if(k==="sl") r = (parseInt(a.sl)||0)-(parseInt(b.sl)||0);
-    else if(k==="created") r = (a.created||"").localeCompare(b.created||"");
+    else if(k==="created") r = createdMs(a) - createdMs(b);
+    else if(k==="pr_pending") r = (prPending(a)?1:0) - (prPending(b)?1:0);
+    else if(k==="next_action"){
+      const rank = t => { const st = t.stage;
+        if(st==="Cancelled"||st==="Delivered") return 9;
+        if(st==="PR Release Pending") return 0;
+        if(st==="PR Done") return 1;
+        if(st==="PO Done") return 2;
+        if(st==="LC Done") return 3;
+        if(st==="Ordered"||st==="Partially Ordered") return 4;
+        return 5; };
+      r = rank(a) - rank(b);
+    }
     else if(k==="cer_status") r = (a.cer_status||"").localeCompare(b.cer_status||"");
     else if(k==="stage") r = STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage);
     else if(k==="owner") r = (a.owner||"").localeCompare(b.owner||"");
@@ -2015,7 +2200,7 @@ function filtered(){
 
 /* ---------- badges ---------- */
 const STAGE_BADGE = {
-  "Not Ordered":"b-not","Partially Ordered":"b-part","Ordered":"b-ord","PR Done":"b-pr",
+  "Not Ordered":"b-not","Partially Ordered":"b-part","Ordered":"b-ord","PR Release Pending":"b-pre","PR Done":"b-pr",
   "PO Done":"b-po","LC Done":"b-lc","Delivered":"b-del","Cancelled":"b-can"
 };
 function stageBadge(s){ return `<span class="badge ${STAGE_BADGE[s]||"b-st"}">${esc(s)}</span>`; }
@@ -2054,13 +2239,27 @@ function tracksCell(t){
   if(t.lc) parts.push(`<span class="tk">LC <b>${esc(t.lc)}</b></span>`);
   return parts.length ? `<div class="tracks">${parts.join("")}</div>` : `<span style="color:var(--dim)">—</span>`;
 }
+function isNewRecord(t){
+  // "NEW" badge: shown until the user opens the item (viewed) or edits it, and
+  // auto-expires after 7 days, so it never becomes permanent UI noise.
+  if(!t || t._viewed) return false;
+  const ms = createdMs(t);
+  if(!ms) return false;
+  return (Date.now() - ms) < 7*86400000;
+}
 function nameCell(t){
   const chips = [];
   if(t.qty) chips.push(`<span class="badge b-st" style="font-size:10.5px">Qty ${esc(t.qty)}</span>`);
   if(t.cer) chips.push(`<span style="color:#8fb8ff;font-family:var(--mono);font-size:11px">${esc(t.cer)}</span>`);
   if(t.dept) chips.push(`<span>${esc(t.dept)}</span>`);
   // v9: per-row SAP readiness badge removed — no readiness indicator is rendered.
-  return `<div class="t-name">${esc(t.item || "(untitled)")}</div>
+  // Additive (v10): the procurement next-action state is surfaced per row, plus
+  // a temporary "NEW" marker for records created in the last 7 days.
+  const pBadge = prPending(t)
+    ? `<span class="pr-badge pend" title="PR entered \u2014 waiting for release by an authorized user">&#128993; PR release pending</span>`
+    : (prReleased(t) ? `<span class="pr-badge rel" title="PR released">&#128994; PR released</span>` : "");
+  const nBadge = isNewRecord(t) ? `<span class="pr-badge new">NEW</span>` : "";
+  return `<div class="t-name">${esc(t.item || "(untitled)")}${nBadge}${pBadge}</div>
     <div class="t-sub">${chips.join("")}</div>`;
 }
 
@@ -2088,6 +2287,10 @@ function detailRow(t){
       ${grid("Machine Status", esc(t.machine_status||"—"))}
       ${grid("Machine Received", fmtDate(t.machine_date))}
       ${grid("SCM Note", esc(t.scm_note), false, true).replace('<div class="v note">—</div>','<div class="v note" style="color:var(--dim);font-style:normal">—</div>')}
+      ${grid("PR Created", t.pr_created_at ? (esc(localStamp(t.pr_created_at)) + (t.pr_created_by ? " \u00b7 " + esc(t.pr_created_by) : "")) : "—")}
+      ${grid("PR Released", t.pr_released_at ? (esc(localStamp(t.pr_released_at)) + (t.pr_released_by ? " \u00b7 " + esc(t.pr_released_by) : "")) : "—")}
+      ${grid("PR Release Status", prPending(t) ? "\ud83d\udfe0 Waiting for release" : (prReleased(t) ? "\ud83d\udfe2 Released" : "—"))}
+      ${grid("PR History", (Array.isArray(t.pr_history) && t.pr_history.length) ? t.pr_history.map(h => esc(h.pr || "") + " \u2014 " + esc(h.status || "") + (h.released_at ? " (" + esc(localStamp(h.released_at)) + " by " + esc(h.released_by || "—") + ")" : "")).join("<br>") : "—", false, true)}
       <div class="det-meta">
         <span class="tag">✏️ Last Edited By: ${esc(t.lastEditedBy || "—")}</span>
         <span class="when">Last Edited: ${t.lastEditedAt ? esc(fmtStamp(t.lastEditedAt)) : "—"}</span>
@@ -2142,7 +2345,176 @@ function renderTable(){
   $("#footPipeline").textContent = STAGES.filter(s=>stages[s]).map(s=>`${s} ${stages[s]}`).join(" · ") || "—";
 }
 
-function renderAll(){ renderStats(); renderTable(); }
+function renderAll(){ renderStats(); renderTable(); renderPrDashboard(); }
+
+/* ============================================================
+   PR RELEASE DASHBOARD  (additive procurement workflow layer)
+   Answers one question at a glance: what needs action next?
+     PR entered  -> pending release   (orange)
+     PR released -> PO follow-up      (blue)
+     PO raised   -> LC follow-up      (violet)
+     Delivered                        (green)
+   Read-only: it derives everything from the records. The only action it
+   performs is Release PR, which writes pr_released/_date/_by and clears the
+   item from the pending list. It never deletes the PR number.
+   ============================================================ */
+const PR_ACTIONS = [
+  { key:"pr",  dot:"\ud83d\udfe0", label:"PR release",   stage:"PR Release Pending", pending:prPending },
+  { key:"po",  dot:"\ud83d\udd35", label:"PO follow-up", stage:"PR Done",            pending:function(t){ return t.stage === "PR Done"; } },
+  { key:"lc",  dot:"\ud83d\udfe3", label:"LC follow-up", stage:"PO Done",            pending:function(t){ return t.stage === "PO Done"; } }
+];
+let prPanelOpen = false;
+let _prHooksWired = false;
+
+function renderPrDashboard(){
+  const box = $("#prAlert"); if(!box) return;
+  const groups = {};
+  PR_ACTIONS.forEach(a => { groups[a.key] = tasks.filter(a.pending); });
+  const nPr = groups.pr.length;
+  const parts = PR_ACTIONS.map(a => groups[a.key].length);
+  const anyAction = parts.some(n => n > 0);
+
+  // headline
+  const lbl = document.querySelector(".pr-alert-lbl");
+  if(lbl) lbl.textContent = nPr > 0 ? "PR RELEASE REQUIRED" : (anyAction ? "NEXT PROCUREMENT ACTION" : "NO PROCUREMENT ACTION PENDING");
+  const cnt = $("#prAlertCount");
+  const focus = nPr || parts[1] || parts[2] || 0;
+  if(cnt){
+    cnt.textContent = nPr ? nPr : (anyAction ? focus : "0");
+    cnt.classList.toggle("zero", !anyAction);
+  }
+  const sub = $("#prAlertSub");
+  if(sub){
+    const bits = [];
+    if(nPr) bits.push(nPr + (nPr===1 ? " PR waiting for release" : " PRs waiting for release"));
+    if(parts[1]) bits.push(parts[1] + " awaiting PO");
+    if(parts[2]) bits.push(parts[2] + " awaiting LC");
+    sub.textContent = bits.length ? bits.join(" \u00b7 ") : "Nothing awaiting action \u2014 everything is released / delivered";
+  }
+
+  // chips -> jump straight to a filtered view
+  const chips = $("#prAlertChips");
+  if(chips){
+    chips.innerHTML = PR_ACTIONS.filter(a => groups[a.key].length).map(a =>
+      `<button class="pr-chip" type="button" data-prfilter="${a.key}">${a.dot} <b>${groups[a.key].length}</b> ${esc(a.label)}</button>`
+    ).join("") + (tasks.length
+      ? `<button class="pr-chip" type="button" data-prfilter="clear" title="Show every record again">\u21ba <b>${tasks.length}</b> all records</button>` : "");
+  }
+
+  // expandable panel
+  const panel = $("#prPanel");
+  if(panel) panel.hidden = !prPanelOpen;
+  const list = $("#prList");
+  if(!list || !prPanelOpen) return;
+  let html = "";
+  PR_ACTIONS.forEach(a => {
+    const rows = groups[a.key]; if(!rows.length) return;
+    html += `<div class="pr-group"><div class="pr-group-h">${a.dot} ${esc(a.label)} \u2014 ${rows.length}</div><div class="pr-list">`;
+    rows.forEach(t => { html += prRowHtml(t, a.key); });
+    html += `</div></div>`;
+  });
+  if(!html) html = `<div class="pr-empty">Nothing is waiting for a procurement action right now.</div>`;
+  list.innerHTML = html;
+}
+
+function prRowHtml(t, kind){
+  const pr = String(t.pr || "\u2014");
+  const item = t.item || t.cer || t.id;
+  const val = t.ov_bdt ? fmtBDT(t.ov_bdt) : (t.order_value ? (fmtNum(t.order_value) + " " + (t.currency || "")) : "\u2014");
+  const own = t.owner || "\u2014";
+  const age = t.pr_created_at ? waitingFor(t.pr_created_at) : (t.pr_date ? waitingFor(t.pr_date) : "");
+  const when = kind === "pr"
+    ? "Waiting for release" + (age ? " \u00b7 " + age : "")
+    : (kind === "po" ? "PR released \u2014 raise the PO" : "PO raised \u2014 open the L/C");
+  const by = kind === "pr" ? (t.pr_by || "") : (t.pr_released_by || "");
+  const btn = kind === "pr"
+    ? `<button class="btn ghost sm" type="button" data-release="${esc(t.id)}" title="Mark this PR as released">Release PR</button>`
+    : "";
+  return `<div class="pr-row">
+    <span class="pr-ic">\ud83d\udfe0</span>
+    <span class="pr-main">
+      <span class="pr-t">PR ${esc(pr)} \u2014 ${esc(item)}</span>
+      <span class="pr-s">${esc(when)} \u00b7 ${esc(own)} \u00b7 ${esc(val)}${by ? " \u00b7 entered by " + esc(by) : ""} \u00b7 ${esc(t.stage || "")}</span>
+    </span>
+    ${btn}
+  </div>`;
+}
+
+/* ----- Release PR (authorized: signed-in user) ----- */
+async function releasePr(id){
+  const t = tasks.find(x => x.id === id); if(!t) return;
+  if(!prPending(t)){ toast("This PR is already released."); return; }
+  const prNum = String(t.pr || "").trim();
+  if(!confirm("Release PR " + prNum + "?\n\n" + (t.item || t.cer || t.id) + "\n\nThis records the release date and the releasing user, and removes the item from the PR Release Required list. The PR number is kept.")) return;
+  if(Lock.isLocked() && !Lock.amIHolder()){
+    toast("Read-only \u2014 " + (Lock.holderName() || "another user") + " is editing right now. Try again later.");
+    return;
+  }
+  const okLock = await Lock.acquire();
+  if(!okLock.ok && !(okLock.holder === "not logged in" && !isAuthenticated())){
+    toast("Read-only \u2014 " + (okLock.holder || "another user") + " is editing right now. Try again later.");
+    return;
+  }
+  const nowIso = new Date().toISOString();   // absolute instant (audit)
+  const who = actName();
+  t.pr_released = true;
+  t.pr_release_status = "Released";
+  t.pr_released_at = nowIso;
+  t.pr_released_by = who;
+  if(!String(t.pr_released_date || "").trim()) t.pr_released_date = nowLocalStamp().slice(0,10);
+  if(!Array.isArray(t.pr_history)) t.pr_history = [];
+  let ev = t.pr_history.find(h => String(h.pr) === prNum);
+  if(!ev){ ev = makePrEvent(prNum); t.pr_history.push(ev); }
+  ev.status = "Released"; ev.released_at = nowIso; ev.released_by = who;
+  t.lastEditedBy = currentUser() || who;
+  t.lastEditedAt = nowIso;
+  applySmart(t);
+  const ok = await save();
+  renderAll();
+  if(ok){
+    await Lock.release();
+    toast("PR " + prNum + " released by " + who);
+  } else {
+    toast("PR release could not be saved to the shared tracker. Please try again.");
+  }
+}
+
+function wirePrDashboard(){
+  if(_prHooksWired) return; _prHooksWired = true;
+  const btn = $("#prAlertBtn");
+  if(btn) btn.addEventListener("click", ()=>{
+    prPanelOpen = !prPanelOpen;
+    renderPrDashboard();
+    if(prPanelOpen){ const n = $("#prList"); if(n) n.scrollIntoView({block:"nearest", behavior:"smooth"}); }
+  });
+  const close = $("#prPanelClose");
+  if(close) close.addEventListener("click", ()=>{ prPanelOpen = false; renderPrDashboard(); });
+
+  const chips = $("#prAlertChips");
+  if(chips) chips.addEventListener("click", e=>{
+    const c = e.target.closest("[data-prfilter]"); if(!c) return;
+    const key = c.getAttribute("data-prfilter");
+    const sel = $("#sortSel"), stg = $("#stageFilter");
+    if(key === "clear"){
+      filter.stage = ""; if(stg) stg.value = "";
+      if(sel) sel.value = "cer_date-desc";
+      sort.key = "cer_date"; sort.dir = "desc";
+      renderAll(); return;
+    }
+    const a = PR_ACTIONS.find(x => x.key === key); if(!a) return;
+    filter.stage = a.stage; if(stg) stg.value = a.stage;
+    if(key === "pr" && sel) sel.value = "pr_pending-desc";
+    if(key === "pr"){ sort.key = "pr_pending"; sort.dir = "desc"; }
+    renderAll();
+  });
+
+  const list = $("#prList");
+  if(list) list.addEventListener("click", e=>{
+    const b = e.target.closest("[data-release]"); if(!b) return;
+    e.stopPropagation();
+    releasePr(b.getAttribute("data-release"));
+  });
+}
 
 /* ---------- filter controls ---------- */
 function initFilters(){
@@ -2307,6 +2679,10 @@ function openAdd(){
 }
 function openEdit(id){
   const t = tasks.find(x=>x.id===id); if(!t) return;
+  // Opening an item counts as "seen": the temporary NEW badge is cleared.
+  // It is cleared in memory here (so the row stops showing NEW immediately)
+  // and persisted by the next save, so a view never triggers a write by itself.
+  if(t._viewed !== true) t._viewed = true;
   // NOT gated on sign-in. A visitor with no account still gets to add and
   // edit - their work is kept in this browser instead of the shared tracker.
   // (The old gate dead-ended them on "Read-only - not logged in", so the
@@ -2480,65 +2856,180 @@ function readForm(){
   return t;
 }
 
+/* ============================================================================
+   SAVE ITEM  (rewritten in v10 — the behaviour the owner asked for)
+
+   What was wrong and is now fixed:
+     * The list was mutated BEFORE the write was attempted, so a failed write
+       still left the (unsaved) item in the table - it looked saved until the
+       next refresh silently dropped it.
+     * The write was never confirmed and the new row relied on tasks.unshift(),
+       which the very next render re-sorted away whenever the CER date was blank.
+     * Failure was announced as success, and the modal closed over unsaved work.
+
+   The order is now: read the form -> prepare the record -> PERSIST -> and only
+   then touch the list. On failure the list is rolled back, the modal stays open
+   with everything the user typed, and nothing claims to have been saved.
+   ============================================================================ */
 $("#formSave").addEventListener("click", async ()=>{
   // Defensive: never save while someone else holds the editing lock.
   if(Lock.isLocked() && !Lock.amIHolder()){
-    toast("Read-only — " + (Lock.holderName() || "another user") + " is editing right now.");
+    toast("Read-only \u2014 " + (Lock.holderName() || "another user") + " is editing right now.");
     return;
   }
-  const t = readForm();
+
+  // ---- 1) READ THE FORM. No shared state is mutated yet. ----
+  const form = readForm();
   // VALIDATION REMOVED (v8): no field is mandatory any more. An item can be
   // saved with every field left blank.
   // v9: the residual SAP-missing gate that lived here was deleted too, so no
   // SAP readiness text can be produced and nothing can block a save.
   $("#formErr").textContent = "";
-  recomputeBDT(t);
-  if(editingId){
-    const idx = tasks.findIndex(x=>x.id===editingId);
-    if(idx<0) return;
-    t.id = editingId;
-    // keep auto flags from existing record
-    const old = tasks[idx];
-    t.sl = old.sl;
-    t.autoPriority = old.autoPriority; t.autoProgress = old.autoProgress; t._autoTarget = old._autoTarget;
-    // Last Edited By / At - recorded automatically, never user-editable
-    t.lastEditedBy = currentUser();
-    t.lastEditedAt = new Date().toISOString();
-    tasks[idx] = t;
-    toast("Item updated");
-  } else {
+  recomputeBDT(form);
+
+  const isNew = !editingId;
+  const old = isNew ? null : tasks.find(x => x.id === editingId);
+  if(!isNew && !old) return;
+
+  // The record that will be STORED: for an edit, the existing record with the
+  // form's values laid over it, so nothing the form does not carry is lost.
+  const t = isNew ? form : Object.assign({}, old, form);
+
+  if(isNew){
     t.id = uid();
     t.sl = String(nextSl());
-    // Record creation timestamp: enables correct Newest/Oldest sorting even
-    // before a CER Receiving Date is entered (fallback sort key). Uses the
-    // LOCAL date/time — UTC toISOString() could shift to yesterday (+06:00).
+    // Record the creation timestamp as a LOCAL stamp. This is what lets a new
+    // item stay at the TOP (and keeps "Newest" correct) even when CER date,
+    // PR date, target, PO and LC are all blank.
     if(!t.created) t.created = nowLocalStamp();
     t.autoPriority = true; t.autoProgress = true; t._autoTarget = true;
     t.lastEditedBy = currentUser();
     t.lastEditedAt = new Date().toISOString();
-    tasks.unshift(t);
-    toast("Item added");
-  }
-  const ok = await save();
-  renderAll();
-  if(ok){
-    // Release the lock first (await it), then close the modal with
-    // skipRelease=true to avoid a double-release race. The modal closes,
-    // the form resets, and the new/updated item is visible right away.
-    await Lock.release();
-    closeModal(true);
-    toast("Saved successfully");
-    syncLocalOnlyBanner();
   } else {
-    // A signed-in write failed. The form and the lock are kept so nothing the
-    // user typed is lost - but NO error text is surfaced: the shared-tracker
-    // write error (including the raw row-level-security refusal) was removed
-    // from the UI at the owner's request. The failure is still reported to the
-    // console for diagnostics.
-    if(lastSaveError) console.error("Save did not reach the shared tracker:", lastSaveError);
-    const m = (lastSaveError && (lastSaveError.message || lastSaveError.details || lastSaveError.hint)) || "unknown error";
-    console.warn("Save failed:", m);
+    t.id = editingId;
+    t.sl = old.sl;
+    t.autoPriority = old.autoPriority; t.autoProgress = old.autoProgress; t._autoTarget = old._autoTarget;
+    // CAREFUL: every field the EDIT FORM carries (PR, PR Date, PO, LC, Mat Group,
+    // Origin, Purpose, Order justification, Delivery Date, created ...) must keep
+    // the value the user has just typed. Carrying those over from the stored
+    // record would silently undo the edit - so only the fields the form does NOT
+    // touch are preserved here: above all the PR release audit trail, which an
+    // ordinary edit must never erase.
+    t.pr_released = old.pr_released;
+    t.pr_release_status = old.pr_release_status;
+    t.pr_released_at = old.pr_released_at;
+    t.pr_released_by = old.pr_released_by;
+    t.pr_released_date = old.pr_released_date;
+    t.pr_created_at = old.pr_created_at;
+    t.pr_created_by = old.pr_created_by;
+    t.pr_history = old.pr_history;
+    // Safety net only: 'created' is normally supplied by the form itself.
+    if(!String(t.created || "").trim()) t.created = old.created || "";
+    // Saving an item means it is no longer "new".
+    t._viewed = true;
+    t.lastEditedBy = currentUser();
+    t.lastEditedAt = new Date().toISOString();
   }
+
+  // ---- 2) PR NUMBER  ->  "PR CREATED - AWAITING RELEASE" ----
+  // Entering a PR number for the first time is a procurement event: the PR
+  // creation date is captured automatically (ONLY when PR Date is blank), the
+  // PR is marked "Waiting for PR Release" and an in-app release task appears.
+  //   * editing without touching the PR   -> raises nothing
+  //   * PR already released               -> never re-opened by an edit
+  //   * the number corrected on a pending PR -> updates that same event
+  //   * a genuinely different PR number   -> a NEW release event
+  const oldPr = isNew ? "" : String(old.pr || "").trim();
+  const newPr = String(t.pr || "").trim();
+  let prEvent = null;
+  if(!Array.isArray(t.pr_history)) t.pr_history = [];
+  if(newPr && newPr !== oldPr){
+    if(oldPr && !prReleased(old)){
+      // Same PR, corrected number - keep ONE pending event, never a duplicate.
+      let ev = t.pr_history.find(h => String(h.pr) === oldPr && h.status !== "Released");
+      if(!ev){ ev = makePrEvent(newPr); t.pr_history.push(ev); }
+      ev.pr = newPr;
+      prEvent = ev;
+    } else {
+      t.pr_created_at = nowLocalStamp();
+      t.pr_created_by = actName();
+      t.pr_released = false;
+      t.pr_release_status = "Waiting for PR Release";
+      t.pr_released_at = "";
+      t.pr_released_by = "";
+      let ev = t.pr_history.find(h => String(h.pr) === newPr && h.status !== "Released");
+      if(!ev){ ev = makePrEvent(newPr); ev.created_at = t.pr_created_at; t.pr_history.push(ev); }
+      prEvent = ev;
+    }
+    // Auto-detect the PR creation date - never overwriting one already present.
+    if(!String(t.pr_date || "").trim()) t.pr_date = nowLocalStamp().slice(0, 10);
+    if(t.cer_status !== "Cancelled") t.cer_status = "Ordered";
+  }
+  if(!newPr){ t.pr_created_at = ""; t.pr_created_by = ""; }
+
+  // Derive the pipeline stage from the record's own data (this is where
+  // "PR Release Pending" / "PR Done" is decided - a PR number alone is NOT
+  // treated as a released PR).
+  applySmart(t);
+
+  // ---- 3) STAGE 1: persist first. The visible list is not touched until
+  //         this write has actually landed.
+  const prevTasks = tasks;
+  tasks = isNew ? [t].concat(prevTasks) : prevTasks.map(x => x.id === t.id ? t : x);
+  lastSaveError = null;
+  let ok = false;
+  try { ok = await save(); }
+  catch(e){ ok = false; lastSaveError = lastSaveError || e; }
+
+  // ---- 4) STAGE 2A: the write did NOT land. ----
+  // Roll the list back so the table keeps telling the truth, keep the modal
+  // open with everything the user typed, and say plainly that nothing was
+  // stored. No success message, and the modal does NOT close.
+  if(!ok){
+    tasks = prevTasks;
+    const m = (lastSaveError && (lastSaveError.message || lastSaveError.details || lastSaveError.hint)) || "unknown error";
+    if(lastSaveError) console.error("Save did not reach the shared tracker:", lastSaveError);
+    console.warn("Save failed:", m);
+    let reason = "";
+    if(/row-level security|42501|permission|policy/i.test(m)) reason = " Reason: this account has no write permission (are you signed in?).";
+    else if(/network|fetch|Failed to fetch|timeout|NetworkError/i.test(m)) reason = " Reason: network problem.";
+    else reason = " Reason: " + m;
+    $("#formErr").textContent = "Save failed. Your changes were not saved to the shared tracker. Please try again." + reason;
+    renderAll();
+    toast("Save failed \u2014 nothing was saved. Your text is still in the form.");
+    return;
+  }
+
+  // ---- 5) STAGE 2B: saved. Close, refresh, and surface the new item. ----
+  await Lock.release();
+  closeModal(true);
+
+  if(isNew || (prEvent && prEvent.status !== "Released")){
+    // Put the record just saved first in the array AND switch the sort to
+    // "Newest", so it is guaranteed to appear as the TOP row immediately -
+    // even when every date field is blank and the array gets re-sorted.
+    const rest = tasks.filter(x => x.id !== t.id);
+    tasks = [t].concat(rest);
+    writeLocal();
+    // Switch the dropdown to the existing "Newest" option. That option sorts by
+    // CER Receiving Date with a creation-timestamp fallback, so a brand-new item
+    // (every date field blank) still lands on the very top row.
+    sort.key = "cer_date"; sort.dir = "desc";
+    const sel = $("#sortSel"); if(sel) sel.value = "cer_date-desc";
+  }
+  renderAll();
+
+  // Highlight the row just added/updated (brief, unobtrusive).
+  try{
+    const id = (window.CSS && CSS.escape) ? CSS.escape(t.id) : String(t.id).replace(/"/g,"");
+    const tr = document.querySelector('.task-row[data-id="' + id + '"]');
+    if(tr){ tr.classList.add("row-flash"); setTimeout(()=>tr.classList.remove("row-flash"), 2000); }
+  }catch(e){}
+
+  toast(prEvent
+    ? "Saved successfully \u2014 PR " + prEvent.pr + " needs release"
+    : (isNew ? "Item added \u2014 saved successfully" : "Saved successfully"));
+  syncLocalOnlyBanner();
 });
 $("#formCancel").addEventListener("click", closeModal);
 $("#modalClose").addEventListener("click", closeModal);
@@ -3641,6 +4132,7 @@ document.addEventListener("keydown", e=>{
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
   initFilters();
+  wirePrDashboard();
   guardSearchAutofill();
   renderUserBadge();
   renderAll();
