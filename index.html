@@ -239,6 +239,10 @@ tbody tr.task-row{border-bottom:1px solid var(--line);transition:background .12s
 tbody tr.task-row:hover{background:rgba(59,130,246,.055)}
 tbody tr.task-row.row-open{background:rgba(59,130,246,.08)}
 tbody tr.task-row.row-open td{border-bottom-color:transparent}
+/* Brief highlight on the row that was just added/saved. The class was already
+   applied by the save flow but had no rule, so the highlight never appeared. */
+tbody tr.task-row.row-flash{animation:rowflash 2s ease-out}
+@keyframes rowflash{0%{background:rgba(59,130,246,.30)}60%{background:rgba(59,130,246,.14)}100%{background:transparent}}
 tbody tr.detail-row td{padding:0;background:var(--bg2)}
 .detail{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px;padding:16px 18px 18px 46px;
   border-bottom:1px solid var(--line)}
@@ -253,11 +257,6 @@ thead th:first-child{position:sticky;left:0;z-index:6;background:var(--bg2);widt
 tbody tr.task-row td:first-child{position:sticky;left:0;z-index:4;background:var(--panel);width:300px;min-width:300px;max-width:300px;white-space:normal;word-wrap:break-word}
 tbody tr.task-row:hover td:first-child{background:rgba(59,130,246,.055)}
 tbody tr.task-row.row-open td:first-child{background:rgba(59,130,246,.08)}
-/* Copy for SAP selection column */
-.sap-sel-col input,.sap-sel-cell input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue,#3b82f6)}
-.sap-selbar{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--line);background:rgba(59,130,246,.06);font-size:12.5px;color:var(--txt)}
-.sap-selbar .sap-sel-txt b{color:var(--blue)}
-.sap-selbar .btn.sm{padding:3px 10px;font-size:11.5px}
 td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 .t-name{font-weight:600;color:var(--txt);line-height:1.35}
 .t-sub{font-size:11.5px;color:var(--dim);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -424,29 +423,124 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 .pr-chip b{color:var(--txt,#e6e8ee);font-weight:700}
 .pr-ro{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#f0b775;background:rgba(240,183,117,.14);border:1px solid rgba(240,183,117,.32);border-radius:7px;padding:3px 8px;white-space:nowrap}
 .pr-panel{border-top:1px solid var(--line2,#2a2f3a);padding:10px 12px;background:rgba(0,0,0,.14)}
+.pr-relinfo{display:flex;align-items:center;gap:6px;margin:0 12px 7px;padding:6px 10px;border-radius:8px;font-size:11.5px;color:#8ed6a4;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.28)}
+.pr-relinfo b{color:var(--txt,#e6e8ee)}
+.pr-relinfo .pr-src{color:var(--dim,#8b93a3);font-size:10.5px}
 .pr-panel-h{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
 .pr-panel-h b{font-size:12.5px}
 .pr-panel-note{font-size:11px;color:var(--dim,#8b93a3)}
 .pr-group{margin:6px 0 10px}
 .pr-group-h{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--mut,#b6bdca);text-transform:uppercase;margin:6px 0 5px}
-.pr-list{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow:auto}
-.pr-row{display:block;background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:10px;padding:10px 12px}
-.pr-row .pr-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.pr-row .pr-ic{flex:none;font-size:13px}
-.pr-row .pr-t{font-size:13px;color:var(--txt,#e6e8ee);font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.pr-row .pr-head .sp{flex:1}
-.pr-detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px 14px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line2,#2a2f3a)}
-.pr-detail .d{display:flex;flex-direction:column;gap:1px;min-width:0}
-.pr-detail .d .k{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--dim,#8b93a3)}
-.pr-detail .d .v{font-size:12px;color:var(--txt,#e6e8ee);word-break:break-word}
-.pr-detail .d.wide{grid-column:1/-1}
+/* --- collapsible PR cards: ONE card per PR No., all its items kept together --- */
+.pr-list{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow:auto}
+.pr-card{background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:10px;overflow:hidden}
+.pr-card.open{border-color:rgba(240,183,117,.42)}
+.pr-card-h{display:flex;align-items:center;gap:10px;padding:10px 12px;flex-wrap:wrap}
+.pr-card.open .pr-card-h{border-bottom:1px solid var(--line2,#2a2f3a)}
+.pr-tgl{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:7px;border:1px solid var(--line2,#2a2f3a);background:rgba(148,163,184,.08);color:var(--mut,#b6bdca);cursor:pointer;font-size:11px;line-height:1;padding:0}
+.pr-tgl:hover{background:rgba(148,163,184,.18);color:var(--txt,#e6e8ee)}
+.pr-ic{flex:none;font-size:14px}
+.pr-tit{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pr-tit .pr-t{font-size:13px;color:var(--txt,#e6e8ee);font-weight:800}
+.pr-card-h .sp{flex:1}
+.pr-items{margin:0 12px 10px;border:1px solid var(--line2,#2a2f3a);border-radius:9px;overflow:auto}
+.pr-itbl{width:100%;min-width:1180px;border-collapse:collapse;font-size:11.5px}
+.pr-itbl th{background:rgba(0,0,0,.22);color:var(--dim,#8b93a3);font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:7px 9px;white-space:nowrap;border-bottom:1px solid var(--line2,#2a2f3a)}
+.pr-itbl td{padding:7px 9px;border-bottom:1px solid rgba(42,47,58,.5);color:var(--txt,#e6e8ee);vertical-align:top}
+.pr-itbl tr:last-child td{border-bottom:0}
+.pr-itbl .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pr-itbl .it{font-weight:600;min-width:170px}
+.pr-working{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 11px;border-radius:9px;font-size:12px;font-weight:700;color:#f0b775;background:rgba(240,183,117,.12);border:1px solid rgba(240,183,117,.32)}
+.pr-spin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(240,183,117,.35);border-top-color:#f0b775;animation:prspin .7s linear infinite;flex:none}
+@keyframes prspin{to{transform:rotate(360deg)}}
 .pr-empty{font-size:12px;color:var(--dim,#8b93a3);padding:6px 0}
 .pr-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap;vertical-align:middle}
 .pr-badge.pend{background:rgba(240,150,60,.16);color:#f0b775;border:1px solid rgba(240,150,60,.35)}
 .pr-badge.rel{background:rgba(80,200,140,.14);color:#6fd3a1;border:1px solid rgba(80,200,140,.3)}
 .pr-badge.new{background:rgba(90,150,255,.18);color:#8fb8ff;border:1px solid rgba(90,150,255,.35)}
 @media print{.pr-alert{display:none !important}}
-@media (max-width:640px){.pr-chips{margin-left:0}.pr-detail{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.pr-chips{margin-left:0}.pr-items{margin:0 8px 10px;overflow-x:auto}}
+
+/* ---------- Data Management (Data Management Admin only) ---------- */
+[hidden]{display:none !important}
+.dm-panel{margin:14px 0 0;border:1px solid var(--line,#2a2f3a);border-radius:14px;background:var(--card,#161a22);overflow:hidden}
+.dm-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line,#2a2f3a)}
+.dm-title{font-weight:800;font-size:14px;letter-spacing:.2px}
+.dm-role{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(59,130,246,.14);color:#7cb0ff;border:1px solid rgba(59,130,246,.3)}
+.dm-role.bad{background:rgba(239,68,68,.14);color:#ff9a9a;border-color:rgba(239,68,68,.3)}
+.dm-x{background:none;border:none;color:var(--mut,#8b93a3);cursor:pointer;font-size:18px;line-height:1;padding:2px 7px;border-radius:8px}
+.dm-x:hover{background:rgba(255,255,255,.06);color:var(--txt,#e6e9ef)}
+.dm-body{padding:14px}
+.dm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+.dm-card{border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:12px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:6px}
+.dm-card b{font-size:12.5px}
+.dm-card span{font-size:11px;color:var(--mut,#8b93a3);line-height:1.45}
+.dm-card button{margin-top:auto}
+.dm-deny{border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08);color:#ffb4b4;border-radius:12px;padding:14px;font-size:12.5px;line-height:1.55}
+.dm-log{margin-top:14px;border-top:1px solid var(--line,#2a2f3a);padding-top:12px}
+.dm-log h4{margin:0 0 8px;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut,#8b93a3)}
+.dm-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.dm-tbl th,.dm-tbl td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line,#2a2f3a);white-space:nowrap}
+.dm-tbl th{color:var(--mut,#8b93a3);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px}
+.dm-empty{font-size:11.5px;color:var(--mut,#8b93a3);padding:8px 0}
+.dm-flow{margin-top:14px;border:1px solid var(--line,#2a2f3a);border-radius:12px;background:rgba(255,255,255,.02);padding:14px}
+.dm-flow h4{margin:0 0 4px;font-size:12.5px;letter-spacing:.2px}
+.dm-flow .dm-sub{font-size:11px;color:var(--mut,#8b93a3);line-height:1.5;margin-bottom:10px}
+.dm-steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.dm-step{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--line,#2a2f3a);color:var(--mut,#8b93a3);background:rgba(255,255,255,.02)}
+.dm-step.on{border-color:rgba(59,130,246,.5);color:#7cb0ff;background:rgba(59,130,246,.12)}
+.dm-step.done{border-color:rgba(52,211,153,.45);color:#34d399;background:rgba(52,211,153,.1)}
+.dm-step.bad{border-color:rgba(239,68,68,.45);color:#ff9a9a;background:rgba(239,68,68,.1)}
+.dm-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:10px 0}
+.dm-kpi{border:1px solid var(--line,#2a2f3a);border-radius:10px;padding:9px 11px;background:rgba(255,255,255,.02)}
+.dm-kpi b{display:block;font-size:17px;font-weight:800;line-height:1.15}
+.dm-kpi span{font-size:10px;font-weight:700;color:var(--mut,#8b93a3);text-transform:uppercase;letter-spacing:.05em}
+.dm-ok{color:#34d399}.dm-warn{color:#f59e0b}.dm-bad{color:#f87171}
+.dm-sev{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;white-space:nowrap}
+.dm-sev-block{background:rgba(239,68,68,.18);color:#ff9a9a;border:1px solid rgba(239,68,68,.45)}
+.dm-sev-warn{background:rgba(245,158,11,.16);color:#fbbf24;border:1px solid rgba(245,158,11,.4)}
+.dm-sev-info{background:rgba(148,163,184,.14);color:#a8b3c4;border:1px solid rgba(148,163,184,.3)}
+.dm-probs.dm-warnbox{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.05)}
+.dm-probs.dm-warnbox th{color:#fbbf24}
+.dm-probs.dm-warnbox th,.dm-probs.dm-warnbox td{border-bottom-color:rgba(245,158,11,.16)}
+.dm-confirm{margin:10px 0 0;border:1px solid rgba(245,158,11,.45);border-radius:10px;background:rgba(245,158,11,.08);padding:12px 14px}
+.dm-confirm p{margin:0 0 10px;font-size:12.5px;color:#e6e9ef;line-height:1.6}
+.dm-confirm .dm-acts{margin:0}
+.dm-probs{margin:8px 0 0;max-height:190px;overflow:auto;border:1px solid rgba(239,68,68,.3);border-radius:10px;background:rgba(239,68,68,.06)}
+.dm-probs table{width:100%;border-collapse:collapse;font-size:11px}
+.dm-probs th,.dm-probs td{text-align:left;padding:5px 8px;border-bottom:1px solid rgba(239,68,68,.18)}
+.dm-probs th{color:#ff9a9a;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.dm-probs td.dm-c{white-space:nowrap;color:var(--mut,#8b93a3)}
+.dm-probs td.dm-v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffd7a8;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.dm-probs td.dm-a{color:#9fd6b4}
+.dm-errbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 0}
+.dm-errbar .dm-note{margin:0}
+.dm-errrow{margin:8px 0 0;max-height:300px;overflow:auto;border:1px solid rgba(239,68,68,.3);border-radius:10px;background:rgba(239,68,68,.05);padding:8px 10px}
+.dm-errrow h5{margin:0 0 6px;font-size:11px;color:#ff9a9a;text-transform:uppercase;letter-spacing:.3px}
+.dm-errrow .dm-er{font-size:11px;color:var(--mut,#8b93a3);line-height:1.7;padding:5px 0;border-bottom:1px solid rgba(239,68,68,.14)}
+.dm-errrow .dm-er:last-child{border-bottom:0}
+.dm-errrow .dm-er b{color:#e8ecf3}
+.dm-errrow .dm-er code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffd7a8;background:rgba(255,255,255,.05);padding:1px 4px;border-radius:4px}
+.dm-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.dm-note{font-size:11.5px;color:var(--mut,#8b93a3);line-height:1.6;margin-top:9px}
+.dm-note b{color:var(--txt,#e6e9ef)}
+.dm-chk{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--txt,#e6e9ef);margin:10px 0;line-height:1.5}
+.dm-chk input{margin-top:2px}
+.dm-busy{display:flex;align-items:center;gap:12px;margin:10px 0;padding:11px 13px;border:1px solid rgba(59,130,246,.35);border-radius:11px;background:rgba(59,130,246,.08)}
+.dm-spin{width:16px;height:16px;flex:0 0 16px;border-radius:50%;border:2px solid rgba(124,176,255,.3);border-top-color:#7cb0ff;animation:dmspin .7s linear infinite}
+@keyframes dmspin{to{transform:rotate(360deg)}}
+.dm-busy-t{flex:1;min-width:0}
+.dm-busy-t b{display:block;font-size:11.5px;color:#cfe0ff;margin-bottom:6px}
+.dm-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.dm-bar i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#7cb0ff);transition:width .18s ease}
+.dm-pct{font-size:10px;color:var(--mut,#8b93a3);margin-top:4px;font-weight:700}
+.dm-prev{margin:10px 0 0;max-height:260px;overflow:auto;border:1px solid var(--line,#2a2f3a);border-radius:10px;background:rgba(255,255,255,.02)}
+.dm-prev table{width:100%;border-collapse:collapse;font-size:11px}
+.dm-prev th,.dm-prev td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line,#2a2f3a);white-space:nowrap}
+.dm-prev th{position:sticky;top:0;background:#1b2029;color:var(--mut,#8b93a3);font-size:10px;text-transform:uppercase;letter-spacing:.3px;z-index:1}
+.dm-tag{font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:999px;letter-spacing:.3px}
+.dm-tag-new{background:rgba(52,211,153,.16);color:#34d399;border:1px solid rgba(52,211,153,.35)}
+.dm-tag-upd{background:rgba(245,158,11,.16);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
 </style>
 </head>
 <body>
@@ -483,45 +577,31 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     </button>
     <div class="hdr-actions">
       <span class="sep"></span>
-      <div class="exp-menu" id="expMenu">
-        <button class="btn ghost data" id="exportMenuBtn" title="Export / import data">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          <span class="lbl">Export</span>
-          <span class="dots" aria-hidden="true">&#8942;</span>
-        </button>
-        <div class="exp-drop" id="expDrop">
-          <button class="exp-item" data-act="sapExport" title="Export the rows currently shown to an SAP Excel (.xlsx) file matching the CER CEVA 2026 template">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            <span class="exp-txt"><span class="exp-lbl">Export</span><span class="exp-sub">Download the shown rows (SAP Excel)</span></span>
-          </button>
-          <button class="exp-item" data-act="cerImport" title="Read the original CER workbook (30 columns) and merge it into the tracker, matched on CER number">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
-            <span class="exp-txt"><span class="exp-lbl">Import Data from Excel</span><span class="exp-sub">Merge the original CER workbook (30 cols)</span></span>
-          </button>
-          <div class="exp-div"></div>
-          <button class="exp-item" data-act="publish" title="Send the changes kept in this browser to the shared tracker">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a4 4 0 0 0 0-8z"/></svg>
-            <span class="exp-txt"><span class="exp-lbl">Publish to shared tracker</span><span class="exp-sub">Send saved changes to the shared tracker</span></span>
-          </button>
-          <button class="exp-item" data-act="csv" title="Download the rows currently shown as a CSV file">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            <span class="exp-txt"><span class="exp-lbl">Export CSV</span><span class="exp-sub">Download the shown rows as CSV</span></span>
-          </button>
-        </div>
-      </div>
       <button class="btn ghost data" id="printBtn" title="Print / save as PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         <span class="lbl">Print</span>
       </button>
-      <input type="file" id="sapImportFile" accept=".xlsx,.xls" style="display:none">
       <input type="file" id="cerImportFile" accept=".xlsx,.xls,.csv" style="display:none">
-      <input type="file" id="sapExistingFile" accept=".xlsx,.xls" style="display:none">
+      <button class="btn ghost data" id="dmBtn" hidden title="Data Management - import, replace, back up and restore CER data (Data Management Admin only)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+        <span class="lbl">Data Management</span>
+      </button>
       <button class="btn primary" id="addBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span class="lbl">Add Item</span>
       </button>
     </div>
   </header>
+
+  <!-- Data Management (Data Management Admin only) -->
+  <section class="dm-panel" id="dmPanel" hidden>
+    <div class="dm-head">
+      <span class="dm-title">Data Management</span>
+      <span class="dm-role" id="dmRole">Data Management Admin</span>
+      <button class="dm-x" id="dmClose" title="Close">&times;</button>
+    </div>
+    <div class="dm-body" id="dmBody"></div>
+  </section>
 
   <!-- Stats -->
   <section class="stats" id="statsRow"></section>
@@ -542,9 +622,16 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
     <div class="pr-panel" id="prPanel" hidden>
       <div class="pr-panel-h">
         <b>PR Release Required &mdash; item details</b>
-        <span class="pr-panel-note">Every item whose PR is created but not yet released. Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
+        <span class="pr-panel-note">Every PR whose number is entered but which has not been released yet. All items of the same PR are grouped together &mdash; expand a PR to review its items. Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
+        <span id="prPanelNote"></span>
         <span style="flex:1"></span>
         <button class="btn ghost sm" id="prPanelClose" type="button">Close</button>
+      </div>
+      <!-- Release progress / result. A release that failed used to show nothing
+           at all, which made a refused write look like a dead button. -->
+      <div id="prWorking" class="pr-working" hidden>
+        <span class="pr-spin" aria-hidden="true"></span>
+        <span id="prWorkingTxt">Releasing&hellip;</span>
       </div>
       <div id="prList"></div>
     </div>
@@ -579,19 +666,8 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
         </select>
       </div>
       <div class="tb-right">
-        <button class="btn ghost sm" id="sapCopyBtn" title="Copy selected rows in SAP 25-column format to clipboard">Copy for SAP</button>
-        <button class="btn ghost sm" id="excelCopyBtn" title="Copy selected rows in 20-column Excel format to clipboard">Copy for Excel</button>
-        <select id="excelCopyMode" title="Copy for Excel mode" style="height:30px;font-size:12px;border:1px solid var(--border,#3a3f4b);border-radius:6px;background:var(--card,#1e222b);color:var(--text,#e6e8ee);padding:0 6px;cursor:pointer">
-          <option value="headers">With Headers</option>
-          <option value="data">Data Only</option>
-        </select>
         <div class="count-txt"><b id="shownCount">0</b> of <span id="totalCount">0</span> items</div>
       </div>
-    </div>
-    <div class="sap-selbar" id="sapSelBar" style="display:none">
-      <span class="sap-sel-txt"><b id="sapSelCount">0</b> selected</span>
-      <button class="btn ghost sm" id="sapSelectAllBtn" title="Select all visible rows">Select all</button>
-      <button class="btn ghost sm" id="sapClearBtn" title="Clear selection">Clear</button>
     </div>
 
     <div class="table-scroll">
@@ -606,7 +682,6 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
             <th data-sort="agent" style="min-width:115px">Local Agent</th>
             <th data-sort="cer_status" style="min-width:105px">CER Status</th>
             <th style="min-width:70px;text-align:right">Actions</th>
-            <th class="sap-sel-col" style="width:44px;min-width:44px;max-width:44px;text-align:center" title="Select rows for Copy for SAP"><input type="checkbox" id="sapSelectAll" title="Select all visible rows for Copy for SAP"></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -658,7 +733,7 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
       <div class="ic">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
       </div>
-      <h3>Delete this item?</h3>
+      <h3 id="confirmTitle">Delete this item?</h3>
       <p id="confirmText">This cannot be undone.</p>
       <div class="row">
         <button class="btn ghost" id="confirmNo">Cancel</button>
@@ -732,6 +807,853 @@ td .mono{font-family:var(--mono);font-size:12px;color:var(--blue)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Data Management workbook parser. type="javascript/worker" means the browser
+     does NOT execute this block; it is read as text and handed to a Web Worker so
+     XLSX parsing never blocks the main thread. -->
+<script id="dmWorkerSrc" type="javascript/worker">
+/* TSD CER Tracker - Data Management workbook parser (Web Worker).
+   Runs the whole XLSX parse + merge OFF the main thread, so a large workbook
+   can never freeze the page. Self-contained: it loads SheetJS itself and
+   carries a verbatim copy of the app's pure cell readers / merge logic. */
+/* NOTE: this binding must NOT be called XLSX - SheetJS declares `var XLSX`
+   itself, and a top-level `let XLSX` here would collide with it inside
+   importScripts() ("Identifier XLSX has already been declared"). */
+let XL = null;
+const CDNS = [
+  "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+  "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"
+];
+function loadXLSX(){
+  if(XL) return Promise.resolve(XL);
+  return new Promise((res, rej)=>{
+    let i = 0;
+    const next = ()=>{
+      if(i >= CDNS.length) return rej(new Error("The Excel library could not be loaded in the background worker. Check your connection and try again."));
+      try{
+        importScripts(CDNS[i++]);
+        if(typeof self.XLSX !== "undefined"){ XL = self.XLSX; return res(XL); }
+      }catch(e){ /* try the next CDN */ }
+      next();
+    };
+    next();
+  });
+}
+
+/* ---- pure helpers, copied verbatim from the tracker ---- */
+const isoDate = d => {
+  const x = new Date(d);
+  if(isNaN(x)) return "";
+  const p = n => String(n).padStart(2,"0");
+  return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`;
+};
+const todayLocalISO = () => {
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+};
+function uid(){ return "T" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+/* The worker does not know the signed-in user and does not run the app's
+   stage engine; the main thread re-stamps and re-applies those after the
+   merge, so the worker stays pure and fast. */
+function currentUser(){ return ""; }
+function applySmart(){ /* applied on the main thread after the merge */ }
+
+const CER_FIELDS = [
+  { label:"SL No",                                             key:"sl",                  kind:"text" },
+  { label:"CER",                                               key:"cer",                 kind:"text" },
+  { label:"CER received Date",                                 key:"cer_date",            kind:"date" },
+  { label:"Item Name",                                         key:"item",                kind:"text" },
+  { label:"Qty",                                               key:"qty",                 kind:"text" },
+  { label:"Unit/Area",                                         key:"unit_area",           kind:"text" },
+  { label:"Department",                                        key:"dept",                kind:"text" },
+  { label:"Site/Plant",                                        key:"plant",               kind:"text" },
+  { label:"CER status (Ordered/Not Ordered)",                   key:"cer_status",          kind:"text" },
+  { label:"Manufacturer Name",                                 key:"manufacturer",        kind:"text" },
+  { label:"Local Agent",                                       key:"agent",               kind:"text" },
+  { label:"Order Value",                                       key:"order_value",         kind:"num"  },
+  { label:"Currency",                                          key:"currency",            kind:"text" },
+  { label:"Tracking Number",                                   key:"tracking",            kind:"text" },
+  { label:"Order Value (BDT)",                                 key:"ov_bdt",              kind:"num"  },
+  { label:"Initial Quoted Value",                              key:"init_quoted",         kind:"num"  },
+  { label:"Initial Value (BDT)",                               key:"init_bdt",            kind:"num"  },
+  { label:"% reduction cost (BDT)",                            key:"reduction",           kind:"text" },
+  { label:"Submitted to Factory Accounts",                     key:"submitted",           kind:"date" },
+  { label:"PR",                                                key:"pr",                  kind:"text" },
+  { label:"PR  date",                                          key:"pr_date",             kind:"date" },
+  { label:"PO",                                                key:"po",                  kind:"text" },
+  { label:"LC",                                                key:"lc",                  kind:"text" },
+  { label:"Responsibility",                                    key:"owner",               kind:"text" },
+  { label:"NoteSheet Received Date (SCM)",                     key:"notesheet_date",      kind:"date" },
+  { label:"SCM 07.04.2026",                                    key:"scm_note",            kind:"text" },
+  { label:"Machine Received Status",                           key:"machine_status",      kind:"text" },
+  { label:"Machine Received Date",                             key:"machine_date",        kind:"date" },
+  { label:"Installation Status",                               key:"install_status",      kind:"text" },
+  { label:"Installation Date",                                 key:"install_date",        kind:"date" }
+];
+
+
+
+/* ---------- small readers: Excel -> tracker value ---------- */
+const normHdr = s => String(s===null||s===undefined?"":s)
+  .replace(/[\u00a0]/g," ").replace(/\s+/g," ").trim().toLowerCase();
+
+// A tracker record may legitimately hold several CER numbers in one field,
+// separated by commas / newlines / semicolons. Matching is per token.
+function splitCers(v){
+  return String(v===null||v===undefined?"":v)
+    .split(/[,\n;\/]+/).map(s=>s.trim()).filter(Boolean);
+}
+
+function cellToText(v){
+  if(v===null||v===undefined) return "";
+  if(v instanceof Date) return isoDate(v);          // never the UTC-shifted form
+  if(typeof v === "number"){
+    // Excel mangles long identifiers into exponential notation. Recover the
+    // integer form so a PR/PO/LC number still matches on the next import.
+    if(Number.isInteger(v) && Math.abs(v) >= 1e11) return v.toFixed(0);
+    return String(v);
+  }
+  return String(v).replace(/\s+/g," ").trim();
+}
+
+// Status words that legitimately appear in a date column when the event has not
+// happened yet. They are ACCEPTED - the date stays blank, the status is kept in
+// the status column, and nothing is turned into a fake date.
+const DATE_STATUS_WORDS = ["na","n/a","n.a.","n a","no","none","nil","-","--","---","x","xx",
+  "not done","notdone","not received","notreceived","not yet","notyet","pending","awaiting",
+  "in progress","inprogress","done","received","ok","tbd","not applicable","not available",
+  "not required","not started","not ordered","hold","on hold"];
+
+function dateStatusWord(s){
+  const t = String(s==null?"":s).replace(/\u00a0/g," ").replace(/\s+/g," ").trim().toLowerCase();
+  if(!t) return "";
+  return DATE_STATUS_WORDS.indexOf(t) !== -1 ? t : "";
+}
+
+function parseDateCell(v){
+  if(v === null || v === undefined) return { iso:"", status:"blank", reason:"" };
+  if(v instanceof Date){
+    if(isNaN(v)) return { iso:"", status:"invalid", reason:"the cell holds an invalid date object" };
+    return { iso: isoDate(v), status:"ok", reason:"" };
+  }
+  const s = String(v).replace(/\u00a0/g," ").trim();
+  if(s === "") return { iso:"", status:"blank", reason:"" };
+
+  // A status word ("Not received", "Not done", "NA") is a legitimate value in a
+  // date column - accepted, never an error and never converted to a date.
+  const sw = dateStatusWord(s);
+  if(sw) return { iso:"", status:"status", reason:sw };
+
+  // ISO first: 2026-09-24 (optionally with a time part)
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$/);
+  if(m) return finishDate(+m[1], +m[2], +m[3]);
+
+  // Year-first with slashes: 2026/09/24
+  m = s.match(/^(\d{4})[./](\d{1,2})[./](\d{1,2})$/);
+  if(m) return finishDate(+m[1], +m[2], +m[3]);
+
+  // Day-first / month-first with . - or /: 24.09.2026, 24-09-2026, 24/09/2026, 09/24/2026
+  m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+  if(m){
+    let a = +m[1], b = +m[2], y = +m[3];
+    if(m[3].length === 2) y = 2000 + y;
+    // Disambiguate: a value above 12 in the first slot can only be a day, and
+    // above 12 in the second slot can only be a month. Otherwise the app's
+    // convention (and SAP's) is DAY first.
+    let dd, mm;
+    if(a > 12 && b <= 12){ dd = a; mm = b; }
+    else if(b > 12 && a <= 12){ mm = a; dd = b; }
+    else { dd = a; mm = b; }
+    return finishDate(y, mm, dd);
+  }
+
+  // Excel serial number (a bare number sitting in a date column)
+  if(/^\d+(\.\d+)?$/.test(s)){
+    const n = parseFloat(s);
+    if(n > 20000 && n < 80000){
+      const d = new Date(Date.UTC(1899,11,30) + n*86400000);
+      return { iso: `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`, status:"ok", reason:"" };
+    }
+    // A long integer in a date column is almost always an identifier (a PR / PO
+    // / LC number) that landed in the wrong field. Flag it - never convert it.
+    if(Number.isInteger(n) && s.replace(/\.\d+$/,"").length >= 7)
+      return { iso:"", status:"number", reason:"the number " + s + " looks like a PR / PO / LC number placed in a date column, not a date" };
+    return { iso:"", status:"invalid", reason:"the number " + s + " is not a valid Excel date serial" };
+  }
+
+  // A letter O / I typed where a digit belongs (23.O4.2026) is a typo, not a
+  // format problem. Normalise a COPY to test it, and report the original.
+  const fixed = s.replace(/[Oo]/g,"0").replace(/[Il]/g,"1");
+  if(fixed !== s && /^[\d./-]+$/.test(fixed)){
+    const r2 = parseDateCell(fixed);
+    if(r2.status === "ok")
+      return { iso:"", status:"suspicious", reason:"'" + s + "' contains a letter where a digit belongs" };
+  }
+
+  // Date-like (digits and separators) but no known shape. A 3-digit year in
+  // ANY position (e.g. 226-09-24, 24/09/226) is reported as SUSPICIOUS, not
+  // merely invalid, so the user is told it looks like a typo.
+  if(/^[\d./-]+$/.test(s)){
+    const toks = s.split(/[./-]/);
+    for(let i=0;i<toks.length;i++){
+      if(toks[i].length === 3)
+        return { iso:"", status:"suspicious", reason:"the year '" + toks[i] + "' has 3 digits - it looks like a typo" };
+    }
+    return { iso:"", status:"invalid", reason:"'" + s + "' is not a recognised date format" };
+  }
+
+  return { iso:"", status:"text", reason:"'" + s + "' is not a date" };
+}
+
+// Validate a real calendar date and normalise it. A 3-digit year is reported as
+// SUSPICIOUS rather than silently accepted or silently dropped.
+function finishDate(y, mm, dd){
+  if(y >= 100 && y < 1000)
+    return { iso:"", status:"suspicious", reason:"the year '" + y + "' has 3 digits - it looks like a typo" };
+  if(y < 1900 || y > 2200)
+    return { iso:"", status:"suspicious", reason:"the year '" + y + "' is outside the plausible range 1900-2200" };
+  if(mm < 1 || mm > 12)
+    return { iso:"", status:"invalid", reason:"month " + mm + " does not exist" };
+  const dim = [31, (y%4===0 && (y%100!==0 || y%400===0)) ? 29 : 28, 31,30,31,30,31,31,30,31,30,31][mm-1];
+  if(dd < 1 || dd > dim)
+    return { iso:"", status:"invalid", reason:"day " + dd + " does not exist in month " + mm };
+  return { iso: `${y}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`, status:"ok", reason:"" };
+}
+
+// Best-effort repair SUGGESTION for a suspicious / invalid date value. This is
+// only ever shown to the user - the importer never applies it automatically.
+function suggestDate(raw){
+  const s = String(raw == null ? "" : raw).replace(/\u00a0/g," ").trim();
+  if(!s) return "";
+  if(dateStatusWord(s)) return "No action needed - this is a status, not a date.";
+
+  // A long integer in a date column: almost always an identifier.
+  if(/^\d{7,}$/.test(s))
+    return "This looks like a PR / PO / LC number. Move it to the correct column, or clear the date.";
+
+  // A letter O / I where a digit belongs: 23.O4.2026 -> 2026-04-23
+  const fixed = s.replace(/[Oo]/g,"0").replace(/[Il]/g,"1");
+  if(fixed !== s){
+    const r0 = parseDateCell(fixed);
+    if(r0.status === "ok") return "Check the typo; expected " + r0.iso;
+  }
+
+  // 226-09-24 -> 2026-09-24 (a 3-digit year is almost always a missing digit)
+  let m = s.match(/^(\d{3})([./-])(\d{1,2})\2(\d{1,2})$/);
+  if(m){
+    const y = "20" + m[1].slice(-2);
+    const r = finishDate(+y, +m[3], +m[4]);
+    if(r.status === "ok") return "Check the year; expected " + r.iso;
+  }
+  // 24/09/226 -> 2026-09-24 (a 3-digit year in the LAST slot)
+  m = s.match(/^(\d{1,2})([./-])(\d{1,2})\2(\d{3})$/);
+  if(m){
+    const y = "20" + m[4].slice(-2);
+    let a = +m[1], b = +m[3];
+    let dd, mm;
+    if(a > 12 && b <= 12){ dd = a; mm = b; } else if(b > 12 && a <= 12){ mm = a; dd = b; } else { dd = a; mm = b; }
+    const r = finishDate(+y, mm, dd);
+    if(r.status === "ok") return "Check the year; expected " + r.iso;
+  }
+  // 24.09.26 / 24-09-2026 / 24/09/2026 -> normalise
+  m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+  if(m){
+    let a = +m[1], b = +m[2], y = +m[3];
+    if(m[3].length === 2) y = 2000 + y;
+    let dd, mm;
+    if(a > 12 && b <= 12){ dd = a; mm = b; } else if(b > 12 && a <= 12){ mm = a; dd = b; } else { dd = a; mm = b; }
+    const r = finishDate(y, mm, dd);
+    if(r.status === "ok") return "Use " + r.iso;
+  }
+  return "Enter the date as YYYY-MM-DD (for example 2026-09-24).";
+}
+
+function cellToDate(v){
+  const r = parseDateCell(v);
+  return r.status === "ok" ? r.iso : "";
+}
+
+function cellToNum(v){
+  if(v===null||v===undefined||v==="") return null;
+  if(typeof v === "number") return isFinite(v) ? v : null;
+  const s = String(v).replace(/[,\s\u00a0]/g,"").replace(/[৳$€£]/g,"");
+  if(s==="" || /^#/.test(s)) return null;                          // "#DIV/0!" and friends -> blank
+  const n = parseFloat(s.replace(/%$/,""));
+  return isNaN(n) ? null : n;
+}
+
+// The workbook's 30 columns are NOT always in the same order, so every column
+// is resolved by HEADER TEXT rather than by position.
+function mapColumnsFromHeaders(headerCells){
+  const map = {};                       // field key -> column index (0-based)
+  const used = {};                      // guard: never let two fields claim one column
+  CER_FIELDS.forEach(fd=>{ if(used[fd.key]) return; used[fd.key] = true; map[fd.key] = -1; });
+  const fields = CER_FIELDS.slice();
+  const taken = new Set();
+  fields.forEach(fd=>{
+    const want = normHdr(fd.label);
+    const wantBare = want.replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();
+    for(let i=0;i<headerCells.length;i++){
+      if(taken.has(i)) continue;
+      const h = normHdr(headerCells[i]);
+      if(!h) continue;
+      const hBare = h.replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();
+      if(h === want || hBare === wantBare || (wantBare.length>4 && (hBare.startsWith(wantBare) || wantBare.startsWith(hBare)))){
+        map[fd.key] = i; taken.add(i); return;
+      }
+    }
+  });
+  return map;
+}
+
+// Reject "files" that cannot possibly be the CER workbook.
+function detectCerHeaderRow(aoa){
+  const scan = Math.min(aoa.length, 12);
+  for(let r=0; r<scan; r++){
+    const row = aoa[r] || [];
+    const hasItem = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "item name");
+    const hasQty  = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "qty");
+    const hasCer  = row.some(c=>normHdr(c).replace(/\(.*?\)/g,"").trim() === "cer");
+    if(hasItem && hasCer && hasQty) return r;
+  }
+  return -1;
+}
+
+// The workbook holds 13 sheets and the CER sheet is NOT the first one
+// (order: "2024 ", "Sheet1", "2026", "August", ...). Reading SheetNames[0]
+// silently imports the WRONG sheet, so every sheet is examined and the real
+// CER sheet is chosen by content - a sheet named "2026" wins, otherwise the
+// first sheet whose header row carries CER + Item Name + Qty.
+function pickCerSheet(wb){
+  const norm = s => String(s||"").replace(/[\s\u00a0]+/g,"").trim().toLowerCase();
+  // blankrows:true keeps the array index aligned with the real Excel row
+  // number (index 0 = row 1), which is what the error report needs.
+  const conv = n => { try{ return XL.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:"", blankrows:true }); }catch(e){ return []; } };
+  // Prefer the sheet literally named "2026" (the CER year sheet of this
+  // workbook) so only one sheet has to be parsed in the normal case.
+  const named = (wb.SheetNames || []).find(n=>norm(n) === "2026");
+  if(named){
+    const aoa = conv(named);
+    const hRow = detectCerHeaderRow(aoa);
+    if(hRow >= 0) return { name:named, aoa:aoa, hRow:hRow };
+  }
+  for(const n of (wb.SheetNames || [])){
+    if(norm(n) === "2026") continue;
+    const aoa = conv(n);
+    const hRow = detectCerHeaderRow(aoa);
+    if(hRow >= 0) return { name:n, aoa:aoa, hRow:hRow };
+  }
+  return null;
+}
+
+// One Excel row -> one tracker record (same shape the form produces).
+function cerRowToRecord(cells, col){
+  const raw = k => (col[k] >= 0 && col[k] < cells.length) ? cells[col[k]] : "";
+  const t = {
+    sl: cellToText(raw("sl")),
+    cer: cellToText(raw("cer")),
+    cer_date: cellToDate(raw("cer_date")),
+    item: cellToText(raw("item")),
+    qty: cellToText(raw("qty")),
+    unit_area: cellToText(raw("unit_area")),
+    dept: cellToText(raw("dept")),
+    plant: cellToText(raw("plant")),
+    cer_status: cellToText(raw("cer_status")),
+    manufacturer: cellToText(raw("manufacturer")),
+    agent: cellToText(raw("agent")),
+    order_value: cellToNum(raw("order_value")),
+    currency: cellToText(raw("currency")),
+    tracking: cellToText(raw("tracking")),
+    ov_bdt: cellToNum(raw("ov_bdt")),
+    init_quoted: cellToNum(raw("init_quoted")),
+    init_bdt: cellToNum(raw("init_bdt")),
+    reduction: cellToText(raw("reduction")),
+    submitted: cellToDate(raw("submitted")),
+    pr: cellToText(raw("pr")),
+    pr_date: cellToDate(raw("pr_date")),
+    po: cellToText(raw("po")),
+    lc: cellToText(raw("lc")),
+    owner: cellToText(raw("owner")),
+    notesheet_date: cellToDate(raw("notesheet_date")),
+    scm_note: cellToText(raw("scm_note")),
+    machine_status: cellToText(raw("machine_status")),
+    machine_date: cellToDate(raw("machine_date")),
+    /* The workbook carries two extra columns the tracker form does not show
+       (Installation Status / Installation Date). They are stored on the record
+       so no information is lost in the round trip. */
+    install_status: cellToText(raw("install_status")),
+    install_date: cellToDate(raw("install_date")),
+    rate: null,
+    /* The RAW cell values for every date column, kept so validation can report
+       the value the user actually sees in Excel (not the normalised form). */
+    _raw: {
+      cer_date: raw("cer_date"), submitted: raw("submitted"), pr_date: raw("pr_date"),
+      notesheet_date: raw("notesheet_date"), machine_date: raw("machine_date"),
+      install_date: raw("install_date")
+    }
+  };
+  return t;
+}
+
+// Keep the tracker's own vocabulary. Anything outside it is folded to a value
+// the dropdowns already know, so an import can never create a stage/filter that
+// the UI cannot display.
+function tidyCerRecord(t){
+  t.cer_status = t.cer_status.replace(/[\s.]+$/,"").trim();
+  if(!/^(Ordered|Not Ordered|Partially Ordered|Cancelled)$/i.test(t.cer_status)){
+    t.cer_status = t.cer_status ? "Ordered" : "Not Ordered";
+  } else {
+    t.cer_status = t.cer_status.toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+  }
+  const ms = t.machine_status.toLowerCase();
+  if(/received/.test(ms) && !/not/.test(ms)) t.machine_status = "Received";
+  else if(/not\s*received/.test(ms)) t.machine_status = "Not Received";
+  else if(/^n\/?a$/.test(ms)) t.machine_status = "NA";
+  else if(/^delivered$/.test(ms)) t.machine_status = "Received";
+  else t.machine_status = "";
+
+  const cur = t.currency.toUpperCase().trim();
+  t.currency = ["BDT","USD","EURO","GBP","CHF"].indexOf(cur) >= 0 ? cur : "";
+  t.plant = /dhamrai/i.test(t.plant) ? "Dhamrai" : (/zirabo/i.test(t.plant) ? "Zirabo" : t.plant);
+  // Excel error text is not data.
+  if(/%/.test(t.reduction)) t.reduction = t.reduction;
+  else if(t.reduction && !/^-?\d*\.?\d+$/.test(t.reduction)) t.reduction = "";
+  return t;
+}
+
+// Merge the workbook into `tasks`, keyed on CER number.
+//
+// IDEMPOTENCY is built in, not bolted on: the workbook rows are first collapsed
+// into ONE GROUP PER IDENTITY (a group is every row sharing any CER number),
+// and every token a group has ever seen is retained on it. A group is then
+// matched against the tracker on ANY of its tokens - so re-importing the same
+// file updates the same records instead of inserting copies.
+const noCerKey = t => "NOCER|" + [t.item, t.unit_area, t.plant, t.tracking, t.qty]
+  .map(v=>String(v||"").replace(/\s+/g," ").trim().toLowerCase()).join("|");
+
+function groupCerRows(records){
+  const groups = [], byKey = new Map(), skipped = [];
+  records.forEach((raw, n)=>{
+    const rowNo = n + 1;
+    if(!raw.item && !raw.cer){ skipped.push({ row:rowNo, why:"no CER and no item name" }); return; }
+    tidyCerRecord(raw);
+    const keys = splitCers(raw.cer);
+    if(!keys.length){
+      // Real data carrying no CER at all: give it a composite identity so it is
+      // imported rather than discarded, yet still recognised on a later run.
+      const nk = noCerKey(raw);
+      if(byKey.has(nk)){
+        const g = byKey.get(nk);
+        const patch = cerPatchFrom(g.rec, raw);
+        if(Object.keys(patch).length) Object.assign(g.rec, patch);
+        g.merged++;
+        return;
+      }
+      const g = { keys:[nk], rec: raw, rowNo: rowNo, merged: 1 };
+      groups.push(g); byKey.set(nk, g);
+      return;
+    }
+    let g = null;
+    for(const k of keys){ if(byKey.has(k)){ g = byKey.get(k); break; } }
+    if(!g){
+      g = { keys: keys.slice(), rec: raw, rowNo: rowNo, merged: 1 };
+      groups.push(g);
+    } else {
+      const patch = cerPatchFrom(g.rec, raw);
+      if(Object.keys(patch).length) Object.assign(g.rec, patch);
+      g.merged++;
+      keys.forEach(k=>{ if(g.keys.indexOf(k) < 0) g.keys.push(k); });
+    }
+    // Keep EVERY CER number this group carries, so the record stays matchable by
+    // any of them. Losing a token here is exactly what let earlier runs
+    // duplicate records.
+    g.rec.cer = g.keys.filter(k=>k.indexOf("NOCER|") !== 0).join(", ");
+    g.keys.forEach(k=>{ if(!byKey.has(k)) byKey.set(k, g); });
+  });
+  return { groups: groups, skipped: skipped };
+}
+
+// Merge the workbook into `tasks`, keyed on CER number.
+function cerMerge(records){
+  const { groups, skipped } = groupCerRows(records);
+
+  // Index what the tracker already holds: every CER token, plus the composite
+  // identity for records that carry no CER at all.
+  const byCer = new Map();
+  tasks.forEach((t,i)=>{
+    const keys = splitCers(t.cer);
+    if(keys.length){ keys.forEach(k=>{ if(!byCer.has(k)) byCer.set(k, i); }); }
+    else { const nk = noCerKey(t); if(!byCer.has(nk)) byCer.set(nk, i); }
+  });
+
+  const newRecords = [], updates = [], skipRows = skipped.slice();
+  const claimed = new Set();
+  let updated = 0, unchanged = 0;
+
+  groups.forEach(g=>{
+    const rec = g.rec;
+    let idx = -1;
+    for(const k of g.keys){ if(byCer.has(k)){ idx = byCer.get(k); break; } }
+
+    if(idx < 0){
+      // Genuinely new -> insert once, as ONE complete record.
+      rec.id = uid();
+      rec.autoPriority = true; rec.autoProgress = true; rec._autoTarget = true;
+      rec.lastEditedBy = currentUser(); rec.lastEditedAt = new Date().toISOString();
+      rec.created = rec.created || todayLocalISO();
+      applySmart(rec);
+      newRecords.push(rec);
+      return;
+    }
+
+    if(claimed.has(idx)){ unchanged++; return; }
+    claimed.add(idx);
+    const patch = cerPatchFrom(tasks[idx], rec);
+    if(Object.keys(patch).length){ updates.push({ idx: idx, patch: patch }); updated++; }
+    else unchanged++;
+  });
+
+  return {
+    total: records.length,
+    added: newRecords.length,
+    updated: updated,
+    skipped: skipRows.length,
+    unchanged: unchanged,
+    newRecords: newRecords,
+    updates: updates,
+    skipRows: skipRows
+  };
+}
+
+// Fields the workbook is authoritative for. A blank Excel cell NEVER erases a
+// value the tracker already holds - imports only ever fill or refresh.
+const CER_IMPORT_WINS = ["sl","cer","cer_date","item","qty","unit_area","dept","plant","cer_status",
+  "manufacturer","agent","order_value","currency","tracking","ov_bdt","init_quoted","init_bdt",
+  "reduction","submitted","pr","pr_date","po","lc","owner","notesheet_date","scm_note",
+  "machine_status","machine_date","install_status","install_date"];
+
+function sameVal(a,b){
+  if(a===null||a===undefined||a==="") return (b===null||b===undefined||b==="");
+  if(b===null||b===undefined||b==="") return false;
+  if(typeof a === "number" || typeof b === "number") return parseFloat(a) === parseFloat(b);
+  return String(a).trim() === String(b).trim();
+}
+
+function cerPatchFrom(old, rec){
+  const patch = {};
+  CER_IMPORT_WINS.forEach(k=>{
+    if(k === "sl") return;                    // existing records keep their own number
+    const nv = rec[k];
+    const blank = nv === null || nv === undefined || nv === "";
+    if(blank) return;                         // never blank out what is already there
+    if(!sameVal(old[k], nv)) patch[k] = nv;
+  });
+  return patch;
+}
+
+
+
+/* ---- SAP 25-column row reader (verbatim copy) ---- */
+function sapDateToIso(v){
+  const m = String(v).trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if(!m) return "";
+  let y = m[3]; if(y.length===2) y = "20"+y;
+  const mm = String(m[2]).padStart(2,"0");
+  const dd = String(m[1]).padStart(2,"0");
+  return `${y}-${mm}-${dd}`;
+}
+
+function sapRowToRecord(cells){
+  const get = i => (cells[i] === undefined || cells[i] === null) ? "" : String(cells[i]).trim();
+  const qtyNum = get(6);   // Required Qty (numeric part)
+  const unit = get(7);     // Unit
+  const qty = qtyNum ? (unit ? qtyNum + " " + unit : qtyNum) : (unit || "");
+  return {
+    pr: get(0),
+    item: get(5),
+    qty: qty,
+    delivery_date: get(9) ? sapDateToIso(get(9)) : "",
+    mat_group: get(10),
+    owner: get(14),
+    tracking: get(15),
+    order_value: get(18) ? parseFloat(get(18)) : null,
+    currency: get(19),
+    manufacturer: get(20),
+    purpose: get(21),
+    origin: get(22),
+    dept: get(23),
+    order_justification: get(24)
+  };
+}
+
+/* ---------- validate ----------
+   TWO-CATEGORY MODEL - the importer is intelligent, not permissive.
+
+     BLOCKING ERRORS (severity "block") - the file cannot be imported safely:
+       an unreadable / unsupported / unparseable file, no data rows at all,
+       the required columns completely missing, an absurd row count.
+
+     WARNINGS (severity "warn") - normal data-quality issues that DO NOT block
+       an import: a missing Item Name, a missing CER number, a suspicious or
+       invalid date, a non-numeric amount, a duplicate id, a row that carries
+       data but has no identity at all.
+
+     INFO (severity "info") - accepted values, reported for transparency:
+       a status word in a date field ("Not received", "Not done", "NA"), blank
+       rows that were ignored, rows that share a CER with an earlier row.
+
+   `ok` means "no BLOCKING errors" - warnings never stop an import. */
+function dmValidate(parsed){
+  const blocking = [], warnings = [], infos = [];
+  const recs = parsed.records || [];
+  const stats = { rows: recs.length, withCer:0, withItem:0, groupedCers:0, dupIds:0, empty:0,
+                  badNum:0, badDate:0, statusDates:0, blankRows: parsed.blankRows || 0,
+                  nonRecordRows:0, noIdentity:0 };
+  const colMap = parsed.colMap || null;
+  const colName = k => {
+    try{
+      const list = (typeof CER_FIELDS !== "undefined" && CER_FIELDS) ? CER_FIELDS : [];
+      for(let i=0;i<list.length;i++){ if(list[i].key === k) return list[i].label; }
+    }catch(e){}
+    return k;
+  };
+  const firstNonEmpty = cells => {
+    for(let i=0;i<(cells||[]).length;i++){
+      const v = cells[i];
+      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+    return "";
+  };
+
+  // ---- BLOCKING: nothing to import at all --------------------------------
+  if(!recs.length)
+    blocking.push({ row:"-", col:"file", value:"", field:"file", severity:"block",
+      why:"The file contains no data rows.",
+      action:"Check that the workbook holds the CER sheet and that it has a header row." });
+
+  // ---- BLOCKING: the required structure is missing ------------------------
+  // A workbook that is neither a CER sheet (no Item Name / CER headers) nor a
+  // SAP export (no "PR" header row) cannot be imported - say so plainly rather
+  // than importing whatever the fallback parser happened to produce.
+  if(parsed.kind === "sap" && parsed.sapHeaderFound === false)
+    blocking.push({ row:"header", col:"file", value:"", field:"file", severity:"block",
+      why:"This workbook is neither a CER sheet nor a SAP export - the required column headers were not found.",
+      action:"Check that the sheet holds the CER columns (Item Name, CER, ...) or the SAP export columns (starting with PR)." });
+
+  if(parsed.kind === "cer" && colMap){
+    if(!(colMap.item >= 0))
+      blocking.push({ row:"header", col:"Item Name", value:"", field:"Item Name", severity:"block",
+        why:"The required 'Item Name' column was not found in the header row.",
+        action:"Add an 'Item Name' column header, or check that the header row is the one carrying the column titles." });
+    if(!(colMap.cer >= 0))
+      blocking.push({ row:"header", col:"CER", value:"", field:"CER", severity:"block",
+        why:"The required 'CER' column was not found in the header row.",
+        action:"Add a 'CER' column header, or check that the header row is the one carrying the column titles." });
+  }
+
+  const seenId = new Map(), seenCer = new Map();
+  recs.forEach((r, i)=>{
+    const rowNo = (typeof r._row === "number") ? r._row : (i + 1);
+    const item = String(r.item || "").trim();
+    const cer  = String(r.cer || "").trim();
+    if(item) stats.withItem++;
+    if(cer)  stats.withCer++;
+
+    // ---- a subtotal / total / repeated-header row ------------------------
+    // Recognised wherever its label happens to sit, but ONLY when it is
+    // unambiguous: a subtotal marker AND at most 3 populated cells. A real
+    // record (even one named "Total Station") carries many more cells, so it is
+    // never mistaken for a subtotal.
+    {
+      const c0 = r._cells || [];
+      const n0 = c0.filter(c=>c!==undefined && c!==null && String(c).trim()!=="").length;
+      const t0 = c0.map(c=>String(c==null?"":c).trim().toLowerCase()).join(" ");
+      if(n0 > 0 && n0 <= 3 && /(^|\s)(sub\s*-?\s*total|grand\s+total|total|sum)(\s|$)/.test(t0)){
+        stats.nonRecordRows++; return;
+      }
+    }
+
+    // ---- a row with neither identity field -------------------------------
+    // A completely blank row is ignored (and counted). A separator / subtotal /
+    // repeated header row is ignored too, but ONLY when it can be recognised
+    // safely. A row that carries real data and simply lacks both fields is
+    // RETAINED and reported as a WARNING - never silently discarded.
+    if(!item && !cer){
+      const cells = r._cells || [];
+      const nonEmpty = cells.filter(c=>c!==undefined && c!==null && String(c).trim()!=="").length;
+      const text = cells.map(c=>String(c==null?"":c).trim().toLowerCase()).join(" ");
+      const isSubtotal = /(^|\s)(sub\s*-?\s*total|grand\s+total|total|sum)(\s|$)/.test(text);
+      const isHeaderish = nonEmpty <= 4 && /^(sl|cer|item|qty|unit|department|plant|pr|po|description)\b/.test(text);
+      if(nonEmpty === 0){ stats.blankRows++; return; }
+      if(isSubtotal || isHeaderish){ stats.nonRecordRows++; return; }
+      stats.empty++; stats.noIdentity++;
+      warnings.push({ row:rowNo, col:"Item Name / CER", value:firstNonEmpty(cells), field:"item / cer", severity:"warn",
+        why:"The row holds data but has neither an Item Name nor a CER number, so it has no identity to import under.",
+        action:"Add the Item Name (and the CER number if it has one). It will NOT be imported as it stands - review it below." });
+      return;
+    }
+
+    // ---- a row with an Item but no CER is fine (composite identity) -------
+    if(item && !cer){
+      warnings.push({ row:rowNo, col:"CER", value:item, field:"cer", severity:"warn",
+        why:"No CER number on this row - it will be imported under a composite identity (item + unit + plant + tracking + qty).",
+        action:"Add the CER number if the row has one, so a later re-import matches it instead of adding a copy." });
+    }
+
+    const id = String(r.id || "").trim();
+    if(id){
+      if(seenId.has(id)){
+        stats.dupIds++;
+        warnings.push({ row:rowNo, col:"id", value:id, field:"id", severity:"warn",
+          why:"Duplicate record id '" + id + "' (first seen on row " + seenId.get(id) + ").",
+          action:"Remove the duplicate row, or give it a different id." });
+      } else seenId.set(id, rowNo);
+    }
+
+    // Several rows legitimately share one CER (they are grouped on import), so a
+    // repeated CER is reported as INFORMATION, never as a problem.
+    if(cer){
+      const toks = (typeof splitCers === "function" ? splitCers(cer) : [cer]);
+      toks.forEach(tk=>{ if(seenCer.has(tk)) stats.groupedCers++; else seenCer.set(tk, rowNo); });
+    }
+
+    ["order_value","ov_bdt","init_quoted","init_bdt"].forEach(k=>{
+      const v = r[k];
+      if(v === null || v === undefined || v === "") return;
+      if(typeof v === "number"){ if(!isFinite(v)){ stats.badNum++; warnings.push({ row:rowNo, col:colName(k), value:String(v), field:k, severity:"warn", why:"Not a finite number.", action:"Enter a plain number, or leave the cell empty." }); } return; }
+      const t = String(v).replace(/[,\s\u00a0]/g,"").replace(/[\u09f3$\u20ac\u00a3]/g,"");
+      if(t !== "" && isNaN(parseFloat(t))){
+        stats.badNum++;
+        warnings.push({ row:rowNo, col:colName(k), value:String(v), field:k, severity:"warn",
+          why:"'" + v + "' is not a number.",
+          action:"Enter a plain number (digits only), or leave the cell empty." });
+      }
+    });
+
+    // ---- dates -----------------------------------------------------------
+    // Any normal Excel date is accepted and normalised to YYYY-MM-DD. A status
+    // word ("Not received", "Not done", "NA") is ACCEPTED - the date stays
+    // blank and the status is reported. A value that is date-like but wrong (a
+    // 3-digit year, month 13, day 32, a PR number in a date column) is reported
+    // as a WARNING with its exact row, column and value - never silently
+    // dropped, and never auto-corrected.
+    ["cer_date","pr_date","submitted","notesheet_date","machine_date","install_date"].forEach(k=>{
+      const rawV = (r._raw && r._raw[k] !== undefined) ? r._raw[k] : r[k];
+      if(rawV === null || rawV === undefined || String(rawV).trim() === "") return;
+      const res = parseDateCell(rawV);
+      if(res.status === "ok") return;
+      if(res.status === "status"){
+        stats.statusDates++;
+        infos.push({ row:rowNo, col:colName(k), value:String(rawV), field:k, severity:"info",
+          why:"A status value, not a date - accepted as \"" + res.reason + "\".",
+          action:"No action needed. The date is left blank; the status stays in the status column." });
+        return;
+      }
+      stats.badDate++;
+      const sug = suggestDate(rawV);
+      const head = res.status === "suspicious" ? "Suspicious date - "
+                 : res.status === "number"     ? "Suspicious value - "
+                 : "Invalid date - ";
+      warnings.push({ row:rowNo, col:colName(k), value:String(rawV), field:k, severity:"warn",
+        why: head + res.reason,
+        action: sug || "Enter the date as YYYY-MM-DD (for example 2026-09-24)." });
+    });
+  });
+
+  return {
+    ok: blocking.length === 0,                       // warnings never block
+    blocking: blocking.slice(0, 500), blockingCount: blocking.length,
+    warnings: warnings.slice(0, 500), warningCount: warnings.length,
+    infos: infos.slice(0, 500), infoCount: infos.length,
+    problems: blocking.concat(warnings).slice(0, 500),   // back-compat
+    problemCount: blocking.length + warnings.length,
+    stats: stats
+  };
+}
+
+
+/* ---- the job ---- */
+let tasks = [];   // cerMerge() reads this exact name
+function emptyRow(cells){
+  return !cells || !cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="");
+}
+function parseWorkbook(buf){
+  const wb = XL.read(new Uint8Array(buf), { type:"array", cellDates:true });
+  const cer = pickCerSheet(wb);
+  if(cer){
+    const col = mapColumnsFromHeaders(cer.aoa[cer.hRow] || []);
+    const recs = []; let blank = 0;
+    for(let i=cer.hRow+1; i<cer.aoa.length; i++){
+      const cells = cer.aoa[i] || [];
+      if(emptyRow(cells)){ blank++; continue; }
+      const rec = cerRowToRecord(cells, col);
+      rec._row = i + 1;                 // the REAL Excel row number
+      rec._cells = cells.slice();       // kept so an error can show the whole row
+      recs.push(rec);
+    }
+    return { kind:"cer", records: recs, sheet: cer.name, headerRow: cer.hRow, colMap: col, blankRows: blank };
+  }
+  const aoa = XL.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", blankrows:true });
+  if(!aoa.length) throw new Error("No data found in that workbook.");
+  let start = 0, sapHdr = false;
+  // Find the SAP header row (its first non-empty cell is "PR") within the first
+  // few rows, so the header itself is never imported as a record.
+  for(let r=0; r<Math.min(aoa.length, 6); r++){
+    const first = (aoa[r]||[]).filter(c=>c!==undefined&&c!==null&&String(c).trim()!=="")[0];
+    if(String(first||"").trim().toUpperCase() === "PR"){ start = r + 1; sapHdr = true; break; }
+  }
+  const recs = []; let blank = 0;
+  for(let i=start; i<aoa.length; i++){
+    const cells = aoa[i] || [];
+    if(emptyRow(cells)){ blank++; continue; }
+    const rec = sapRowToRecord(cells);
+    rec._row = i + 1;
+    rec._cells = cells.slice();
+    recs.push(rec);
+  }
+  return { kind:"sap", records: recs, sheet: wb.SheetNames[0], headerRow: start, colMap:null, blankRows: blank, sapHeaderFound: sapHdr };
+}
+
+onmessage = async (ev)=>{
+  const d = ev.data || {};
+  const id = d.id;
+  const post = (o)=>{ try{ self.postMessage(Object.assign({ id:id }, o)); }catch(e){} };
+  try{
+    tasks = Array.isArray(d.tasks) ? d.tasks : [];
+    post({ progress:true, pct:8, label:"Loading the Excel engine\u2026" });
+    await loadXLSX();
+    post({ progress:true, pct:22, label:"Reading the workbook\u2026" });
+    // d.file arrives as a File/Blob (structured clone) - read it to bytes here,
+    // in the worker, so the main thread never touches the file contents.
+    let buf = d.file;
+    if(buf && typeof buf.arrayBuffer === "function") buf = await buf.arrayBuffer();
+    else if(buf && buf.buffer) buf = buf.buffer;
+    const parsed = parseWorkbook(buf);
+    post({ progress:true, pct:62, label:"Validating " + parsed.records.length + " row(s)\u2026" });
+    const validation = dmValidate(parsed);
+    let merge = null, preview = null;
+    if(validation.ok){
+      post({ progress:true, pct:80, label:"Working out what will change\u2026" });
+      if(d.mode === "replace"){
+        preview = { mode:"replace", parsed: parsed.records.length, current: tasks.length,
+                    added: parsed.records.length, updated:0, unchanged:0, skipped:0,
+                    resulting: parsed.records.length, destructive:true, merge:null };
+      } else {
+        merge = cerMerge(parsed.records);
+        preview = { mode:"import", parsed: parsed.records.length, current: tasks.length,
+                    added: merge.added, updated: merge.updated, unchanged: merge.unchanged,
+                    skipped: merge.skipped, resulting: tasks.length + merge.added,
+                    destructive:false, merge: merge };
+      }
+    }
+    post({ progress:true, pct:100, label:"Done." });
+    post({ ok:true, parsed: parsed, validation: validation, preview: preview, merge: merge });
+  }catch(e){
+    post({ ok:false, error: ((e && e.message) || String(e)) });
+  }
+};
+
+</script>
 
 <!--
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -949,12 +1871,41 @@ let pendingDelete = null;
      2. Open the browser console (F12) and run:  tsdWhoAmI()
         -> it prints the exact ID to paste below.
         (The ID is also shown next to the name in the header.)
-     3. Paste it here, e.g.  const PR_RELEASE_ADMIN_IDS = ["a1b2c3d4-...."];
-   Leave the array EMPTY to allow any signed-in user (current default).
+     3. Paste it here, e.g.  const PR_RELEASE_ADMIN_IDS = ["4bfcc2f5-1df5-443e-9efe-d4a2b72e4bd8"];
+   The gate is FAIL-CLOSED: if the array is EMPTY, NOBODY can release a PR.
    NOTE: this is a client-side UI gate. For real enforcement add the
    Supabase RLS policy given in the delivery notes.
    ============================================================ */
-const PR_RELEASE_ADMIN_IDS = [];
+const PR_RELEASE_ADMIN_IDS = ["4bfcc2f5-1df5-443e-9efe-d4a2b72e4bd8"];   // <-- BOSS'S SUPABASE AUTH USER ID. Only IDs listed here may release/edit PR Release data.
+/* ============================================================
+   DATA MANAGEMENT ADMIN  (a SEPARATE role from PR Release)
+   ------------------------------------------------------------
+   The Data Management Admin is the ONLY user who may use Data Management:
+   Excel upload, Import CER data, Replace all CER data, Download backup and
+   Restore backup. This list is INDEPENDENT of PR_RELEASE_ADMIN_IDS - the two
+   roles are deliberately not combined, and the boss does NOT get Data
+   Management rights by being the boss.
+
+   HOW TO FILL IT IN:
+     1. Sign in as the Data Management Admin in this tracker.
+     2. Open the browser console (F12) and run:  tsdWhoAmI()
+        -> it prints the exact ID to paste below.
+     3. Paste it here, e.g.
+        const DATA_MGMT_ADMIN_IDS = ["df8689de-d769-43b9-b2a0-217999468d0b"];
+   The gate is FAIL-CLOSED: if the array is EMPTY, NOBODY can manage data.
+   NOTE: this is a client-side UI gate. For real enforcement run the
+   Data Management SQL (cer_data_mgmt_events + import_cer_data /
+   replace_cer_data), which refuses everyone else - including the boss.
+   ============================================================ */
+const DATA_MGMT_ADMIN_IDS = ["df8689de-d769-43b9-b2a0-217999468d0b"];   // <-- DATA MANAGEMENT ADMIN'S SUPABASE AUTH USER ID. Only IDs listed here may use Data Management.
+
+/* The expected size of the live CER dataset. Used ONLY as a sanity expectation
+   in the Data Management workflow (backup verification, post-write verification
+   and the audit log). It is NEVER used to add, remove or fabricate records -
+   the real count always comes from the live data. Update this number if the
+   dataset legitimately grows or shrinks. */
+const EXPECTED_CER_COUNT = 686;
+
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -1000,8 +1951,65 @@ function prReleased(t){
   const v = t.pr_released;
   return v === true || v === "true" || v === 1 || v === "1" || v === "TRUE";
 }
+/* ----- PR RELEASE AUDIT LOG (public.pr_release_events) -----
+   Optional server-side layer on top of the record's own pr_released flag.
+   The tracker works with or without it: pr_released (written by save()) is
+   ALWAYS the primary state, and this log is only layered on top. Until the
+   "Option A" SQL has been run the table does not exist, so every read and
+   write below degrades silently to the local state instead of erroring. */
+let prEvents = new Map();        // PR No. -> newest release event row
+let prEventsAvailable = null;    // null = unknown, true/false once probed
+function prEventsLoaded(){ return prEventsAvailable === true; }
+/* Released if EITHER the record's own flag OR the server release log says so -
+   a release recorded in pr_release_events is honoured even when a later jsonb
+   write did not land. */
+function prReleasedAnywhere(t){
+  if(prReleased(t)) return true;
+  const k = String(t && t.pr || "").trim();
+  return !!(k && prEvents.has(k));
+}
+/* The authoritative releasing user / time, when the event log has it. */
+function prEventInfo(pr){ return prEvents.get(String(pr || "").trim()) || null; }
+/* Is this error simply "the table does not exist yet" (SQL not applied)? */
+function prEventsMissing(err){
+  const c = String((err && err.code) || "");
+  const msg = String((err && (err.message || err.details || err.hint)) || err || "");
+  return c === "42P01" || c === "PGRST202" || c === "404"
+      || /does not exist|could not find the table|schema cache|pr_release_events/i.test(msg);
+}
+/* Read the release log. Not readable / not present -> silent, self-healing
+   fallback to the record's own pr_released state. Never throws. */
+async function loadPrEvents(){
+  const m = new Map();
+  try{
+    const { data, error } = await supabaseClient.from("pr_release_events").select("*");
+    if(error){
+      prEventsAvailable = false;
+      prEvents = m;
+      console.warn("[TSD] pr_release_events not readable (the Option A SQL may not be applied yet) - using each record's own pr_released state. Reason:", error.message || error);
+      return false;
+    }
+    (data || []).forEach(r => {
+      const k = String((r && r.pr_number) || "").trim();
+      if(!k) return;
+      const prev = m.get(k);
+      const ts  = Date.parse(r.released_at || r.created_at || "") || 0;
+      const pts = prev ? (Date.parse(prev.released_at || prev.created_at || "") || 0) : -1;
+      if(!prev || ts >= pts) m.set(k, r);   // keep the newest event per PR
+    });
+    prEvents = m;
+    prEventsAvailable = true;
+    console.log("[TSD] pr_release_events loaded:", m.size, "released PR(s)");
+    return true;
+  }catch(e){
+    prEventsAvailable = false;
+    prEvents = m;
+    console.warn("[TSD] pr_release_events unavailable - falling back to the record's own PR state.", (e && (e.message || e)) || e);
+    return false;
+  }
+}
 function prPending(t){
-  return !!String(t && t.pr || "").trim() && !prReleased(t);
+  return !!String(t && t.pr || "").trim() && !prReleasedAnywhere(t);
 }
 
 /* ---------- local time helpers (Bangladesh = the browser's own clock) ---------- */
@@ -1078,7 +2086,11 @@ function currentUserId(){
 }
 function canReleasePr(){
   if(!isAuthenticated()) return false;                 // must be signed in
-  if(!PR_RELEASE_ADMIN_IDS.length) return true;        // allowlist not set yet -> open
+  // FAIL-CLOSED: while the allowlist is empty NOBODY may release a PR. This is
+  // deliberate - the owner reported that he himself could release a PR, which
+  // is wrong. Paste the boss's Supabase user ID into PR_RELEASE_ADMIN_IDS
+  // (top of file) to grant the right; until then the action stays locked.
+  if(!PR_RELEASE_ADMIN_IDS.length) return false;
   return PR_RELEASE_ADMIN_IDS.indexOf(currentUserId()) !== -1;
 }
 /* Console helper: prints the signed-in user's ID so it can be pasted into
@@ -1098,6 +2110,28 @@ function whoAmI(){
   return { signedIn:true, id:id, email:em, name:nm };
 }
 window.tsdWhoAmI = whoAmI;
+/* ---------- Data Management permission gate (SEPARATE from PR Release) ----------
+   Fail-closed, exactly like canReleasePr(): the signed-in user's ID must be in
+   DATA_MGMT_ADMIN_IDS. The boss is NOT in that list, so the boss fails this
+   gate - the two roles never overlap by accident. */
+function canManageData(){
+  if(!isAuthenticated()) return false;                 // must be signed in
+  if(!DATA_MGMT_ADMIN_IDS.length) return false;        // FAIL-CLOSED
+  return DATA_MGMT_ADMIN_IDS.indexOf(currentUserId()) !== -1;
+}
+/* Refuse a Data Management action with a clear, honest message. Returns true
+   when the caller IS the Data Management Admin, false (and toasts) otherwise. */
+function dmGuard(action){
+  if(canManageData()) return true;
+  const who = isAuthenticated() ? (currentUser() || currentUserId() || "a signed-in user") : "not signed in";
+  const msg = "Data Management is restricted to the Data Management Admin. You are " + who
+            + " - this action was refused and nothing was changed.";
+  console.warn("[TSD] Data Management refused (" + action + "):", msg);
+  toast(msg);
+  return false;
+}
+window.tsdCanManageData = canManageData;
+
 function renderUserBadge(){
   const el = $("#userBadgeName"); if(!el) return;
   const btn = $("#authBtn"); const lbl = $("#authBtnLabel");
@@ -1881,7 +2915,23 @@ async function save(){
         if(error) return false;
         const row = data && data[0];
         if(!row || !Array.isArray(row.data)) return false;
-        return row.data.length === tasks.length;
+        if(row.data.length !== tasks.length) return false;
+        // CONTENT CHECK (not just a row count). A refused UPDATE can match zero
+        // rows while PostgREST still reports NO error, and the retry below may
+        // be refused too - so an "update", an "insert" and a "refused" write
+        // are indistinguishable by length alone. jsonb does not preserve key
+        // order, so compare the fields that actually decide what the user sees
+        // (read per-record by name) instead of comparing raw JSON text.
+        const byId = new Map();
+        row.data.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+        for(const t of tasks){
+          const r = byId.get(String(t.id));
+          if(!r) return false;
+          if(String(r.pr_released === true) !== String(t.pr_released === true)) return false;
+          if(String(r.stage || "") !== String(t.stage || "")) return false;
+          if(String(r.lastEditedAt || "") !== String(t.lastEditedAt || "")) return false;
+        }
+        return true;
       }catch(e){ return false; }
     }
 
@@ -2001,6 +3051,7 @@ function isSameDataset(a, b){
    Deliberately NOT automatic: it needs the editing lock and a signed-in
    session, and it overwrites the shared row - so the user asks for it. */
 async function pushLocalToCloud(){
+  if(!dmGuard("Publish to shared tracker")) return false;
   if(!isAuthenticated()){ requireAuth(); return false; }
   const localArr = Array.isArray(tasks) ? tasks : [];
   if(!localArr.length){ toast("There is nothing to publish yet."); return false; }
@@ -2388,8 +3439,7 @@ function renderTable(){
          <button class="ia del" data-act="del" title="Delete">
            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
          </button>
-       </div></td>
-       <td class="sap-sel-cell" style="text-align:center"><input type="checkbox" class="sap-row-cb" data-id="${esc(t.id)}" ${SAP_SELECTED.has(t.id)?"checked":""} title="Select for Copy for SAP"></td>`;
+       </div></td>`;
     tr.addEventListener("click", e=>{
       const act = e.target.closest("[data-act]");
       if(act){ e.stopPropagation(); act.dataset.act==="edit" ? openEdit(t.id) : askDelete(t.id); return; }
@@ -2425,15 +3475,64 @@ function renderAll(){ renderStats(); renderTable(); renderPrDashboard(); }
    ============================================================ */
 let prPanelOpen = false;
 let _prHooksWired = false;
+let _prPanelWired = false;
+let _prOpen = {};          // PR No. -> true when that PR's card is expanded (collapsed by default)
 
 function prPendingList(){ return tasks.filter(prPending); }
 
+/* Group every pending item by its PR No. ALL items of one PR are kept together
+   in a single group - items from different PRs are never interleaved. */
+function prGroups(){
+  const map = new Map();
+  prPendingList().forEach(t => {
+    const key = String(t.pr || "").trim() || "(no PR number)";
+    let g = map.get(key);
+    if(!g){
+      g = { pr:key, items:[], totalBdt:0, dept:"", plant:"", owner:"",
+            prDate:"", by:"", headMs:0 };
+      map.set(key, g);
+    }
+    g.items.push(t);
+    g.totalBdt += (Number(t.ov_bdt) || 0);
+    // PR-level fields are shown ONCE in the card header - they are shared by
+    // every item of the same PR, so take the first non-empty value seen.
+    if(!g.dept  && t.dept)  g.dept  = String(t.dept);
+    if(!g.plant && t.plant) g.plant = String(t.plant);
+    if(!g.owner && t.owner) g.owner = String(t.owner);
+    if(!g.prDate && t.pr_date) g.prDate = String(t.pr_date);
+    if(!g.by && (t.pr_created_by || t.pr_by)) g.by = String(t.pr_created_by || t.pr_by);
+  });
+  const list = [...map.values()];
+  list.forEach(g => {
+    // "Waiting since" = the earliest PR-creation stamp (or PR date) in the group.
+    let ms = 0;
+    g.items.forEach(t => {
+      const s = t.pr_created_at || t.pr_date || "";
+      if(!s) return;
+      const d = new Date(String(s).length === 10 ? s + "T00:00:00" : s);
+      const v = d.getTime();
+      if(!isNaN(v) && (!ms || v < ms)) ms = v;
+    });
+    g.headMs = ms;
+  });
+  // Most recently created PR first.
+  list.sort((a,b) => (b.headMs !== a.headMs) ? b.headMs - a.headMs
+                                              : String(a.pr).localeCompare(String(b.pr)));
+  return list;
+}
+function waitingSince(g){
+  if(!g.headMs) return "";
+  return waitingFor(new Date(g.headMs).toISOString()) || "";
+}
+
 function renderPrDashboard(){
   const box = $("#prAlert"); if(!box) return;
-  const rows = prPendingList();
-  const nPr = rows.length;
+  const groups = prGroups();                 // items grouped by PR No.
+  const nItem = prPendingList().length;      // items still awaiting release
+  const nPr = groups.length;                 // distinct PRs awaiting release
+  const can = canReleasePr();
 
-  // headline
+  // headline (counts PRs - one PR is one release action)
   const lbl = document.querySelector(".pr-alert-lbl");
   if(lbl) lbl.textContent = nPr > 0 ? "PR RELEASE REQUIRED" : "NO PR RELEASE PENDING";
   const cnt = $("#prAlertCount");
@@ -2444,15 +3543,23 @@ function renderPrDashboard(){
   const sub = $("#prAlertSub");
   if(sub){
     sub.textContent = nPr
-      ? nPr + (nPr === 1 ? " PR waiting for release" : " PRs waiting for release")
+      ? nPr + (nPr === 1 ? " PR" : " PRs") + " \u00b7 " + nItem + (nItem === 1 ? " item" : " items") + " waiting for release"
       : "Every PR has been released";
   }
 
-  // single chip -> jump straight to the PR-release-pending view
+  // ONE chip only. Nothing else lives in this section - there is no PO
+  // follow-up, no LC follow-up and no "all records" chip here.
   const chips = $("#prAlertChips");
   if(chips){
     chips.innerHTML = `<button class="pr-chip" type="button" data-prfilter="pr">\ud83d\udfe0 <b>${nPr}</b> PR release pending</button>`
-      + (canReleasePr() ? "" : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only</span>`);
+      + (can ? "" : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`);
+  }
+
+  // read-only indicator inside the panel
+  const note = $("#prPanelNote");
+  if(note){
+    note.innerHTML = can ? ""
+      : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`;
   }
 
   // expandable panel
@@ -2460,109 +3567,295 @@ function renderPrDashboard(){
   if(panel) panel.hidden = !prPanelOpen;
   const list = $("#prList");
   if(!list || !prPanelOpen) return;
-  let html = "";
-  if(nPr){
-    html += `<div class="pr-group"><div class="pr-group-h">\ud83d\udfe0 PR release required \u2014 ${nPr}</div><div class="pr-list">`;
-    rows.forEach(t => { html += prRowHtml(t); });
-    html += `</div></div>`;
-  } else {
-    html = `<div class="pr-empty">No PR is waiting for release right now.</div>`;
+  if(!nPr){
+    list.innerHTML = `<div class="pr-empty">No PR is waiting for release right now.</div>`;
+    return;
   }
+  let html = "";
+  groups.forEach(g => { html += prCardHtml(g); });
   list.innerHTML = html;
 }
 
-/* Full item-level detail for one pending PR. */
-function prRowHtml(t){
-  const pr = String(t.pr || "\u2014");
-  const item = t.item || t.cer || t.id || "\u2014";
-  const qty = t.qty || "\u2014";
-  const unit = t.unit_area || "\u2014";
-  const dept = t.dept || "\u2014";
-  const plant = t.plant || "\u2014";
-  const manu = t.manufacturer || "\u2014";
-  const agent = t.agent || "\u2014";
-  const ov = t.order_value ? (fmtNum(t.order_value) + " " + (t.currency || "")) : "\u2014";
-  const bdt = t.ov_bdt ? fmtBDT(t.ov_bdt) : "\u2014";
-  const prDate = t.pr_date ? fmtDate(t.pr_date) : "\u2014";
-  const owner = t.owner || "\u2014";
-  const age = t.pr_created_at ? waitingFor(t.pr_created_at) : (t.pr_date ? waitingFor(t.pr_date) : "");
-  const wait = age ? age : "\u2014";
-  const status = prPending(t) ? "\ud83d\udfe0 Waiting for release" : "\ud83d\udfe2 Released";
-  const by = t.pr_by || t.pr_created_by || "";
-  const btn = canReleasePr()
-    ? `<button class="btn ghost sm" type="button" data-release="${esc(t.id)}" title="Mark this PR as released">Release PR</button>`
-    : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`;
-  const d = (k,v,wide) => `<div class="d${wide?" wide":""}"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`;
-  return `<div class="pr-row">
-    <div class="pr-head">
+/* One COLLAPSIBLE card per PR No.  Collapsed: the PR-level info only.
+   Expanded: a table of every item belonging to THAT PR - and nothing else. */
+function prCardHtml(g){
+  const can = canReleasePr();
+  const open = !!_prOpen[g.pr];
+  const pr = g.pr === "(no PR number)" ? "\u2014" : g.pr;
+  const n = g.items.length;
+  const relId = (g.items.find(x => String(x.pr || "").trim()) || g.items[0]).id;
+  const btn = can
+    ? `<button class="btn ghost sm" type="button" data-release="${esc(relId)}" data-pr="${esc(g.pr)}" title="Mark PR ${esc(pr)} as released (all ${n} item${n===1?"":"s"})">Release PR</button>`
+    : `<button class="btn ghost sm" type="button" disabled title="Only the authorized user can release PRs" style="opacity:.5;cursor:not-allowed">Release PR</button>`;
+  // Deliberately minimal: PR No. + item count + the toggle + the PR-level
+  // Release PR action. There is NO summary subline (no PR Date / Department /
+  // Plant / Owner / Waiting / Total BDT) and NO sort or Header-Data control
+  // here - this view is only for reviewing a PR and its items.
+  return `<div class="pr-card${open ? " open" : ""}">
+    <div class="pr-card-h">
+      <button class="pr-tgl" type="button" data-prtoggle="${esc(g.pr)}" aria-expanded="${open ? "true" : "false"}" title="${open ? "Collapse" : "Expand"} this PR">${open ? "\u25b2" : "\u25bc"}</button>
       <span class="pr-ic">\ud83d\udfe0</span>
-      <span class="pr-t">PR ${esc(pr)} \u2014 ${esc(item)}</span>
+      <span class="pr-tit">
+        <span class="pr-t">PR No. ${esc(pr)} \u2014 ${n} Item${n === 1 ? "" : "s"}</span>
+      </span>
       <span class="sp"></span>
       ${btn}
     </div>
-    <div class="pr-detail">
-      ${d("CER", t.cer || "\u2014")}
-      ${d("Item", item, true)}
-      ${d("Qty", qty)}
-      ${d("Unit / Area", unit)}
-      ${d("Department", dept)}
-      ${d("Plant", plant)}
-      ${d("Manufacturer", manu)}
-      ${d("Agent", agent)}
-      ${d("Order Value", ov)}
-      ${d("BDT Value", bdt)}
-      ${d("PR No.", pr)}
-      ${d("PR Date", prDate)}
-      ${d("Owner", owner)}
-      ${d("Waiting Time", wait)}
-      ${d("Status", status)}
-      ${by ? d("PR Created By", by) : ""}
-    </div>
+    ${open ? `${prRelInfo(g.pr)}<div class="pr-items">${prItemsTable(g.items)}</div>` : ""}
   </div>`;
 }
 
-/* ----- Release PR (authorized user only) ----- */
-async function releasePr(id){
-  const t = tasks.find(x => x.id === id); if(!t) return;
-  if(!prPending(t)){ toast("This PR is already released."); return; }
-  if(!canReleasePr()){
-    toast("Read-only \u2014 only the authorized user can release PRs.");
-    return;
-  }
-  const prNum = String(t.pr || "").trim();
-  if(!confirm("Release PR " + prNum + "?\n\n" + (t.item || t.cer || t.id) + "\n\nThis records the release date and the releasing user, and removes the item from the PR Release Required list. The PR number is kept.")) return;
-  if(Lock.isLocked() && !Lock.amIHolder()){
-    toast("Read-only \u2014 " + (Lock.holderName() || "another user") + " is editing right now. Try again later.");
-    return;
-  }
-  const okLock = await Lock.acquire();
-  if(!okLock.ok && !(okLock.holder === "not logged in" && !isAuthenticated())){
-    toast("Read-only \u2014 " + (okLock.holder || "another user") + " is editing right now. Try again later.");
-    return;
-  }
-  const nowIso = new Date().toISOString();   // absolute instant (audit)
-  const who = actName();
-  t.pr_released = true;
-  t.pr_release_status = "Released";
-  t.pr_released_at = nowIso;
-  t.pr_released_by = who;
-  if(!String(t.pr_released_date || "").trim()) t.pr_released_date = nowLocalStamp().slice(0,10);
-  if(!Array.isArray(t.pr_history)) t.pr_history = [];
-  let ev = t.pr_history.find(h => String(h.pr) === prNum);
-  if(!ev){ ev = makePrEvent(prNum); t.pr_history.push(ev); }
-  ev.status = "Released"; ev.released_at = nowIso; ev.released_by = who;
-  t.lastEditedBy = currentUser() || who;
-  t.lastEditedAt = nowIso;
-  applySmart(t);
-  const ok = await save();
-  renderAll();
-  if(ok){
-    await Lock.release();
-    toast("PR " + prNum + " released by " + who);
-  } else {
-    toast("PR release could not be saved to the shared tracker. Please try again.");
-  }
+/* The item table for ONE PR. Every row here belongs to this PR and no other,
+   so items from different PRs can never be interleaved. */
+function prItemsTable(items){
+  // FULL item-level detail for every item of THIS PR - 14 columns, one row per
+  // item. Every row here belongs to this PR and no other, so items from
+  // different PRs can never be interleaved.
+  const head = `<thead><tr>`
+    + `<th class="it">Item</th><th class="n">Qty</th><th>Unit / Area</th>`
+    + `<th>Department</th><th>Plant</th><th>Manufacturer</th><th>Agent</th>`
+    + `<th class="n">Order Value</th><th class="n">BDT Value</th>`
+    + `<th>PR No.</th><th>PR Date</th><th>Owner</th><th>Waiting Time</th><th>Status</th>`
+    + `</tr></thead>`;
+  const body = items.map(t => {
+    const ov = t.order_value ? (fmtNum(t.order_value) + (t.currency ? " " + esc(t.currency) : "")) : "\u2014";
+    const st = smartStage(t);
+    return `<tr>`
+      + `<td class="it">${esc(t.item || t.cer || t.id || "\u2014")}</td>`
+      + `<td class="n">${esc(t.qty || "\u2014")}</td>`
+      + `<td>${esc(t.unit_area || "\u2014")}</td>`
+      + `<td>${esc(t.dept || "\u2014")}</td>`
+      + `<td>${esc(t.plant || "\u2014")}</td>`
+      + `<td>${esc(t.manufacturer || "\u2014")}</td>`
+      + `<td>${esc(t.agent || "\u2014")}</td>`
+      + `<td class="n">${ov}</td>`
+      + `<td class="n">${t.ov_bdt ? fmtBDT(t.ov_bdt) : "\u2014"}</td>`
+      + `<td>${esc(t.pr || "\u2014")}</td>`
+      + `<td>${t.pr_date ? fmtDate(t.pr_date) : "\u2014"}</td>`
+      + `<td>${esc(t.owner || "\u2014")}</td>`
+      + `<td>${esc(waitingFor(t.pr_created_at || t.pr_date) || "\u2014")}</td>`
+      + `<td>${esc(st)}</td>`
+      + `</tr>`;
+  }).join("");
+  return `<table class="pr-itbl">${head}<tbody>${body}</tbody></table>`;
 }
+
+/* Authoritative release info from pr_release_events, shown in the EXPANDED
+   area only (the collapsed header stays minimal). Renders nothing at all when
+   the SQL has not been applied, or when this PR has no release event. */
+function prRelInfo(pr){
+  const e = prEventInfo(pr);
+  if(!e) return "";
+  const by   = String(e.released_by || "").trim();
+  const when = e.released_at ? fmtStamp(e.released_at) : "";
+  if(!by && !when) return "";
+  return `<div class="pr-relinfo">\u2705 Released`
+    + (by ? ` by <b>${esc(by)}</b>` : "")
+    + (when ? ` \u00b7 ${esc(when)}` : "")
+    + ` <span class="pr-src">(from pr_release_events)</span></div>`;
+}
+
+/* ----- Release PR (authorized user only) ----- */
+/* Release one PR - and EVERY item belonging to it, so no item of a released PR
+   is left behind in the pending list. Returns a result object so the caller can
+   report the real outcome; every failure path used to be silent, which made a
+   refused write look like a dead button. */
+async function releasePr(id){
+  const key = String(id == null ? "" : id);
+  if(!key) return { ok:false, msg:"Internal error: no PR reference was passed." };
+  let t = tasks.find(x => x.id === key);
+  if(!t){
+    // The caller may pass the PR NUMBER itself; resolve it to the records.
+    const byPr = tasks.filter(x => String(x.pr || "").trim() === key);
+    if(byPr.length) t = byPr[0];
+  }
+  if(!t) return { ok:false, msg:"That record could not be found - it may have been deleted. Close and reopen the list." };
+
+  const prNum = String(t.pr || "").trim();
+  if(!prNum) return { ok:false, msg:"This record has no PR number, so there is nothing to release." };
+
+  const targets = tasks.filter(x => String(x.pr || "").trim() === prNum && prPending(x));
+  if(!targets.length) return { ok:false, msg:"PR " + prNum + " has already been released." };
+
+  // ---- permission gate (unchanged, still fail-closed) ----
+  if(!canReleasePr()){
+    return { ok:false, msg: PR_RELEASE_ADMIN_IDS.length
+      ? "Read-only \u2014 only the authorized user can release PRs. You are signed in as a different account."
+      : "PR release is locked \u2014 no authorized user ID is configured yet." };
+  }
+
+  // ---- confirmation ----
+  // A native confirm() is BLOCKED inside a sandboxed iframe (it returns
+  // undefined), and the old code was `if(!confirm(...)) return;` - so in an
+  // embedded tracker the release aborted instantly with no message at all.
+  const n = targets.length;
+  const ask = "Release PR " + prNum + (n > 1 ? " (" + n + " items)" : "") + "?\n\n"
+    + (t.item || t.cer || t.id || "") + (n > 1 ? "  +" + (n - 1) + " more item(s)" : "") + "\n\n"
+    + "This records the release date and the releasing user, moves the PR to \"PR Released\" "
+    + "and removes it from the PR Release Required list.\n"
+    + "The PR number and the full PR history are kept.";
+  if(typeof window.__prConfirm !== "function") return { ok:false, msg:"Internal error: the confirmation dialog is unavailable." };
+  const yes = await window.__prConfirm({ title:"Release PR " + prNum + "?", text:ask, ok:"Release PR" });
+  if(!yes) return { ok:false, cancelled:true, msg:"" };
+
+  // ---- editing lock (every other write path in the app acquires it) ----
+  if(Lock.isLocked() && !Lock.amIHolder()){
+    return { ok:false, msg:"Read-only \u2014 " + (Lock.holderName() || "another user") + " is editing right now. Try again in a moment." };
+  }
+  const lr = await Lock.acquire();
+  if(!lr.ok && !(lr.holder === "not logged in" && !isAuthenticated())){
+    return { ok:false, msg:"Read-only \u2014 " + (lr.holder || "another user") + " is editing right now. Try again in a moment." };
+  }
+
+  const nowIso = new Date().toISOString();          // absolute instant (audit)
+  const who = actName();
+  const todayLocal = nowLocalStamp().slice(0, 10);
+
+  // ---- snapshot for an exact rollback if the write does not land ----
+  const snap = targets.map(x => ({
+    id:x.id, pr_released:x.pr_released, pr_release_status:x.pr_release_status,
+    pr_released_at:x.pr_released_at, pr_released_by:x.pr_released_by,
+    pr_released_date:x.pr_released_date, pr_history:x.pr_history,
+    lastEditedBy:x.lastEditedBy, lastEditedAt:x.lastEditedAt,
+    stage:x.stage, progress:x.progress, priority:x.priority,
+    target:x.target
+  }));
+
+  targets.forEach(x => {
+    x.pr_released = true;
+    x.pr_release_status = "Released";
+    x.pr_released_at = nowIso;
+    x.pr_released_by = who;
+    if(!String(x.pr_released_date || "").trim()) x.pr_released_date = todayLocal;
+    if(!Array.isArray(x.pr_history)) x.pr_history = [];   // never lose the history
+    let ev = x.pr_history.find(h => String(h.pr) === prNum);
+    if(!ev){ ev = makePrEvent(prNum); x.pr_history.push(ev); }
+    ev.status = "Released"; ev.released_at = nowIso; ev.released_by = who;
+    x.lastEditedBy = currentUser() || who;
+    x.lastEditedAt = nowIso;
+    applySmart(x);                                        // stage -> "PR Done"
+  });
+
+  // Restores the exact in-memory state captured in `snap` above. Used both when
+  // the shared write fails and when the database refuses the release, so the UI
+  // never shows a false "released" state.
+  const rollback = () => {
+    const byId = new Map(targets.map(x => [x.id, x]));
+    snap.forEach(s => {
+      const x = byId.get(s.id); if(!x) return;
+      Object.keys(s).forEach(k => { if(k !== "id") x[k] = s[k]; });
+    });
+  };
+
+  let ok = false, err = null;
+  lastSaveError = null;
+  try { ok = await save(); }
+  catch(e){ ok = false; err = e; }
+  if(!ok) err = err || lastSaveError;
+
+  if(!ok){
+    // Honest failure: roll the UI back so the tracker keeps telling the truth,
+    // and report the ACTUAL reason instead of pretending it worked.
+    rollback();
+    const m = (err && (err.message || err.details || err.hint)) || "unknown error";
+    let reason;
+    if(/row-level security|42501|permission|not authorized|policy/i.test(m)) reason = "This account has no write permission on the shared tracker.";
+    else if(/network|fetch|Failed to fetch|timeout|NetworkError/i.test(m)) reason = "Network problem reaching the shared tracker.";
+    else reason = m;
+    console.error("[TSD] Release PR failed:", err || m);
+    renderAll();
+    // Report the ACTUAL outcome. Previously every failure was silent, so a
+    // refused write looked like a dead button.
+    const failMsg = "Release failed. PR " + prNum + " was NOT released and nothing was changed. Reason: " + reason;
+    toast(failMsg);
+    return { ok:false, msg:failMsg };
+  }
+
+  // ---- OPTIONAL server-side audit log (public.pr_release_events) ----
+  // Runs only AFTER the jsonb write has been verified above. release_pr() is
+  // SECURITY DEFINER with the boss check INSIDE the function, so a non-boss
+  // caller is refused by the DATABASE (42501) even if they bypass this UI.
+  // If the table has not been created yet the release still stands on the
+  // jsonb state alone - the app must not break for users who have not run the
+  // SQL. Note: release_pr() only INSERTs, so INSERT-only privileges suffice.
+  let logged = false;
+  try{
+    const rpc = await supabaseClient.rpc("release_pr", {
+      p_pr_number:  prNum,
+      p_record_ids: targets.map(x => String(x.id))
+    });
+    if(rpc && rpc.error){
+      if(prEventsMissing(rpc.error)){
+        console.warn("[TSD] pr_release_events not found - the release is recorded in the shared record only. Run the Option A SQL to enable the audit log.");
+      } else if(String(rpc.error.code || "") === "42501"){
+        // The DATABASE refused: this account is not the authorized boss. Do NOT
+        // leave a false "released" state - restore and push the restored state
+        // back, then report it plainly.
+        rollback();
+        try{ await save(); }catch(e){}
+        renderAll();
+        const m2 = "Release refused by the database: only the authorized user may release a PR. Nothing was changed.";
+        console.error("[TSD] Release PR refused by the database:", rpc.error);
+        toast(m2);
+        return { ok:false, msg:m2 };
+      } else {
+        console.warn("[TSD] pr_release_events write failed (the release is still recorded in the shared record):", rpc.error.message || rpc.error);
+      }
+    } else {
+      logged = true;
+    }
+  }catch(e){
+    if(prEventsMissing(e)){
+      console.warn("[TSD] pr_release_events not found - the release is recorded in the shared record only.");
+    } else {
+      console.warn("[TSD] pr_release_events write threw (the release is still recorded in the shared record):", (e && (e.message || e)) || e);
+    }
+  }
+  if(logged) await loadPrEvents();
+
+  try{ await Lock.release(); }catch(e){}
+  renderAll();
+  const doneMsg = "PR " + prNum + " released successfully \u2014 " + targets.length + (targets.length === 1 ? " item" : " items") + " \u00b7 by " + who
+    + (logged ? " \u00b7 logged to pr_release_events" : "");
+  toast(doneMsg);
+  return { ok:true, pr:prNum, count:targets.length, by:who, logged:logged };
+}
+
+/* In-page confirm dialog, used instead of the native confirm() so the action
+   works inside sandboxed iframes too. Resolves true/false; Escape and the
+   backdrop cancel. The delete flow is protected by its own null check on
+   pendingDelete, so the two never interfere. */
+function prConfirm(opts){
+  return new Promise(resolve => {
+    const ov = $("#confirmOverlay"), h = $("#confirmTitle"), p = $("#confirmText"),
+          yes = $("#confirmYes"), no = $("#confirmNo");
+    if(!ov || !yes || !no){ try{ resolve(window.confirm(opts.text) === true); }catch(e){ resolve(false); } return; }
+    const prevH = h ? h.textContent : "", prevT = p ? p.textContent : "", prevY = yes.textContent;
+    if(h) h.textContent = opts.title || "Are you sure?";
+    if(p) p.textContent = opts.text || "";
+    yes.textContent = opts.ok || "Confirm";
+    const done = (v) => {
+      ov.classList.remove("open");
+      yes.removeEventListener("click", onYes);
+      no.removeEventListener("click", onNo);
+      ov.removeEventListener("click", onBg);
+      document.removeEventListener("keydown", onKey);
+      if(h) h.textContent = prevH;
+      if(p) p.textContent = prevT;
+      yes.textContent = prevY;
+      resolve(v);
+    };
+    const onYes = () => done(true), onNo = () => done(false);
+    const onBg = (e) => { if(e.target === ov) done(false); };
+    const onKey = (e) => { if(e.key === "Escape") done(false); };
+    yes.addEventListener("click", onYes);
+    no.addEventListener("click", onNo);
+    ov.addEventListener("click", onBg);
+    document.addEventListener("keydown", onKey);
+    ov.classList.add("open");
+  });
+}
+window.__prConfirm = prConfirm;
 
 function wirePrDashboard(){
   if(_prHooksWired) return; _prHooksWired = true;
@@ -2579,22 +3872,58 @@ function wirePrDashboard(){
   if(chips) chips.addEventListener("click", e=>{
     const c = e.target.closest("[data-prfilter]"); if(!c) return;
     const key = c.getAttribute("data-prfilter");
-    const stg = $("#stageFilter");
     if(key === "pr"){
-      // Focus the main table on the PR-release-pending stage. The toolbar's own
-      // sort / Header-Data controls are left exactly as the user set them.
-      filter.stage = "PR Release Pending";
-      if(stg) stg.value = "PR Release Pending";
-      renderAll();
+      // Open the PR Release panel (one collapsible card per PR, with its item
+      // details). The main tracker table's own sort / Header-Data controls are
+      // left EXACTLY as the user set them - this view never touches them.
+      prPanelOpen = true;
+      renderPrDashboard();
+      const n = $("#prList"); if(n) n.scrollIntoView({block:"nearest", behavior:"smooth"});
     }
   });
 
-  const list = $("#prList");
-  if(list) list.addEventListener("click", e=>{
-    const b = e.target.closest("[data-release]"); if(!b) return;
-    e.stopPropagation();
-    releasePr(b.getAttribute("data-release"));
-  });
+  // One DELEGATED listener on #prList - a permanent element - that reads the
+  // data-* attributes off the clicked node. Per-button listeners would be
+  // thrown away by every renderPrDashboard() re-render, which is one of the
+  // reasons the Release PR button could stop responding.
+  if(!_prPanelWired){
+    _prPanelWired = true;
+    const list = $("#prList");
+    if(list) list.addEventListener("click", async e=>{
+      const tg = e.target.closest("[data-prtoggle]");
+      if(tg){
+        e.preventDefault(); e.stopPropagation();
+        const k = tg.getAttribute("data-prtoggle");
+        _prOpen[k] = !_prOpen[k];
+        renderPrDashboard();
+        return;
+      }
+      const rb = e.target.closest("[data-release]");
+      if(rb){
+        e.preventDefault(); e.stopPropagation();
+        await runRelease(rb.getAttribute("data-release"));
+      }
+    });
+  }
+}
+
+/* Drives one release click and reports the OUTCOME to the user. */
+async function runRelease(id){
+  const working = $("#prWorking"), wtxt = $("#prWorkingTxt");
+  if(working){ working.hidden = false; if(wtxt) wtxt.textContent = "Releasing PR\u2026"; }
+  document.querySelectorAll("#prList [data-release]").forEach(b => { b.disabled = true; });
+  let res;
+  try{
+    res = await releasePr(id);
+  }catch(e){
+    console.error("[TSD] Release PR threw:", e);
+    res = { ok:false, msg:"Release failed with an unexpected error: " + ((e && e.message) || e) };
+  }
+  if(working) working.hidden = true;
+  if(res && res.cancelled){ renderPrDashboard(); return; }
+  // releasePr() reports its own outcome through toast(), so this only refreshes
+  // the panel - a single message, never a duplicate.
+  renderPrDashboard();
 }
 
 /* ---------- filter controls ---------- */
@@ -3124,6 +4453,9 @@ function askDelete(id){
   $("#confirmOverlay").classList.add("open");
 }
 $("#confirmYes").addEventListener("click", async ()=>{
+  // The same dialog is reused by the PR-release confirmation, which runs with
+  // pendingDelete === null and manages its own button listeners.
+  if(pendingDelete === null) return;
   const id = pendingDelete;
   if(id){
     // Defensive: never delete while someone else holds the editing lock.
@@ -3163,231 +4495,8 @@ $("#confirmYes").addEventListener("click", async ()=>{
   pendingDelete = null;
   $("#confirmOverlay").classList.remove("open");
 });
-$("#confirmNo").addEventListener("click", ()=>{ pendingDelete=null; $("#confirmOverlay").classList.remove("open"); });
-$("#confirmOverlay").addEventListener("click", e=>{ if(e.target.id==="confirmOverlay"){ pendingDelete=null; $("#confirmOverlay").classList.remove("open"); } });
-
-/* ---------- Copy for SAP ---------- */
-// Set of selected record ids for the SAP copy feature (persists across re-renders).
-const SAP_SELECTED = new Set();
-
-// Split a tracker qty string like "02 pc", "850 sft", "1 set", "9pc", "1" into
-// {num, unit}. Returns {num:"", unit:""} when there is nothing usable.
-function splitQty(q){
-  const s = String(q ?? "").trim();
-  if(!s) return {num:"", unit:""};
-  const m = s.match(/^([0-9]+(?:\.[0-9]+)?)\s*([A-Za-z%]+)?$/);
-  if(m) return {num:m[1], unit:(m[2]||"").toLowerCase()};
-  // Fallback: leading number, rest as unit (e.g. "9pc" -> 9 / pc)
-  const n = s.match(/^([0-9]+(?:\.[0-9]+)?)/);
-  if(n){
-    const rest = s.slice(n[1].length).trim();
-    // Guard: if the remainder is not a clean alphabetic unit (e.g. compound
-    // "01+01", "04+01"), treat as a single numeric qty with NO unit.
-    const unit = /^[A-Za-z%]+$/.test(rest) ? rest.toLowerCase() : "";
-    return {num:n[1], unit};
-  }
-  return {num:"", unit:s.toLowerCase()};
-}
-
-// Convert an ISO date (YYYY-MM-DD) to SAP's DD.MM.YY text format.
-// Returns "" for empty/invalid input. e.g. "2026-01-05" -> "05.01.26"
-function sapDate(v){
-  if(!v) return "";
-  const s = String(v).trim();
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(!m) return s; // already in some other format, pass through
-  return `${m[3]}.${m[2]}.${m[1].slice(2)}`;
-}
-
-// Exact 25-column header row, matching the CER_CEVA_2026.xlsx "2026" sheet
-// (row 2, columns B-Z). Column 18 (S) has no header -> empty string.
-const SAP_HEADERS = [
-  "PR", "??", "A", "B", "Materials",
-  "Item Description/ Particulars/ Item Name", "Required Qty", "Unit", "Blunk", "Delivery Date",
-  "Mat Group", "SAP Plant", "Sloc", "PGR", "CER Requisitioner",
-  "Tracking no.", "???", "", "Unit Value \n(Without Freight/VAT)", "Crncy",
-  "Vendor", "Purpose/Requirement Justification", "Origin", "Department", "Order justification"
-];
-
-// Build one SAP row (25 tab-separated columns) from a tracker record.
-// SAP column order: PR, ??, A, B, Materials, Item Description, Required Qty,
-// Unit, Blunk, Delivery Date, Mat Group, SAP Plant, Sloc, PGR, CER Requisitioner,
-// Tracking no., ???, (no header), Unit Value, Crncy, Vendor, Purpose, Origin,
-// Department, Order justification.
-function buildSapRow(t){
-  const q = splitQty(t.qty);
-  const cells = [
-    t.pr || "",            // 1  PR
-    "",                    // 2  ??
-    "",                    // 3  A
-    "",                    // 4  B
-    "",                    // 5  Materials
-    t.item || "",          // 6  Item Description
-    q.num,                 // 7  Required Qty (numeric part)
-    q.unit,                // 8  Unit (unit part)
-    "",                    // 9  Blunk
-    t.delivery_date ? sapDate(t.delivery_date) : "", // 10 Delivery Date (DD.MM.YY)
-    t.mat_group || "",     // 11 Mat Group
-    "",                    // 12 SAP Plant (left blank per user)
-    "",                    // 13 Sloc
-    "",                    // 14 PGR
-    t.owner || "",           // 15 Requisitioner
-    t.tracking || "",      // 16 Tracking no.
-    "",                    // 17 ???
-    "",                    // 18 (no header)
-    t.order_value ?? "",   // 19 Unit Value
-    t.currency || "",      // 20 Crncy
-    t.manufacturer || "",  // 21 Vendor
-    t.purpose || "",       // 22 Purpose
-    t.origin || "",        // 23 Origin
-    t.dept || "",          // 24 Department
-    t.order_justification || ""  // 25 Order justification
-  ];
-  return cells.join("\t");
-}
-
-function updateSapSelBar(){
-  const n = SAP_SELECTED.size;
-  $("#sapSelCount").textContent = n;
-  $("#sapSelBar").style.display = n ? "flex" : "none";
-  const all = document.querySelectorAll(".sap-row-cb");
-  const selAll = $("#sapSelectAll");
-  if(selAll) selAll.checked = all.length > 0 && all.length === SAP_SELECTED.size;
-}
-
-async function copyForSap(){
-  const list = filtered().filter(t => SAP_SELECTED.has(t.id));
-  if(!list.length){ toast("Select at least one row to copy for SAP"); return; }
-  const text = [SAP_HEADERS.join("\t"), ...list.map(buildSapRow)].join("\n");
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(`Copied ${list.length} row(s) for SAP`);
-  } catch(e) {
-    // Fallback for older browsers / non-secure contexts.
-    const ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); toast(`Copied ${list.length} row(s) for SAP`); }
-    catch(err){ toast("Copy failed \u2014 please select rows and try again"); }
-    document.body.removeChild(ta);
-  }
-}
-
-/* ---------- Copy for Excel ---------- */
-// Exact 20-column header row for the user's SAP-preparation Excel order.
-const EXCEL_HEADERS = [
-  "PR", "A / B", "Materials", "Item Description", "Required Qty",
-  "Unit", "Delivery Date", "Mat Group", "SAP Plant", "Sloc",
-  "PGR", "CER Requisitioner", "Tracking No.", "Unit Value", "Currency",
-  "Vendor", "Purpose/Requirement Justification", "Origin", "Department", "Order Justification"
-];
-
-// Build one Excel row (20 tab-separated columns) from a tracker record.
-// Preserves blanks as empty slots so columns never shift; keeps original
-// stored values exactly (no truncation, no leading-zero removal).
-function buildExcelRow(t){
-  const q = splitQty(t.qty);
-  const cells = [
-    t.pr || "",                       // 1  PR
-    "",                               // 2  A / B
-    "",                               // 3  Materials
-    t.item || "",                     // 4  Item Description
-    q.num,                            // 5  Required Qty (numeric part)
-    q.unit,                           // 6  Unit (unit part)
-    t.delivery_date ? sapDate(t.delivery_date) : "", // 7  Delivery Date (DD.MM.YY)
-    t.mat_group || "",                // 8  Mat Group
-    "",                               // 9  SAP Plant (left blank per user)
-    "",                               // 10 Sloc
-    "",                               // 11 PGR
-    t.owner || "",                    // 12 CER Requisitioner
-    t.tracking || "",                 // 13 Tracking No.
-    t.order_value ?? "",              // 14 Unit Value
-    t.currency || "",                 // 15 Currency
-    t.manufacturer || "",             // 16 Vendor
-    t.purpose || "",                  // 17 Purpose/Requirement Justification
-    t.origin || "",                   // 18 Origin
-    t.dept || "",                     // 19 Department
-    t.order_justification || ""       // 20 Order Justification
-  ];
-  return cells.join("\t");
-}
-
-async function copySelectedRecordsForExcel(){
-  const list = filtered().filter(t => SAP_SELECTED.has(t.id));
-  if(!list.length){ toast("Select at least one row to copy for Excel"); return; }
-  const withHeaders = $("#excelCopyMode").value !== "data";
-  const rows = list.map(buildExcelRow);
-  const text = withHeaders ? [EXCEL_HEADERS.join("\t"), ...rows].join("\n") : rows.join("\n");
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(`Copied ${list.length} row(s) for Excel`);
-  } catch(e) {
-    const ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); toast(`Copied ${list.length} row(s) for Excel`); }
-    catch(err){ toast("Copy failed — please select rows and try again"); }
-    document.body.removeChild(ta);
-  }
-}
-
-/* ---------- SAP data-entry system ---------- */
-// v9: SAP readiness reporting removed completely at the user's request.
-// The SAP_REQUIRED field list, the sapMissingFields() checker and the
-// sapReadyBadge() renderer were all deleted here, so nothing anywhere reports
-// whether SAP is ready or not ready — no badge, text, colour or icon.
-// The SAP 25-column export/import below is unaffected.
-
-// Build one SAP row (25 columns) as an array of cell values (for xlsx export).
-// Mirrors buildSapRow() but returns an array instead of a tab-joined string.
-function buildSapRowArray(t){
-  const q = splitQty(t.qty);
-  return [
-    t.pr || "",            // 1  PR
-    "",                    // 2  ??
-    "",                    // 3  A
-    "",                    // 4  B
-    "",                    // 5  Materials
-    t.item || "",          // 6  Item Description
-    q.num,                 // 7  Required Qty (numeric part)
-    q.unit,                // 8  Unit (unit part)
-    "",                    // 9  Blunk
-    t.delivery_date ? sapDate(t.delivery_date) : "", // 10 Delivery Date (DD.MM.YY)
-    t.mat_group || "",     // 11 Mat Group
-    "",                    // 12 SAP Plant (left blank per user)
-    "",                    // 13 Sloc
-    "",                    // 14 PGR
-    t.owner || "",         // 15 Requisitioner
-    t.tracking || "",      // 16 Tracking no.
-    "",                    // 17 ???
-    "",                    // 18 (no header)
-    t.order_value ?? "",   // 19 Unit Value
-    t.currency || "",      // 20 Crncy
-    t.manufacturer || "",  // 21 Vendor
-    t.purpose || "",       // 22 Purpose
-    t.origin || "",        // 23 Origin
-    t.dept || "",          // 24 Department
-    t.order_justification || ""  // 25 Order justification
-  ];
-}
-
-// Export filtered rows to a real .xlsx file matching the CER_CEVA_2026 template:
-// exact 25 column headers (B-Z), exact order, correct values/formats.
-function exportSapExcel(){
-  const list = filtered();
-  if(!list.length){ toast("No rows to export"); return; }
-  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
-  const header = SAP_HEADERS.map(h=>h.replace(/\n/g," "));
-  const rows = list.map(buildSapRowArray);
-  const aoa = [header, ...rows];
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  // Set column widths for readability (optional, does not affect data).
-  ws["!cols"] = header.map(h=>({ wch: Math.max(10, (h||"").length+2) }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "2026");
-  XLSX.writeFile(wb, "CER_CEVA_2026.xlsx");
-  toast(`Exported ${list.length} rows to SAP Excel`);
-}
+$("#confirmNo").addEventListener("click", ()=>{ if(pendingDelete === null) return; pendingDelete=null; $("#confirmOverlay").classList.remove("open"); });
+$("#confirmOverlay").addEventListener("click", e=>{ if(e.target.id==="confirmOverlay" && pendingDelete !== null){ pendingDelete=null; $("#confirmOverlay").classList.remove("open"); } });
 
 // Map an SAP Excel row (25 columns, B-Z) back into a website record.
 // The same mapping works in both directions (export and import).
@@ -3422,74 +4531,6 @@ function sapDateToIso(v){
   const mm = String(m[2]).padStart(2,"0");
   const dd = String(m[1]).padStart(2,"0");
   return `${y}-${mm}-${dd}`;
-}
-
-// Import an SAP Excel file: read all rows, map each into a website record,
-// and add them to the tracker (preserving all information).
-function importSapExcel(file){
-  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
-  const reader = new FileReader();
-  reader.onload = e=>{
-    try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type:"array" });
-      const sheetName = wb.SheetNames[0];
-      const ws = wb.Sheets[sheetName];
-      const aoa = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
-      if(!aoa.length){ toast("No data found in the Excel file"); return; }
-      // Skip the header row (row 2 in the template). Detect it: if the first
-      // row's first cell is "PR" (the header), skip it.
-      let start = 0;
-      if(String(aoa[0][0]||"").trim().toUpperCase() === "PR") start = 1;
-      let added = 0;
-      for(let i=start; i<aoa.length; i++){
-        const cells = aoa[i];
-        // Skip fully-empty rows.
-        if(!cells || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
-        const rec = sapRowToRecord(cells);
-        if(!rec.item && !rec.pr) continue; // skip rows with no meaningful data
-        rec.id = uid();
-        rec.sl = String(nextSl());
-        rec.cer = "";
-        rec.cer_date = "";
-        rec.unit_area = "";
-        rec.plant = "";
-        rec.cer_status = "Not Ordered";
-        rec.agent = "";
-        rec.rate = null;
-        rec.ov_bdt = null;
-        rec.init_quoted = null;
-        rec.init_bdt = null;
-        rec.reduction = "";
-        rec.submitted = "";
-        rec.pr_date = "";
-        rec.po = "";
-        rec.lc = "";
-        rec.machine_status = "";
-        rec.machine_date = "";
-        rec.notesheet_date = "";
-        rec.scm_note = "";
-        rec.stage = "Not Ordered";
-        rec.priority = "Low";
-        rec.progress = 5;
-        rec.target = "";
-        rec.created = nowLocalStamp();
-        rec.autoPriority = true; rec.autoProgress = true; rec._autoTarget = true;
-        rec.lastEditedBy = currentUser();
-        rec.lastEditedAt = new Date().toISOString();
-        tasks.unshift(rec);
-        added++;
-      }
-      if(added){
-        save().then(ok=>{ renderAll(); toast(`Imported ${added} row(s) from SAP Excel`); });
-      } else {
-        toast("No importable rows found in the Excel file");
-      }
-    } catch(err){
-      console.error("SAP import failed:", err);
-      toast("Import failed — " + (err?.message || String(err)));
-    }
-  };
-  reader.readAsArrayBuffer(file);
 }
 
 /* ============================================================
@@ -3647,7 +4688,9 @@ function detectCerHeaderRow(aoa){
 // first sheet whose header row carries CER + Item Name + Qty.
 function pickCerSheet(wb){
   const norm = s => String(s||"").replace(/[\s\u00a0]+/g,"").trim().toLowerCase();
-  const conv = n => { try{ return XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:"", blankrows:false }); }catch(e){ return []; } };
+  // blankrows:true keeps the array index aligned with the real Excel row
+  // number (index 0 = row 1), which is what the error report needs.
+  const conv = n => { try{ return XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:"", blankrows:true }); }catch(e){ return []; } };
   // Prefer the sheet literally named "2026" (the CER year sheet of this
   // workbook) so only one sheet has to be parsed in the normal case.
   const named = (wb.SheetNames || []).find(n=>norm(n) === "2026");
@@ -3702,7 +4745,14 @@ function cerRowToRecord(cells, col){
        so no information is lost in the round trip. */
     install_status: cellToText(raw("install_status")),
     install_date: cellToDate(raw("install_date")),
-    rate: null
+    rate: null,
+    /* The RAW cell values for every date column, kept so validation can report
+       the value the user actually sees in Excel (not the normalised form). */
+    _raw: {
+      cer_date: raw("cer_date"), submitted: raw("submitted"), pr_date: raw("pr_date"),
+      notesheet_date: raw("notesheet_date"), machine_date: raw("machine_date"),
+      install_date: raw("install_date")
+    }
   };
   return t;
 }
@@ -3908,7 +4958,8 @@ function renderImportResult(st, extra){
 
 /* ---------- run the CER workbook import ---------- */
 function runCerImport(file){
-  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
+  if(!dmGuard("Import CER data")) return;
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded \u2014 check your connection"); return; }
   const reader = new FileReader();
   reader.onerror = ()=> toast("Could not read that file.");
   reader.onload = async e => {
@@ -4007,189 +5058,1281 @@ function explainImportError(err){
   return m;
 }
 
-/* ---------- SAP Existing: refresh, never duplicate ---------- */
-// Rows from an SAP 25-column file are matched against records the tracker
-// already has, on PR first and tracking number second. Only matched records are
-// refreshed; unmatched rows are reported instead of being added, which is
-// exactly what "SAP Existing" means.
-function importSapExisting(file){
-  if(typeof XLSX === "undefined"){ toast("Excel library not loaded — check your connection"); return; }
-  const reader = new FileReader();
-  reader.onerror = ()=> toast("Could not read that file.");
-  reader.onload = async e => {
-    try{
-      importSheet();
-      renderImportProgress(8, "Reading the SAP file…");
-      await new Promise(r=>setTimeout(r,60));
-      const wb  = XLSX.read(new Uint8Array(e.target.result), { type:"array", cellDates:true });
-      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", blankrows:false });
-      let start = 0;
-      if(String((aoa[0]||[])[0]||"").trim().toUpperCase() === "PR") start = 1;
-
-      const byPr = new Map(), byTrk = new Map();
-      tasks.forEach((t,i)=>{
-        const pr = String(t.pr||"").trim();  if(pr) byPr.set(pr, i);
-        const tr = String(t.tracking||"").trim(); if(tr) byTrk.set(tr, i);
-      });
-
-      let scanned = 0, updated = 0, unmatched = 0, unchanged = 0;
-      const misses = [];
-      for(let i=start; i<aoa.length; i++){
-        const cells = aoa[i] || [];
-        if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
-        scanned++;
-        if(scanned % 25 === 0){
-          renderImportProgress(10 + (i/aoa.length)*55, `Matching ${scanned} row(s)…`);
-          await new Promise(r=>setTimeout(r,0));
-        }
-        const rec = sapRowToRecord(cells);
-        const pr = String(rec.pr||"").trim(), tr = String(rec.tracking||"").trim();
-        const idx = (pr && byPr.has(pr)) ? byPr.get(pr) : ((tr && byTrk.has(tr)) ? byTrk.get(tr) : -1);
-        if(idx < 0){ unmatched++; if(misses.length < 8) misses.push(pr || tr || `row ${i+1}`); continue; }
-        const t = tasks[idx];
-        const patch = {};
-        ["pr","pr_date","qty","delivery_date","mat_group","owner","tracking","order_value","currency",
-         "manufacturer","purpose","origin","dept","order_justification","item"].forEach(k=>{
-          const nv = rec[k];
-          if(nv === null || nv === undefined || nv === "") return;
-          if(!sameVal(t[k], nv)) patch[k] = nv;
-        });
-        if(Object.keys(patch).length){
-          Object.assign(t, patch);
-          t.lastEditedBy = currentUser(); t.lastEditedAt = new Date().toISOString();
-          applySmart(t);
-          updated++;
-        } else unchanged++;
-      }
-
-      renderImportProgress(72, "Saving to the tracker…");
-      const ok = await save();
-      renderImportProgress(92, "Finishing…");
-      await new Promise(r=>setTimeout(r,80));
-      renderAll();
-      await Lock.release();
-
-      $("#modalTitle").textContent = "SAP refresh complete";
-      $("#modalBody").innerHTML = `
-        <div class="imp-wrap">
-          <div class="imp-h">SAP Existing — refresh complete</div>
-          <div class="imp-p">Saved to the tracker.</div>
-          <div class="imp-grid">
-            <div class="imp-kpi"><b class="imp-ok">${updated}</b><span>Updated</span></div>
-            <div class="imp-kpi"><b>${unchanged}</b><span>Unchanged</span></div>
-            <div class="imp-kpi"><b class="${unmatched ? "imp-warn" : ""}">${unmatched}</b><span>Not found</span></div>
-            <div class="imp-kpi"><b>${scanned}</b><span>In file</span></div>
-          </div>
-          <div class="imp-note">Matched on <b>PR</b> first, then <b>tracking number</b>.
-          Rows that matched no existing item were <b>not added</b> — that is what “SAP Existing” means.
-          Use <b>SAP Import</b> if you want those rows added as new items.
-          ${misses.length ? `<br>Not matched, for example: <b>${esc(misses.join(", "))}</b>` : ""}</div>
-        </div>`;
-      toast(`SAP refresh: ${updated} updated, ${unmatched} not found${ok ? "" : " (not saved)"}`);
-    }catch(err){
-      console.error("SAP existing refresh failed:", err);
-      $("#modalTitle").textContent = "Refresh failed";
-      $("#modalBody").innerHTML = `<div class="imp-wrap"><div class="imp-h imp-bad">Refresh failed</div>
-        <div class="imp-p">${esc(explainImportError(err))}</div>
-        <div class="imp-note">Nothing was written. Your existing data is unchanged.</div></div>`;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
-function exportCsv(){
-  const list = filtered();
-  const cols = ["SL No","CER","Item Name","Qty","Unit/Area","Department","Site/Plant","CER Status","Manufacturer","Local Agent","Order Value","Currency","Tracking Number","Order Value (BDT)","Initial Quoted Value","Initial Value (BDT)","% Reduction","Submitted to Factory Accounts","PR","PR Date","PO","LC","Responsibility","NoteSheet (SCM)","SCM Note","Machine Status","Machine Date","Stage","Priority","Progress %","Deadline","Created"];
-  const get = t => [t.sl,t.cer,t.item,t.qty,t.unit_area,t.dept,t.plant,t.cer_status,t.manufacturer,t.agent,t.order_value,t.currency,t.tracking,t.ov_bdt,t.init_quoted,t.init_bdt,t.reduction,t.submitted,t.pr,t.pr_date,t.po,t.lc,t.owner,t.notesheet_date,t.scm_note,t.machine_status,t.machine_date,t.stage,t.priority,t.progress,t.target,t.created,t.order_value,t.cer_date];
-  const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
-  const csv = [cols.map(q).join(","), ...list.map(t=>get(t).map(q).join(","))].join("\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
-  a.download = "tsd-follow-up-cer-ceva-2026.csv";
-  a.click(); URL.revokeObjectURL(a.href);
-  toast(`Exported ${list.length} rows to CSV`);
-}
 $("#printBtn").addEventListener("click", ()=>window.print());
-$("#sapImportFile").addEventListener("change", e=>{
-  const f = e.target.files && e.target.files[0];
-  if(f) importSapExcel(f);
-  e.target.value = "";
-});
 /* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
 $("#cerImportFile").addEventListener("change", e=>{
   const f = e.target.files && e.target.files[0];
   if(f) runCerImport(f);
   e.target.value = "";
 });
-/* 3-dot menu: "SAP Existing" — refresh records that already exist. */
-$("#sapExistingFile").addEventListener("change", e=>{
-  const f = e.target.files && e.target.files[0];
-  if(f) importSapExisting(f);
-  e.target.value = "";
-});
 
-/* ---------- Export ⋮ dropdown menu ---------- */
-const expMenu = $("#expMenu"), expDrop = $("#expDrop");
-function closeExpMenu(){ expMenu.classList.remove("open"); }
-function openExpMenu(){ expMenu.classList.add("open"); }
-$("#exportMenuBtn").addEventListener("click", e=>{
-  e.stopPropagation();
-  expMenu.classList.contains("open") ? closeExpMenu() : openExpMenu();
-});
-expDrop.addEventListener("click", e=>{
-  const item = e.target.closest(".exp-item");
-  if(!item) return;
-  const act = item.getAttribute("data-act");
-  if(act === "csv") exportCsv();
-  else if(act === "sapExport") exportSapExcel();
-  else if(act === "sapImport") $("#sapImportFile").click();
-  else if(act === "sapExisting") $("#sapExistingFile").click();
-  else if(act === "cerImport") $("#cerImportFile").click();
-  else if(act === "publish") pushLocalToCloud();
-  closeExpMenu();
-});
-document.addEventListener("click", e=>{
-  if(!expMenu.contains(e.target)) closeExpMenu();
-});
-document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeExpMenu(); });
 
-/* ---------- Copy for SAP event wiring ---------- */
-$("#sapCopyBtn").addEventListener("click", copyForSap);
-$("#excelCopyBtn").addEventListener("click", copySelectedRecordsForExcel);
-$("#sapSelectAll").addEventListener("change", e=>{
-  const on = e.target.checked;
-  document.querySelectorAll(".sap-row-cb").forEach(cb=>{
-    if(on) SAP_SELECTED.add(cb.dataset.id); else SAP_SELECTED.delete(cb.dataset.id);
-    cb.checked = on;
-  });
-  updateSapSelBar();
-});
-$("#sapSelectAllBtn").addEventListener("click", ()=>{
-  document.querySelectorAll(".sap-row-cb").forEach(cb=>{ SAP_SELECTED.add(cb.dataset.id); cb.checked = true; });
-  updateSapSelBar();
-});
-$("#sapClearBtn").addEventListener("click", ()=>{
-  SAP_SELECTED.clear();
-  document.querySelectorAll(".sap-row-cb").forEach(cb=>{ cb.checked = false; });
-  updateSapSelBar();
-});
-// Delegate row-checkbox clicks (rows are re-rendered on every filter/sort).
-document.addEventListener("click", e=>{
-  const cb = e.target.closest(".sap-row-cb");
-  if(!cb) return;
-  e.stopPropagation();
-  if(cb.checked) SAP_SELECTED.add(cb.dataset.id); else SAP_SELECTED.delete(cb.dataset.id);
-  updateSapSelBar();
-});
 
 document.addEventListener("keydown", e=>{
-  if(e.key==="Escape"){ if($("#modalOverlay").classList.contains("open")){ closeModal(); } if($("#confirmOverlay").classList.contains("open")){ $("#confirmOverlay").classList.remove("open"); pendingDelete=null; } }
+  if(e.key==="Escape"){ if($("#modalOverlay").classList.contains("open")){ closeModal(); } if($("#confirmOverlay").classList.contains("open") && pendingDelete !== null){ $("#confirmOverlay").classList.remove("open"); pendingDelete=null; } }
   if(e.key==="Enter" && e.target?.id==="searchInput") e.preventDefault();
 });
 
 /* ---------- init ---------- */
+
+/* ============================================================
+   DATA MANAGEMENT  -  a SEPARATE permission role
+   ------------------------------------------------------------
+   The Data Management Admin (DATA_MGMT_ADMIN_IDS) is the ONLY user who may
+   upload Excel, import CER data, replace all CER data, download a backup or
+   restore one. This is deliberately INDEPENDENT of the PR Release role: the
+   boss may release PRs but must NOT manage data, and the Data Management
+   Admin may manage data but is not thereby a PR releaser.
+
+   Every action is gated twice:
+     1. here, on canManageData() (fail-closed), and
+     2. in the database, by the cer_data_mgmt_events RLS policy and the
+        import_cer_data() / replace_cer_data() RPCs, which raise 42501 for
+        anyone else - including the boss.
+   ============================================================ */
+let dmPanelOpen = false;
+let dmLog = [];                 // newest-first mirror of cer_data_mgmt_events
+let dmLogAvailable = null;      // null = unknown, true/false once probed
+let _dmWired = false;
+
+/* Is this error simply "the table does not exist yet" (SQL not applied)? */
+function dmEventsMissing(err){
+  const c = String((err && err.code) || "");
+  const msg = String((err && (err.message || err.details || err.hint)) || err || "");
+  return c === "42P01" || c === "PGRST202" || c === "404"
+      || /does not exist|could not find the table|schema cache|cer_data_mgmt_events/i.test(msg);
+}
+
+/* Read the Data Management audit log. Never throws; absent table -> silent. */
+async function loadDmEvents(){
+  try{
+    const { data, error } = await supabaseClient
+      .from("cer_data_mgmt_events")
+      .select("*")
+      .order("created_at", { ascending:false })
+      .limit(50);
+    if(error){
+      dmLogAvailable = false; dmLog = [];
+      console.warn("[TSD] cer_data_mgmt_events not readable (the Data Management SQL may not be applied yet). Reason:", error.message || error);
+      return false;
+    }
+    dmLog = Array.isArray(data) ? data : [];
+    dmLogAvailable = true;
+    return true;
+  }catch(e){
+    dmLogAvailable = false; dmLog = [];
+    console.warn("[TSD] cer_data_mgmt_events unavailable.", (e && (e.message || e)) || e);
+    return false;
+  }
+}
+
+/* Append one audit event through the boss-of-data RPC. Best-effort: a missing
+   table or a refusal is reported but never breaks the action the user asked
+   for. Returns { ok, missing, refused, msg }. */
+async function dmLogEvent(rpcName, args){
+  try{
+    const rpc = await supabaseClient.rpc(rpcName, args || {});
+    if(rpc && rpc.error){
+      if(dmEventsMissing(rpc.error)){
+        console.warn("[TSD] cer_data_mgmt_events not found - the action is recorded locally only. Run the Data Management SQL to enable the audit log.");
+        return { ok:false, missing:true };
+      }
+      if(String(rpc.error.code || "") === "42501"){
+        console.error("[TSD] Data Management refused by the database:", rpc.error);
+        return { ok:false, refused:true, msg:"The database refused this Data Management action: only the Data Management Admin may perform it." };
+      }
+      console.warn("[TSD] Data Management audit write failed:", rpc.error.message || rpc.error);
+      return { ok:false, msg:(rpc.error.message || String(rpc.error)) };
+    }
+    await loadDmEvents();
+    return { ok:true };
+  }catch(e){
+    if(dmEventsMissing(e)) return { ok:false, missing:true };
+    console.warn("[TSD] Data Management audit write threw:", (e && (e.message || e)) || e);
+    return { ok:false, msg:((e && (e.message || e)) || String(e)) };
+  }
+}
+
+/* ---------- the panel ---------- */
+function dmOpenPanel(){ dmPanelOpen = true; renderDataMgmtUI(); const n = $("#dmPanel"); if(n) n.scrollIntoView({block:"nearest", behavior:"smooth"}); }
+function dmClosePanel(){ dmPanelOpen = false; renderDataMgmtUI(); }
+
+function dmRenderLog(){
+  if(!dmLog.length){
+    return `<div class="dm-empty">No Data Management events recorded yet`
+      + (dmLogAvailable === false ? ` (the audit table is not present - run the Data Management SQL to enable it).` : `.`)
+      + `</div>`;
+  }
+  const rows = dmLog.slice(0, 25).map(e=>{
+    const when = e.created_at ? fmtStamp(e.created_at) : "";
+    return `<tr><td>${esc(when)}</td><td>${esc(e.action || "")}</td><td>${esc(e.actor_name || e.actor_email || "")}</td><td>${esc(e.detail || "")}</td></tr>`;
+  }).join("");
+  return `<table class="dm-tbl"><thead><tr><th>When</th><th>Action</th><th>By</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderDataMgmtUI(){
+  const btn = $("#dmBtn");
+  const panel = $("#dmPanel");
+  if(!btn || !panel) return;
+  const allowed = canManageData();
+  // The entry point is HIDDEN for everyone else - including the boss.
+  btn.hidden = !allowed;
+  if(!allowed && !dmPanelOpen){ panel.hidden = true; return; }
+  panel.hidden = !dmPanelOpen;
+  if(!dmPanelOpen) return;
+
+  const role = $("#dmRole");
+  if(role){
+    role.textContent = allowed ? "Data Management Admin" : "Read-only";
+    role.className = "dm-role" + (allowed ? "" : " bad");
+  }
+  const body = $("#dmBody");
+  if(!body) return;
+
+  if(!allowed){
+    // Reached the view without the role: show a clear denied notice instead of
+    // the controls. Nothing here is clickable.
+    const who = isAuthenticated() ? (currentUser() || currentUserId() || "a signed-in user") : "not signed in";
+    body.innerHTML = `<div class="dm-deny"><b>Access denied.</b><br>
+      Data Management is restricted to the Data Management Admin.<br>
+      You are <b>${esc(who)}</b>${currentUserId() ? ` (ID <code>${esc(currentUserId())}</code>)` : ""}.
+      <br><br>You can still view the CER Tracker and use the normal Add / Edit / Delete / Save
+      functions. Nothing on this page is available to your account.</div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="dm-grid">
+      <div class="dm-card"><b>Export Excel</b><span>Download the current CER dataset as an Excel (.xlsx) workbook.</span>
+        <button class="btn ghost" id="dmExportExcel">Export Excel</button></div>
+      <div class="dm-card"><b>Export CSV</b><span>Download the current CER dataset as a CSV file.</span>
+        <button class="btn ghost" id="dmExportCsv">Export CSV</button></div>
+      <div class="dm-card"><b>Download Backup</b><span>Download every record as a JSON backup file.</span>
+        <button class="btn ghost" id="dmBackup">Download Backup</button></div>
+      <div class="dm-card"><b>Import CER Data</b><span>Merge a workbook: Excel &rarr; Validate &rarr; Preview &rarr; Backup &rarr; Import &rarr; Verify. Existing records are never deleted.</span>
+        <button class="btn ghost" id="dmCerUp">Import CER Data</button></div>
+      <div class="dm-card"><b>Replace All CER Data</b><span>Swap the ENTIRE dataset for a workbook or backup. Validated, backed up and verified first - destructive, asks first.</span>
+        <button class="btn ghost" id="dmReplace">Replace All</button></div>
+      <div class="dm-card"><b>Restore Backup</b><span>Restore the dataset from a JSON backup file. Asks first.</span>
+        <button class="btn ghost" id="dmRestore">Restore Backup</button></div>
+      <div class="dm-card"><b>Import / Replacement History</b><span>Refresh the audit log of Data Management operations.</span>
+        <button class="btn ghost" id="dmRefresh">Refresh History</button></div>
+    </div>
+    <div class="dm-flow" id="dmFlow"></div>
+    <div class="dm-log"><h4>Import / Replacement History</h4>${dmRenderLog()}</div>
+    <input type="file" id="dmReplaceFile" accept=".xlsx,.xls,.csv,.json" style="display:none">
+    <input type="file" id="dmRestoreFile" accept=".json" style="display:none">
+    <input type="file" id="dmFlowFile" accept=".xlsx,.xls,.csv,.json" style="display:none">`;
+
+  const on = (id, fn) => { const el = $("#" + id); if(el) el.addEventListener("click", fn); };
+    on("dmExportExcel", ()=>{ if(dmGuard("Export Excel")) dmExportExcel(); });
+  on("dmExportCsv",   ()=>{ if(dmGuard("Export CSV")) dmExportCsv(); });
+  on("dmCerUp",   ()=>{ if(dmGuard("Import CER data")) $("#cerImportFile").click(); });
+  on("dmReplace", ()=>{ if(dmGuard("Replace all CER data")) dmFlowStart("replace"); });
+  on("dmBackup",  ()=>{ if(dmGuard("Download backup")) dmDownloadBackup(); });
+  on("dmRestore", ()=>{ if(dmGuard("Restore backup")) $("#dmRestoreFile").click(); });
+  on("dmRefresh", ()=>{ if(dmGuard("Import history")) loadDmEvents().then(renderDataMgmtUI); });
+  const rf = $("#dmReplaceFile"); if(rf) rf.addEventListener("change", e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) dmReplaceAll(f); });
+  const sf = $("#dmRestoreFile"); if(sf) sf.addEventListener("change", e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) dmRestoreBackup(f); });
+  const ff = $("#dmFlowFile"); if(ff) ff.addEventListener("change", e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) dmFlowFile(f); });
+  dmFlowRender();
+}
+
+/* ---------- the actions ---------- */
+function dmExportCsv(){
+  const list = tasks.slice();
+  const cols = ["SL No","CER","Item Name","Qty","Unit/Area","Department","Site/Plant","CER Status","Manufacturer","Local Agent","Order Value","Currency","Tracking Number","Order Value (BDT)","Initial Quoted Value","Initial Value (BDT)","% Reduction","Submitted to Factory Accounts","PR","PR Date","PO","LC","Responsibility","NoteSheet (SCM)","SCM Note","Machine Status","Machine Date","Stage","Priority","Progress %","Deadline","Created"];
+  const get = t => [t.sl,t.cer,t.item,t.qty,t.unit_area,t.dept,t.plant,t.cer_status,t.manufacturer,t.agent,t.order_value,t.currency,t.tracking,t.ov_bdt,t.init_quoted,t.init_bdt,t.reduction,t.submitted,t.pr,t.pr_date,t.po,t.lc,t.owner,t.notesheet_date,t.scm_note,t.machine_status,t.machine_date,t.stage,t.priority,t.progress,t.target,t.created];
+  const q = v => "\"" + String(v==null?"":v).replace(/"/g,"\"\"") + "\"";
+  const csv = [cols.map(q).join(",")].concat(list.map(t=>get(t).map(q).join(","))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download = "tsd-follow-up-cer-ceva-2026.csv";
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("Exported " + list.length + " rows to CSV");
+}
+
+function dmExportExcel(){
+  if(typeof XLSX === "undefined"){ toast("Excel library not loaded - check your connection"); return; }
+  const list = tasks.slice();
+  const header = ["SL No","CER","Item Name","Qty","Unit/Area","Department","Site/Plant","CER Status","Manufacturer","Local Agent","Order Value","Currency","Tracking Number","Order Value (BDT)","Initial Quoted Value","Initial Value (BDT)","% Reduction","Submitted to Factory Accounts","PR","PR Date","PO","LC","Responsibility","NoteSheet (SCM)","SCM Note","Machine Status","Machine Date","Stage","Priority","Progress %","Deadline","Created"];
+  const row = t => [t.sl,t.cer,t.item,t.qty,t.unit_area,t.dept,t.plant,t.cer_status,t.manufacturer,t.agent,t.order_value,t.currency,t.tracking,t.ov_bdt,t.init_quoted,t.init_bdt,t.reduction,t.submitted,t.pr,t.pr_date,t.po,t.lc,t.owner,t.notesheet_date,t.scm_note,t.machine_status,t.machine_date,t.stage,t.priority,t.progress,t.target,t.created];
+  const aoa = [header].concat(list.map(row));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = header.map(h=>({ wch: Math.max(10, (h||"").length+2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "CER Data");
+  XLSX.writeFile(wb, "tsd-follow-up-cer-ceva-2026.xlsx");
+  toast("Exported " + list.length + " rows to Excel");
+}
+
+function dmDownloadBackup(){
+  if(!dmGuard("Download backup")) return;
+  try{
+    const payload = dmMakeBackup();
+    const v = dmVerifyBackup(payload);
+    if(!v.ok){ toast("Backup verification failed (" + v.why + ") - nothing was downloaded."); return; }
+    dmDownloadBackupPayload(payload, "manual");
+    toast("Backup downloaded and verified - " + v.count + " record(s).");
+    dmLogEvent("log_cer_data_mgmt", { p_action:"backup", p_detail:"Downloaded a verified backup of " + v.count + " record(s)", p_row_count:v.count })
+      .then(r=>{ if(r && r.refused) toast(r.msg); renderDataMgmtUI(); });
+  }catch(e){
+    console.error("[TSD] Backup failed:", e);
+    toast("Backup failed - " + ((e && e.message) || e));
+  }
+}
+
+function dmRestoreBackup(file){
+  if(!dmGuard("Restore backup")) return;
+  const reader = new FileReader();
+  reader.onerror = ()=> toast("Could not read that backup file.");
+  reader.onload = async e => {
+    try{
+      const parsed = JSON.parse(String(e.target.result || ""));
+      const recs = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.records) ? parsed.records : null);
+      if(!recs) throw new Error("That file is not a TSD backup (no records array).");
+      if(!recs.length) throw new Error("That backup contains no records.");
+      // Verify the backup BEFORE anything is written: it must be a complete,
+      // serialisable snapshot, and its own count must match its records.
+      const declared = (parsed && typeof parsed.count === "number") ? parsed.count : recs.length;
+      if(declared !== recs.length) throw new Error("That backup is inconsistent: it declares " + declared + " record(s) but holds " + recs.length + ".");
+      const round = JSON.parse(JSON.stringify(recs));
+      if(round.length !== recs.length) throw new Error("That backup did not survive a serialisation round trip.");
+      const yes = await window.__prConfirm({
+        title:"Restore backup?",
+        text:"Replace the current " + tasks.length + " record(s) with the " + recs.length + " record(s) in this backup?\n\n"
+           + "The current data will be overwritten. A verified backup of the current data is taken first, and the previous dataset is restored automatically if the write fails.",
+        ok:"Restore"
+      });
+      if(!yes) return;
+      // Snapshot + verified backup of the CURRENT data before the write.
+      const snapshot = JSON.parse(JSON.stringify(tasks));
+      const pre = dmMakeBackup();
+      const pv = dmVerifyBackup(pre);
+      if(!pv.ok){ toast("Backup verification failed (" + pv.why + ") - nothing was written."); return; }
+      dmDownloadBackupPayload(pre, "pre-restore");
+      if(!Lock.amIHolder()){ const r = await Lock.acquire(); if(!r.ok){ toast("Read-only - " + (r.holder || "another user") + " is editing right now. Nothing was written."); return; } }
+      tasks = round;
+      let ok = false, err = null;
+      try{ ok = await save(); if(!ok) err = "the shared write did not land"; }catch(ex){ err = (ex && ex.message) || String(ex); }
+      // Verify by re-reading the shared row.
+      let verify = { ok:false, why: err || "the write failed" };
+      if(ok){
+        try{
+          const { data, error } = await supabaseClient.from("cer_records").select("id,data").limit(1);
+          if(error) verify = { ok:false, why:"the read-back failed: " + (error.message || error) };
+          else if(!data || !data.length) verify = { ok:false, why:"the shared row could not be read back" };
+          else {
+            const live = Array.isArray(data[0].data) ? data[0].data : [];
+            verify = (live.length === tasks.length) ? { ok:true, count:live.length }
+                   : { ok:false, why:"the database holds " + live.length + " record(s) but the tracker expected " + tasks.length };
+          }
+        }catch(ex){ verify = { ok:false, why:((ex && ex.message) || String(ex)) }; }
+      }
+      if(!verify.ok){
+        tasks = snapshot;
+        let restored = false;
+        try{ restored = await save(); }catch(ex){ restored = false; }
+        renderAll();
+        try{ await Lock.release(); }catch(ex){}
+        toast("Restore failed (" + verify.why + "). The previous " + snapshot.length + " record(s) were restored" + (restored ? " and re-saved." : " in the browser only - use the downloaded backup."));
+        dmLogEvent("log_cer_data_mgmt", { p_action:"restore_failed", p_detail:"Restore failed: " + verify.why, p_row_count:snapshot.length, p_source:file.name });
+        renderDataMgmtUI();
+        return;
+      }
+      renderAll();
+      try{ await Lock.release(); }catch(ex){}
+      toast("Backup restored and verified - " + tasks.length + " record(s).");
+      const r = await dmLogEvent("log_cer_data_mgmt", { p_action:"restore", p_detail:"Restored " + tasks.length + " record(s) from " + file.name, p_row_count:tasks.length, p_source:file.name });
+      if(r && r.refused) toast(r.msg);
+      renderDataMgmtUI();
+    }catch(err){
+      console.error("[TSD] Restore failed:", err);
+      toast("Restore failed - " + ((err && err.message) || err));
+    }
+  };
+  reader.readAsText(file);
+}
+
+function dmReplaceAll(file){
+  if(!dmGuard("Replace all CER data")) return;
+  const isJson = /\.json$/i.test(file.name || "");
+  const reader = new FileReader();
+  reader.onerror = ()=> toast("Could not read that file.");
+  reader.onload = async e => {
+    try{
+      let recs = null;
+      if(isJson){
+        const parsed = JSON.parse(String(e.target.result || ""));
+        recs = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.records) ? parsed.records : null);
+        if(!recs) throw new Error("That JSON file is not a TSD backup (no records array).");
+      } else {
+        if(typeof XLSX === "undefined"){ toast("Excel library not loaded - check your connection"); return; }
+        const wb  = XLSX.read(new Uint8Array(e.target.result), { type:"array", cellDates:true });
+        const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", blankrows:false });
+        if(!aoa.length) throw new Error("No data found in that workbook.");
+        let start = 0;
+        if(String((aoa[0]||[])[0]||"").trim().toUpperCase() === "PR") start = 1;
+        recs = [];
+        for(let i=start; i<aoa.length; i++){
+          const cells = aoa[i] || [];
+          if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")) continue;
+          const rec = sapRowToRecord(cells);
+          if(!rec.item && !rec.pr) continue;
+          rec.id = uid(); rec.sl = String(nextSl());
+          rec.lastEditedBy = currentUser(); rec.lastEditedAt = new Date().toISOString();
+          recs.push(rec);
+        }
+        if(!recs.length) throw new Error("No importable rows found in that workbook.");
+      }
+      const yes = await window.__prConfirm({
+        title:"Replace ALL CER data?",
+        text:"Replace the ENTIRE dataset (" + tasks.length + " record(s)) with the " + recs.length + " record(s) in this file?\n\n"
+           + "This is destructive: every current record is discarded. Download a backup first if you are unsure.",
+        ok:"Replace All"
+      });
+      if(!yes) return;
+      if(!Lock.amIHolder()){ const r = await Lock.acquire(); if(!r.ok){ toast("Read-only - " + (r.holder || "another user") + " is editing right now."); return; } }
+      tasks = recs;
+      const ok = await save();
+      renderAll();
+      try{ await Lock.release(); }catch(err){}
+      toast(ok ? ("Replaced all CER data - " + tasks.length + " record(s).") : "Replaced locally, but the shared write did not land.");
+      const r = await dmLogEvent("replace_cer_data", { p_row_count:tasks.length, p_detail:"Replaced all data from " + file.name + " (" + tasks.length + " record(s))" });
+      if(r && r.refused) toast(r.msg);
+      renderDataMgmtUI();
+    }catch(err){
+      console.error("[TSD] Replace all failed:", err);
+      toast("Replace all failed - " + ((err && err.message) || err));
+    }
+  };
+  if(isJson) reader.readAsText(file); else reader.readAsArrayBuffer(file);
+}
+
+/* ============================================================
+   DATA MANAGEMENT WORKFLOW
+   ------------------------------------------------------------
+   Excel -> Validate -> Preview -> Backup -> Import/Replace -> Verify
+
+   The SQL layer (cer_data_mgmt_events + import_cer_data /
+   replace_cer_data) only AUTHORIZES and LOGS. The real work - parsing the
+   workbook, validating it, previewing the effect, snapshotting the current
+   data, writing cer_records.data and verifying the result - happens HERE.
+
+   Replace is guarded and atomic in effect: the pre-replacement snapshot is
+   held in memory AND downloaded as a backup, and if the write or the
+   post-write verification fails the previous dataset is restored
+   automatically. The user can never be left with empty or partial data.
+   ============================================================ */
+let dmFlow = null;                       // the current workflow run
+const DM_STEPS = ["Excel","Validate","Preview","Backup","Write","Verify"];
+
+function dmFlowReset(mode){
+  dmFlow = { mode: mode || "import", fileName:"", fileSize:0, parsed:null, validation:null, preview:null,
+             previewRows:null, merge:null, backup:null, stage:"excel", result:null, error:null,
+             busy:false, pct:0, status:"", errOnly:true, errRows:false,
+             confirmed:false, confirmOpen:false, showInfo:false };
+  dmFlowRender();
+}
+function dmFlowStart(mode){
+  if(!dmGuard(mode === "replace" ? "Replace all CER data" : "Import CER data")) return;
+  dmFlowReset(mode);
+  const f = $("#dmFlowFile"); if(f) f.click();
+}
+
+/* ---------- file reading ---------- */
+function dmReadText(file){
+  return new Promise((res, rej)=>{ const r = new FileReader(); r.onerror = ()=>rej(new Error("Could not read that file.")); r.onload = e=>res(String(e.target.result || "")); r.readAsText(file); });
+}
+function dmReadArrayBuffer(file){
+  return new Promise((res, rej)=>{ const r = new FileReader(); r.onerror = ()=>rej(new Error("Could not read that file.")); r.onload = e=>res(e.target.result); r.readAsArrayBuffer(file); });
+}
+
+/* Parse a workbook or a JSON backup into tracker records. Reuses the app's
+   existing SAP / CER parsing code - nothing is re-implemented. */
+async function dmParseFile(file){
+  const isJson = /\.json$/i.test(file.name || "");
+  if(isJson){
+    const parsed = JSON.parse(await dmReadText(file));
+    const recs = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.records) ? parsed.records : null);
+    if(!recs) throw new Error("That JSON file is not a TSD backup (no records array).");
+    return { kind:"json", records: recs.map(r=>Object.assign({}, r)), sheet:"(backup file)", headerRow:0, colMap:null, blankRows:0 };
+  }
+  if(typeof XLSX === "undefined") throw new Error("Excel library not loaded - check your connection.");
+  const wb = XLSX.read(new Uint8Array(await dmReadArrayBuffer(file)), { type:"array", cellDates:true });
+
+  // 1) The 30-column CER workbook: resolve columns by HEADER TEXT.
+  const cer = pickCerSheet(wb);
+  if(cer){
+    const col = mapColumnsFromHeaders(cer.aoa[cer.hRow] || []);
+    const recs = []; let blank = 0;
+    for(let i=cer.hRow+1; i<cer.aoa.length; i++){
+      const cells = cer.aoa[i] || [];
+      if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")){ blank++; continue; }
+      const rec = cerRowToRecord(cells, col);
+      rec._row = i + 1;
+      rec._cells = cells.slice();
+      recs.push(rec);
+    }
+    return { kind:"cer", records: recs, sheet: cer.name, headerRow: cer.hRow, colMap: col, blankRows: blank };
+  }
+
+  // 2) The 25-column SAP export shape.
+  const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", blankrows:true });
+  if(!aoa.length) throw new Error("No data found in that workbook.");
+  let start = 0;
+  for(let r=0; r<Math.min(aoa.length, 6); r++){
+    const first = (aoa[r]||[]).filter(c=>c!==undefined&&c!==null&&String(c).trim()!=="")[0];
+    if(String(first||"").trim().toUpperCase() === "PR"){ start = r + 1; sapHdr = true; break; }
+  }
+  const recs = []; let blank = 0;
+  for(let i=start; i<aoa.length; i++){
+    const cells = aoa[i] || [];
+    if(!cells.length || cells.every(c=>c===undefined||c===null||String(c).trim()==="")){ blank++; continue; }
+    const rec = sapRowToRecord(cells);
+    rec._row = i + 1;
+    rec._cells = cells.slice();
+    recs.push(rec);
+  }
+  return { kind:"sap", records: recs, sheet: wb.SheetNames[0], headerRow: start, colMap:null, blankRows: blank, sapHeaderFound: sapHdr };
+}
+
+/* ---------- validate ----------
+   TWO-CATEGORY MODEL - the importer is intelligent, not permissive.
+
+     BLOCKING ERRORS (severity "block") - the file cannot be imported safely:
+       an unreadable / unsupported / unparseable file, no data rows at all,
+       the required columns completely missing, an absurd row count.
+
+     WARNINGS (severity "warn") - normal data-quality issues that DO NOT block
+       an import: a missing Item Name, a missing CER number, a suspicious or
+       invalid date, a non-numeric amount, a duplicate id, a row that carries
+       data but has no identity at all.
+
+     INFO (severity "info") - accepted values, reported for transparency:
+       a status word in a date field ("Not received", "Not done", "NA"), blank
+       rows that were ignored, rows that share a CER with an earlier row.
+
+   `ok` means "no BLOCKING errors" - warnings never stop an import. */
+function dmValidate(parsed){
+  const blocking = [], warnings = [], infos = [];
+  const recs = parsed.records || [];
+  const stats = { rows: recs.length, withCer:0, withItem:0, groupedCers:0, dupIds:0, empty:0,
+                  badNum:0, badDate:0, statusDates:0, blankRows: parsed.blankRows || 0,
+                  nonRecordRows:0, noIdentity:0 };
+  const colMap = parsed.colMap || null;
+  const colName = k => {
+    try{
+      const list = (typeof CER_FIELDS !== "undefined" && CER_FIELDS) ? CER_FIELDS : [];
+      for(let i=0;i<list.length;i++){ if(list[i].key === k) return list[i].label; }
+    }catch(e){}
+    return k;
+  };
+  const firstNonEmpty = cells => {
+    for(let i=0;i<(cells||[]).length;i++){
+      const v = cells[i];
+      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+    return "";
+  };
+
+  // ---- BLOCKING: nothing to import at all --------------------------------
+  if(!recs.length)
+    blocking.push({ row:"-", col:"file", value:"", field:"file", severity:"block",
+      why:"The file contains no data rows.",
+      action:"Check that the workbook holds the CER sheet and that it has a header row." });
+
+  // ---- BLOCKING: the required structure is missing ------------------------
+  // A workbook that is neither a CER sheet (no Item Name / CER headers) nor a
+  // SAP export (no "PR" header row) cannot be imported - say so plainly rather
+  // than importing whatever the fallback parser happened to produce.
+  if(parsed.kind === "sap" && parsed.sapHeaderFound === false)
+    blocking.push({ row:"header", col:"file", value:"", field:"file", severity:"block",
+      why:"This workbook is neither a CER sheet nor a SAP export - the required column headers were not found.",
+      action:"Check that the sheet holds the CER columns (Item Name, CER, ...) or the SAP export columns (starting with PR)." });
+
+  if(parsed.kind === "cer" && colMap){
+    if(!(colMap.item >= 0))
+      blocking.push({ row:"header", col:"Item Name", value:"", field:"Item Name", severity:"block",
+        why:"The required 'Item Name' column was not found in the header row.",
+        action:"Add an 'Item Name' column header, or check that the header row is the one carrying the column titles." });
+    if(!(colMap.cer >= 0))
+      blocking.push({ row:"header", col:"CER", value:"", field:"CER", severity:"block",
+        why:"The required 'CER' column was not found in the header row.",
+        action:"Add a 'CER' column header, or check that the header row is the one carrying the column titles." });
+  }
+
+  const seenId = new Map(), seenCer = new Map();
+  recs.forEach((r, i)=>{
+    const rowNo = (typeof r._row === "number") ? r._row : (i + 1);
+    const item = String(r.item || "").trim();
+    const cer  = String(r.cer || "").trim();
+    if(item) stats.withItem++;
+    if(cer)  stats.withCer++;
+
+    // ---- a subtotal / total / repeated-header row ------------------------
+    // Recognised wherever its label happens to sit, but ONLY when it is
+    // unambiguous: a subtotal marker AND at most 3 populated cells. A real
+    // record (even one named "Total Station") carries many more cells, so it is
+    // never mistaken for a subtotal.
+    {
+      const c0 = r._cells || [];
+      const n0 = c0.filter(c=>c!==undefined && c!==null && String(c).trim()!=="").length;
+      const t0 = c0.map(c=>String(c==null?"":c).trim().toLowerCase()).join(" ");
+      if(n0 > 0 && n0 <= 3 && /(^|\s)(sub\s*-?\s*total|grand\s+total|total|sum)(\s|$)/.test(t0)){
+        stats.nonRecordRows++; return;
+      }
+    }
+
+    // ---- a row with neither identity field -------------------------------
+    // A completely blank row is ignored (and counted). A separator / subtotal /
+    // repeated header row is ignored too, but ONLY when it can be recognised
+    // safely. A row that carries real data and simply lacks both fields is
+    // RETAINED and reported as a WARNING - never silently discarded.
+    if(!item && !cer){
+      const cells = r._cells || [];
+      const nonEmpty = cells.filter(c=>c!==undefined && c!==null && String(c).trim()!=="").length;
+      const text = cells.map(c=>String(c==null?"":c).trim().toLowerCase()).join(" ");
+      const isSubtotal = /(^|\s)(sub\s*-?\s*total|grand\s+total|total|sum)(\s|$)/.test(text);
+      const isHeaderish = nonEmpty <= 4 && /^(sl|cer|item|qty|unit|department|plant|pr|po|description)\b/.test(text);
+      if(nonEmpty === 0){ stats.blankRows++; return; }
+      if(isSubtotal || isHeaderish){ stats.nonRecordRows++; return; }
+      stats.empty++; stats.noIdentity++;
+      warnings.push({ row:rowNo, col:"Item Name / CER", value:firstNonEmpty(cells), field:"item / cer", severity:"warn",
+        why:"The row holds data but has neither an Item Name nor a CER number, so it has no identity to import under.",
+        action:"Add the Item Name (and the CER number if it has one). It will NOT be imported as it stands - review it below." });
+      return;
+    }
+
+    // ---- a row with an Item but no CER is fine (composite identity) -------
+    if(item && !cer){
+      warnings.push({ row:rowNo, col:"CER", value:item, field:"cer", severity:"warn",
+        why:"No CER number on this row - it will be imported under a composite identity (item + unit + plant + tracking + qty).",
+        action:"Add the CER number if the row has one, so a later re-import matches it instead of adding a copy." });
+    }
+
+    const id = String(r.id || "").trim();
+    if(id){
+      if(seenId.has(id)){
+        stats.dupIds++;
+        warnings.push({ row:rowNo, col:"id", value:id, field:"id", severity:"warn",
+          why:"Duplicate record id '" + id + "' (first seen on row " + seenId.get(id) + ").",
+          action:"Remove the duplicate row, or give it a different id." });
+      } else seenId.set(id, rowNo);
+    }
+
+    // Several rows legitimately share one CER (they are grouped on import), so a
+    // repeated CER is reported as INFORMATION, never as a problem.
+    if(cer){
+      const toks = (typeof splitCers === "function" ? splitCers(cer) : [cer]);
+      toks.forEach(tk=>{ if(seenCer.has(tk)) stats.groupedCers++; else seenCer.set(tk, rowNo); });
+    }
+
+    ["order_value","ov_bdt","init_quoted","init_bdt"].forEach(k=>{
+      const v = r[k];
+      if(v === null || v === undefined || v === "") return;
+      if(typeof v === "number"){ if(!isFinite(v)){ stats.badNum++; warnings.push({ row:rowNo, col:colName(k), value:String(v), field:k, severity:"warn", why:"Not a finite number.", action:"Enter a plain number, or leave the cell empty." }); } return; }
+      const t = String(v).replace(/[,\s\u00a0]/g,"").replace(/[\u09f3$\u20ac\u00a3]/g,"");
+      if(t !== "" && isNaN(parseFloat(t))){
+        stats.badNum++;
+        warnings.push({ row:rowNo, col:colName(k), value:String(v), field:k, severity:"warn",
+          why:"'" + v + "' is not a number.",
+          action:"Enter a plain number (digits only), or leave the cell empty." });
+      }
+    });
+
+    // ---- dates -----------------------------------------------------------
+    // Any normal Excel date is accepted and normalised to YYYY-MM-DD. A status
+    // word ("Not received", "Not done", "NA") is ACCEPTED - the date stays
+    // blank and the status is reported. A value that is date-like but wrong (a
+    // 3-digit year, month 13, day 32, a PR number in a date column) is reported
+    // as a WARNING with its exact row, column and value - never silently
+    // dropped, and never auto-corrected.
+    ["cer_date","pr_date","submitted","notesheet_date","machine_date","install_date"].forEach(k=>{
+      const rawV = (r._raw && r._raw[k] !== undefined) ? r._raw[k] : r[k];
+      if(rawV === null || rawV === undefined || String(rawV).trim() === "") return;
+      const res = parseDateCell(rawV);
+      if(res.status === "ok") return;
+      if(res.status === "status"){
+        stats.statusDates++;
+        infos.push({ row:rowNo, col:colName(k), value:String(rawV), field:k, severity:"info",
+          why:"A status value, not a date - accepted as \"" + res.reason + "\".",
+          action:"No action needed. The date is left blank; the status stays in the status column." });
+        return;
+      }
+      stats.badDate++;
+      const sug = suggestDate(rawV);
+      const head = res.status === "suspicious" ? "Suspicious date - "
+                 : res.status === "number"     ? "Suspicious value - "
+                 : "Invalid date - ";
+      warnings.push({ row:rowNo, col:colName(k), value:String(rawV), field:k, severity:"warn",
+        why: head + res.reason,
+        action: sug || "Enter the date as YYYY-MM-DD (for example 2026-09-24)." });
+    });
+  });
+
+  return {
+    ok: blocking.length === 0,                       // warnings never block
+    blocking: blocking.slice(0, 500), blockingCount: blocking.length,
+    warnings: warnings.slice(0, 500), warningCount: warnings.length,
+    infos: infos.slice(0, 500), infoCount: infos.length,
+    problems: blocking.concat(warnings).slice(0, 500),   // back-compat
+    problemCount: blocking.length + warnings.length,
+    stats: stats
+  };
+}
+
+
+/* ---------- preview ---------- */
+function dmBuildPreview(parsed, mode){
+  const recs = parsed.records || [];
+  if(mode === "replace"){
+    return { mode:"replace", parsed: recs.length, current: tasks.length, added: recs.length,
+             updated: 0, unchanged: 0, skipped: 0, resulting: recs.length, destructive:true, merge:null };
+  }
+  const m = cerMerge(recs);            // pure: reads `tasks`, never mutates it
+  return { mode:"import", parsed: recs.length, current: tasks.length, added: m.added,
+           updated: m.updated, unchanged: m.unchanged, skipped: m.skipped,
+           resulting: tasks.length + m.added, destructive:false, merge: m };
+}
+
+/* ---------- backup ---------- */
+function dmMakeBackup(){
+  return {
+    app: "TSD Follow-Up Tracker (CER & CEVA)",
+    kind: "tsd-cer-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser() || currentUserId() || "",
+    count: tasks.length,
+    records: JSON.parse(JSON.stringify(tasks))
+  };
+}
+function dmVerifyBackup(payload){
+  if(!payload || !Array.isArray(payload.records)) return { ok:false, why:"the backup has no records array" };
+  if(payload.count !== payload.records.length) return { ok:false, why:"the backup count (" + payload.count + ") does not match its records (" + payload.records.length + ")" };
+  if(payload.records.length !== tasks.length) return { ok:false, why:"the backup holds " + payload.records.length + " record(s) but the tracker holds " + tasks.length };
+  let round;
+  try{ round = JSON.parse(JSON.stringify(payload)); }catch(e){ return { ok:false, why:"the backup is not serialisable (" + ((e && e.message) || e) + ")" }; }
+  if(round.records.length !== payload.records.length) return { ok:false, why:"the backup did not survive a serialisation round trip" };
+  return { ok:true, count: payload.records.length };
+}
+function dmDownloadBackupPayload(payload, tag){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" }));
+  a.download = "tsd-cer-backup-" + nowLocalStamp().slice(0,10) + (tag ? "-" + tag : "") + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ============================================================
+   DATA MANAGEMENT WORKFLOW  (v17 - performance-hardened)
+   ------------------------------------------------------------
+   Excel -> Validate -> Preview -> Backup -> Import/Replace -> Verify
+
+   PERFORMANCE
+     * The workbook is parsed in a Web Worker, so the main thread is never
+       blocked - the page stays responsive even for a very large file.
+     * A preflight size / row check rejects oversized files BEFORE any
+       expensive work, with a clear message.
+     * The preview renders at most DM_PREVIEW_MAX rows ("showing X of Y").
+     * Progress is reported at every stage, with a spinner and status text.
+     * Cancel aborts the worker and restores the previous state.
+
+   SAFETY
+     * Nothing is sent to Supabase until validation AND explicit confirmation.
+     * Replace backs the current data up and VERIFIES the backup first; if the
+       backup fails, the replacement does not happen.
+     * Any write failure rolls back to the pre-write snapshot, so
+       cer_records.data is never left empty or partially written.
+   ============================================================ */
+const DM_PREVIEW_MAX = 50;                 // rows rendered in the preview table
+const DM_MAX_BYTES   = 25 * 1024 * 1024;   // hard file-size limit (25 MB)
+const DM_MAX_ROWS    = 200000;             // hard parsed-row limit
+const DM_WARN_BYTES  = 8 * 1024 * 1024;    // warn above 8 MB
+const DM_WARN_ROWS   = 20000;              // warn above 20k rows
+
+let dmWorker = null, dmWorkerUrl = null, dmJobSeq = 0, dmJob = null;
+
+function dmFmtBytes(n){
+  if(n >= 1048576) return (n/1048576).toFixed(1) + " MB";
+  if(n >= 1024) return Math.round(n/1024) + " KB";
+  return n + " B";
+}
+
+/* ---------- the Web Worker ---------- */
+function dmWorkerSource(){
+  const el = document.getElementById("dmWorkerSrc");
+  return el ? el.textContent : "";
+}
+function dmGetWorker(){
+  if(dmWorker) return dmWorker;
+  const src = dmWorkerSource();
+  if(!src) return null;
+  try{
+    dmWorkerUrl = URL.createObjectURL(new Blob([src], { type:"text/javascript" }));
+    dmWorker = new Worker(dmWorkerUrl);
+    dmWorker.onerror = (e)=>{ console.warn("[TSD] Data Management worker error:", (e && e.message) || e); };
+    return dmWorker;
+  }catch(e){
+    console.warn("[TSD] Web Worker unavailable - falling back to main-thread parsing.", e);
+    return null;
+  }
+}
+function dmWorkerParse(file, mode, tasksSnapshot, onProgress){
+  return new Promise((resolve, reject)=>{
+    const w = dmGetWorker();
+    if(!w) return reject(new Error("__no_worker__"));
+    const id = ++dmJobSeq;
+    dmJob = { id: id, reject: reject };
+    const onMsg = (ev)=>{
+      const d = ev.data || {};
+      if(d.id !== id) return;
+      if(d.progress){ if(onProgress) onProgress(d.pct, d.label); return; }
+      w.removeEventListener("message", onMsg);
+      dmJob = null;
+      if(d.ok) resolve(d);
+      else reject(new Error(d.error || "The workbook could not be parsed."));
+    };
+    w.addEventListener("message", onMsg);
+    w.postMessage({ id: id, file: file, mode: mode, tasks: tasksSnapshot });
+  });
+}
+function dmAbortWorker(){
+  if(dmJob){ try{ dmJob.reject(new Error("__cancelled__")); }catch(e){} dmJob = null; }
+  if(dmWorker){ try{ dmWorker.terminate(); }catch(e){} dmWorker = null; }
+  if(dmWorkerUrl){ try{ URL.revokeObjectURL(dmWorkerUrl); }catch(e){} dmWorkerUrl = null; }
+}
+
+/* ---------- preflight: reject oversized files BEFORE any expensive work ---------- */
+function dmPreflight(file){
+  const size = (file && file.size) || 0;
+  if(size === 0)
+    return { ok:false, why:"That file is empty (0 bytes). Nothing was read and nothing was changed." };
+  if(size > DM_MAX_BYTES)
+    return { ok:false, why:"That file is " + dmFmtBytes(size) + " - larger than the " + dmFmtBytes(DM_MAX_BYTES)
+      + " limit. Split it into smaller workbooks and import them one at a time. Nothing was read and nothing was changed." };
+  return { ok:true, size:size,
+    warn: size > DM_WARN_BYTES ? ("That file is " + dmFmtBytes(size) + " - it is parsed in the background, so the page stays responsive.") : "" };
+}
+
+/* ---------- progress ---------- */
+function dmProgress(stage, pct, label){
+  if(!dmFlow) return;
+  dmFlow.stage = stage;
+  dmFlow.pct = pct;
+  dmFlow.status = label || "";
+  dmFlowRender();
+}
+
+/* ---------- validation error reporting ---------- */
+// The error table: Excel Row | Column | Value | Problem | Action.
+// "Errors Only" hides the informational rows so the blocking problems stand out.
+/* ---------- validation reporting (two categories) ----------
+   The table always shows: Excel Row | Column | Value | Problem | Action, with a
+   severity badge so a BLOCKING error is never confused with a WARNING.
+   "Errors only" hides the informational rows; "Warnings only" hides the
+   blocking rows (there are none when the file is importable). */
+function dmSevBadge(sev){
+  const k = String(sev || "warn").toLowerCase();
+  const label = k === "block" ? "Blocking" : (k === "info" ? "Info" : "Warning");
+  return `<span class="dm-sev dm-sev-${k === "block" ? "block" : (k === "info" ? "info" : "warn")}">${label}</span>`;
+}
+function dmProblemRows(list){
+  return list.map(p=>`<tr>
+    <td class="dm-c">${esc(p.row)}</td>
+    <td class="dm-c">${esc(p.col || p.field || "")}</td>
+    <td class="dm-v" title="${esc(p.value || "")}">${esc(p.value || "")}</td>
+    <td>${dmSevBadge(p.severity)} ${esc(p.why)}</td>
+    <td class="dm-a">${esc(p.action || "")}</td></tr>`).join("");
+}
+function dmRenderProblems(v){
+  if(!v) return "";
+  const blocking = v.blocking || [];
+  const warnings = v.warnings || [];
+  const infos    = v.infos || [];
+  const showInfo = !!(dmFlow && dmFlow.showInfo);
+  const list = blocking.concat(warnings).concat(showInfo ? infos : []);
+  if(!list.length) return "";
+  const warnBox = blocking.length === 0;
+  const hidden = showInfo ? 0 : infos.length;
+  const more = `<div class="dm-note">Showing <b>${blocking.length}</b> blocking error(s) and <b>${warnings.length}</b> warning(s)`
+    + (hidden ? ` &middot; ${hidden} informational row(s) hidden` : "")
+    + `.</div>`;
+  return `<div class="dm-probs${warnBox ? " dm-warnbox" : ""}"><table><thead><tr>
+      <th>Excel Row</th><th>Column</th><th>Value</th><th>Problem</th><th>Action</th>
+    </tr></thead><tbody>${dmProblemRows(list)}</tbody></table></div>${more}`;
+}
+
+// "View Error Rows": show the FULL contents of every row that has a problem, so
+// the user never has to hunt through a 794-row workbook by hand.
+// "View error rows": show the FULL contents of every row that has a blocking
+// error or a warning, so the user never has to hunt through a 794-row workbook.
+function dmErrorRowsHtml(parsed, v){
+  if(!parsed || !v) return "";
+  const all = (v.blocking || []).concat(v.warnings || []);
+  if(!all.length) return "";
+  const recs = parsed.records || [];
+  const byRow = new Map();
+  recs.forEach(r=>{ if(typeof r._row === "number") byRow.set(r._row, r); });
+  const seen = new Set();
+  const blocks = [];
+  all.forEach(p=>{
+    const rn = (typeof p.row === "number") ? p.row : parseInt(p.row, 10);
+    if(!rn || isNaN(rn) || seen.has(rn)) return;
+    seen.add(rn);
+    const rec = byRow.get(rn);
+    if(!rec){ return; }
+    const cells = rec._cells || [];
+    const pairs = [];
+    for(let i=0;i<cells.length;i++){
+      const cv = cells[i];
+      if(cv === undefined || cv === null || String(cv).trim() === "") continue;
+      const label = (parsed.colMap && typeof CER_FIELDS !== "undefined")
+        ? (CER_FIELDS.filter(f=>parsed.colMap[f.key] === i)[0] || {}).label || ("Column " + (i+1))
+        : ("Column " + (i+1));
+      pairs.push(`<b>${esc(label)}</b>: <code>${esc(String(cv).slice(0,60))}</code>`);
+    }
+    const probs = all.filter(q=>String(q.row) === String(rn))
+      .map(q=>`${dmSevBadge(q.severity)} <span class="dm-bad">${esc(q.col || q.field)}</span> - ${esc(q.why)} <i>${esc(q.action || "")}</i>`).join("<br>");
+    blocks.push(`<div class="dm-er"><b>Excel row ${rn}</b> &middot; ${pairs.join(" &middot; ") || "(no cell values)"}<br>${probs}</div>`);
+  });
+  if(!blocks.length) return "";
+  return `<div class="dm-errrow"><h5>Problem rows - full contents (${blocks.length})</h5>${blocks.join("")}</div>`;
+}
+
+/* ---------- preview rows (CAPPED) ---------- */
+function dmPreviewRows(parsed, mode, merge){
+  const recs = (parsed && parsed.records) || [];
+  const out = [];
+  const max = DM_PREVIEW_MAX;
+  const row = (r, kind, fields)=>({ kind:kind, item:r.item||"", cer:r.cer||"", pr:r.pr||"",
+    qty:r.qty||"", dept:r.dept||"", plant:r.plant||"", fields:fields||"" });
+  if(mode === "replace"){
+    for(let i=0; i<recs.length && out.length<max; i++) out.push(row(recs[i], "new"));
+    return { rows: out, shown: out.length, total: recs.length };
+  }
+  const m = merge || { newRecords:[], updates:[] };
+  (m.newRecords || []).forEach(r=>{ if(out.length < max) out.push(row(r, "new")); });
+  (m.updates || []).forEach(u=>{
+    if(out.length >= max) return;
+    const t = tasks[u.idx] || {};
+    const f = Object.keys(u.patch || {});
+    out.push(row(t, "update", f.slice(0,6).join(", ") + (f.length>6 ? " +" + (f.length-6) + " more" : "")));
+  });
+  return { rows: out, shown: out.length, total: (m.newRecords||[]).length + (m.updates||[]).length };
+}
+function dmRenderPreviewTable(pv){
+  if(!pv || !pv.rows.length) return "";
+  const rows = pv.rows.map(r=>`<tr>
+    <td><span class="dm-tag ${r.kind==="new"?"dm-tag-new":"dm-tag-upd"}">${r.kind==="new"?"NEW":"UPDATE"}</span></td>
+    <td>${esc(r.item)}</td><td>${esc(r.cer)}</td><td>${esc(r.pr)}</td><td>${esc(r.qty)}</td>
+    <td>${esc(r.dept)}</td><td>${esc(r.plant)}</td><td>${esc(r.fields)}</td></tr>`).join("");
+  const more = pv.total > pv.shown
+    ? `<div class="dm-note">Showing the first <b>${pv.shown}</b> of <b>${pv.total}</b> affected row(s) - the rest are processed but not listed here.</div>`
+    : `<div class="dm-note">Showing all <b>${pv.shown}</b> affected row(s).</div>`;
+  return `<div class="dm-prev"><table><thead><tr><th>Effect</th><th>Item</th><th>CER</th><th>PR</th><th>Qty</th><th>Dept</th><th>Plant</th><th>Fields changed</th></tr></thead><tbody>${rows}</tbody></table></div>${more}`;
+}
+
+/* ---------- the write, guarded with rollback ---------- */
+async function dmFlowWrite(){
+  if(!dmGuard("Data Management")) return;
+  if(!dmFlow || !dmFlow.preview || dmFlow.busy) return;
+  // BLOCKING errors stop the operation outright.
+  if(dmFlow.validation && (dmFlow.validation.blockingCount || 0) > 0){
+    toast("Validation failed - nothing can be imported. Fix the blocking errors first.");
+    return;
+  }
+  // WARNINGS do not block, but the user must confirm before anything is written.
+  if(dmFlow.validation && (dmFlow.validation.warningCount || 0) > 0 && !dmFlow.confirmed){
+    dmFlow.confirmOpen = true; dmFlowRender(); return;
+  }
+  dmFlow.busy = true; dmFlow.error = null; dmFlow.result = null;
+
+  // STEP 4 - BACKUP (before any write)
+  dmProgress("backup", 0, "Snapshotting the current data\u2026");
+  const backup = dmMakeBackup();
+  const bv = dmVerifyBackup(backup);
+  dmFlow.backup = { verified: bv.ok, why: bv.why || "", count: backup.records.length };
+  if(!bv.ok){
+    dmFlow.busy = false;
+    dmFlow.error = "Backup verification failed (" + bv.why + ") - nothing was written.";
+    dmFlow.stage = "backup"; dmFlowRender(); toast(dmFlow.error);
+    return;
+  }
+  dmDownloadBackupPayload(backup, dmFlow.mode);
+  dmFlowRender();
+
+  // Snapshot for rollback - the exact pre-write dataset.
+  const snapshot = JSON.parse(JSON.stringify(tasks));
+
+  // Editor lock (the shared row is written through the normal save path).
+  if(!Lock.amIHolder()){
+    const r = await Lock.acquire();
+    if(!r.ok){
+      dmFlow.busy = false;
+      dmFlow.error = "Read-only - " + (r.holder || "another user") + " is editing right now. Nothing was written.";
+      dmFlow.stage = "backup"; dmFlowRender(); toast(dmFlow.error);
+      return;
+    }
+  }
+
+  // STEP 5 - WRITE
+  dmProgress("write", 0, "Writing to the shared tracker\u2026");
+  let ok = false, err = null;
+  try{
+    if(dmFlow.mode === "replace"){
+      tasks = (dmFlow.parsed.records || []).map(r=>Object.assign({}, r));
+      tasks.forEach((t,i)=>{
+        if(!t.id) t.id = uid();
+        if(!t.sl) t.sl = String(i+1);
+        t.lastEditedBy = currentUser(); t.lastEditedAt = new Date().toISOString();
+        applySmart(t);
+      });
+    } else {
+      const m = dmFlow.merge || (dmFlow.preview && dmFlow.preview.merge);
+      (m.updates || []).forEach(u=>{
+        Object.assign(tasks[u.idx], u.patch);
+        tasks[u.idx].lastEditedBy = currentUser();
+        tasks[u.idx].lastEditedAt = new Date().toISOString();
+        applySmart(tasks[u.idx]);
+      });
+      (m.newRecords || []).forEach(r=>{
+        r.lastEditedBy = currentUser(); r.lastEditedAt = new Date().toISOString();
+        applySmart(r);
+        tasks.push(r);
+      });
+    }
+    ok = await save();
+    if(!ok) err = "the shared write did not land (the database refused it, or the read-back did not match)";
+  }catch(e){ err = (e && e.message) || String(e); }
+
+  // STEP 6 - VERIFY (re-read from the database)
+  dmProgress("verify", 0, "Verifying against the database\u2026");
+  let verify = { ok:false, why:"" };
+  if(ok){
+    try{
+      const { data, error } = await supabaseClient.from("cer_records").select("id,data").limit(1);
+      if(error) verify = { ok:false, why:"the read-back failed: " + (error.message || error) };
+      else if(!data || !data.length) verify = { ok:false, why:"the shared row could not be read back" };
+      else {
+        const live = Array.isArray(data[0].data) ? data[0].data : [];
+        if(live.length !== tasks.length) verify = { ok:false, why:"the database holds " + live.length + " record(s) but the tracker expected " + tasks.length };
+        else verify = { ok:true, count: live.length };
+      }
+    }catch(e){ verify = { ok:false, why:((e && e.message) || String(e)) }; }
+  } else {
+    verify = { ok:false, why: err || "the write failed" };
+  }
+
+  // ROLLBACK on any failure - never leave empty or partial data.
+  if(!verify.ok){
+    tasks = snapshot;
+    let restored = false;
+    try{ restored = await save(); }catch(e){ restored = false; }
+    renderAll();
+    try{ await Lock.release(); }catch(e){}
+    dmFlow.busy = false;
+    dmFlow.result = { ok:false, restored: restored, why: verify.why, count: snapshot.length };
+    dmFlow.error = "The " + dmFlow.mode + " failed (" + verify.why + "). The previous " + snapshot.length + " record(s) were restored" + (restored ? " and re-saved." : " in the browser, but the re-save did not land - use the downloaded backup to restore.");
+    dmFlow.stage = "verify"; dmFlowRender();
+    toast(dmFlow.error);
+    dmLogEvent("log_cer_data_mgmt", { p_action: dmFlow.mode + "_failed", p_detail: dmFlow.error, p_row_count: snapshot.length, p_source: dmFlow.fileName });
+    return;
+  }
+
+  // SUCCESS
+  renderAll();
+  try{ await Lock.release(); }catch(e){}
+  dmFlow.busy = false;
+  dmFlow.result = { ok:true, count: tasks.length, why:"" };
+  dmFlow.stage = "verify"; dmFlowRender();
+  const rpcName = dmFlow.mode === "replace" ? "replace_cer_data" : "import_cer_data";
+  const r = await dmLogEvent(rpcName, {
+    p_row_count: tasks.length,
+    p_source: dmFlow.fileName,
+    p_detail: (dmFlow.mode === "replace" ? "Replaced all CER data" : "Imported CER data")
+            + " from " + dmFlow.fileName + " (" + tasks.length + " record(s))"
+  });
+  if(r && r.refused) toast(r.msg);
+  toast((dmFlow.mode === "replace" ? "Replaced all CER data" : "Imported CER data") + " - " + tasks.length + " record(s), verified against the database.");
+  renderDataMgmtUI();
+}
+
+/* ---------- the workflow UI ---------- */
+function dmStepClass(name){
+  if(!dmFlow) return "";
+  const order = DM_STEPS.map(s=>s.toLowerCase());
+  const cur = order.indexOf(String(dmFlow.stage || "excel").toLowerCase());
+  const idx = order.indexOf(name.toLowerCase());
+  if(dmFlow.error && idx === cur) return "bad";
+  if(idx < cur) return "done";
+  if(idx === cur) return "on";
+  return "";
+}
+function dmFlowRender(){
+  const host = $("#dmFlow"); if(!host) return;
+  if(!dmFlow){
+    host.innerHTML = `<h4>Data Management workflow</h4>
+      <div class="dm-sub">Excel &rarr; Validate &rarr; Preview &rarr; Backup &rarr; Import / Replace &rarr; Verify.
+      Choose <b>Import CER Data</b> to merge a workbook, or <b>Replace All</b> to swap the whole dataset.</div>`;
+    return;
+  }
+  const steps = DM_STEPS.map(s=>`<span class="dm-step ${dmStepClass(s)}">${esc(s)}</span>`).join("");
+  let body = "";
+
+  if(dmFlow.busy){
+    const pct = Math.max(0, Math.min(100, Math.round(dmFlow.pct || 0)));
+    body += `<div class="dm-busy"><span class="dm-spin"></span>
+      <div class="dm-busy-t"><b>${esc(dmFlow.status || "Working\u2026")}</b>
+      <div class="dm-bar"><i style="width:${pct}%"></i></div>
+      <div class="dm-pct">${pct}%</div></div></div>`;
+  }
+
+  if(dmFlow.stage === "excel" && !dmFlow.busy){
+    body += `<div class="dm-note">No file chosen yet.</div>`;
+  }
+
+  if(dmFlow.validation){
+    const v = dmFlow.validation, st = v.stats || {};
+    const nBlock = v.blockingCount || 0, nWarn = v.warningCount || 0, nInfo = v.infoCount || 0;
+    body += `<div class="dm-kpis">
+      <div class="dm-kpi"><b>${st.rows || 0}</b><span>Rows parsed</span></div>
+      <div class="dm-kpi"><b>${st.withItem || 0}</b><span>With item</span></div>
+      <div class="dm-kpi"><b>${st.withCer || 0}</b><span>With CER</span></div>
+      <div class="dm-kpi"><b class="${nBlock ? "dm-bad" : "dm-ok"}">${nBlock}</b><span>Blocking errors</span></div>
+      <div class="dm-kpi"><b class="${nWarn ? "dm-warn" : "dm-ok"}">${nWarn}</b><span>Warnings</span></div>
+    </div>`;
+
+    if(nBlock > 0){
+      // ---- BLOCKING: the file cannot be imported -------------------------
+      body += `<div class="dm-note"><b class="dm-bad">Validation failed &mdash; nothing can be imported.</b>
+        ${nBlock} blocking error(s) must be fixed first. Nothing has been written.</div>
+        <div class="dm-errbar">
+          <button class="btn ghost" id="dmErrRows">${dmFlow.errRows ? "Hide error rows" : "View error rows"}</button>
+        </div>`;
+      body += dmRenderProblems(v);
+      if(dmFlow.errRows) body += dmErrorRowsHtml(dmFlow.parsed, v);
+    } else {
+      // ---- NO BLOCKING ERRORS: importable, warnings are advisory ---------
+      body += `<div class="dm-note"><b class="dm-ok">Validation complete</b> &middot;
+        <b class="dm-ok">0 Blocking Errors</b> &middot;
+        <b class="${nWarn ? "dm-warn" : "dm-ok"}">${nWarn} Warning${nWarn === 1 ? "" : "s"}</b>.
+        ${nWarn ? "The file can be imported, but you should review the warnings." : "Nothing needs your attention."}
+        ${st.blankRows ? `<br>${st.blankRows} completely blank row(s) were ignored.` : ""}
+        ${st.nonRecordRows ? `<br>${st.nonRecordRows} separator / subtotal / repeated-header row(s) were ignored.` : ""}
+        ${st.statusDates ? `<br>${st.statusDates} date field(s) hold a status (for example "Not received") and were accepted as blank.` : ""}
+        ${st.groupedCers ? `<br>${st.groupedCers} row(s) share a CER with an earlier row and will be grouped on import.` : ""}
+      </div>`;
+      if(nWarn > 0 || nInfo > 0){
+        body += `<div class="dm-errbar">
+          <button class="btn ghost" id="dmErrRows">${dmFlow.errRows ? "Hide warning rows" : "View warning rows"}</button>
+          ${nInfo ? `<button class="btn ghost" id="dmShowInfo">${dmFlow.showInfo ? "Hide informational rows" : "Show informational rows (" + nInfo + ")"}</button>` : ""}
+        </div>`;
+        body += dmRenderProblems(v);
+        if(dmFlow.errRows) body += dmErrorRowsHtml(dmFlow.parsed, v);
+      }
+    }
+  }
+
+  if(dmFlow.preview && dmFlow.validation && dmFlow.validation.ok){
+    const p = dmFlow.preview;
+    body += `<div class="dm-kpis">
+      <div class="dm-kpi"><b>${p.parsed}</b><span>In file</span></div>
+      <div class="dm-kpi"><b class="dm-ok">${p.added}</b><span>New</span></div>
+      <div class="dm-kpi"><b>${p.updated}</b><span>Matched / updated</span></div>
+      <div class="dm-kpi"><b>${p.unchanged}</b><span>Unchanged</span></div>
+      <div class="dm-kpi"><b>${p.current}</b><span>Current total</span></div>
+      <div class="dm-kpi"><b>${p.resulting}</b><span>Resulting total</span></div>
+    </div>`;
+    if(p.destructive){
+      body += `<div class="dm-note"><b class="dm-bad">Replace is destructive.</b> All <b>${p.current}</b> current record(s) will be discarded and replaced by the <b>${p.parsed}</b> record(s) in this file. A verified backup is taken first and the previous dataset is restored automatically if anything fails.</div>`;
+    } else {
+      body += `<div class="dm-note">Existing records are <b>never deleted</b>. <b>${p.added}</b> new record(s) will be added; <b>${p.updated}</b> existing record(s) will be refreshed in place (blank cells never erase a value); <b>${p.unchanged}</b> are already up to date.</div>`;
+    }
+    body += dmRenderPreviewTable(dmFlow.previewRows);
+  }
+
+  // ---- the confirmation gate (warnings only) -----------------------------
+  if(dmFlow.confirmOpen && dmFlow.validation && dmFlow.validation.ok){
+    const nWarn = dmFlow.validation.warningCount || 0;
+    body += `<div class="dm-confirm">
+      <p><b>${nWarn} warning${nWarn === 1 ? "" : "s"} were found. No blocking errors were detected.</b>
+      The file can be imported, but you should review the warnings. Continue?</p>
+      <div class="dm-acts">
+        <button class="btn ghost" id="dmConfirmNo">Cancel</button>
+        <button class="btn" id="dmConfirmYes">Import Anyway</button>
+      </div></div>`;
+  }
+
+  if(dmFlow.backup){
+    body += `<div class="dm-note">Backup: <b class="${dmFlow.backup.verified ? "dm-ok" : "dm-bad"}">${dmFlow.backup.verified ? "verified" : "FAILED"}</b> - ${dmFlow.backup.count} record(s) snapshotted and downloaded${dmFlow.backup.why ? " (" + esc(dmFlow.backup.why) + ")" : ""}.</div>`;
+  }
+
+  if(dmFlow.result){
+    body += dmFlow.result.ok
+      ? `<div class="dm-note"><b class="dm-ok">Done.</b> The database now holds <b>${dmFlow.result.count}</b> record(s), verified by re-reading the shared row.</div>`
+      : `<div class="dm-note"><b class="dm-bad">Failed.</b> ${esc(dmFlow.result.why)}. The previous <b>${dmFlow.result.count}</b> record(s) were restored${dmFlow.result.restored ? " and re-saved." : " in the browser only."}</div>`;
+  }
+  if(dmFlow.error && !dmFlow.result){
+    body += `<div class="dm-note"><b class="dm-bad">${esc(dmFlow.error)}</b></div>`;
+  }
+
+  const nBlock = (dmFlow.validation && dmFlow.validation.blockingCount) || 0;
+  const nWarn  = (dmFlow.validation && dmFlow.validation.warningCount) || 0;
+  const canWrite = dmFlow.validation && dmFlow.validation.ok && dmFlow.preview && !dmFlow.busy
+                   && !(dmFlow.result && dmFlow.result.ok) && !dmFlow.confirmOpen;
+  const label = dmFlow.mode === "replace" ? "Replace All CER Data" : "Import CER Data";
+  const goLabel = (nWarn > 0 && !dmFlow.confirmed) ? "Continue Import" : label;
+  body += `<div class="dm-acts">
+    <button class="btn ghost" id="dmFlowPick" ${dmFlow.busy ? "disabled" : ""}>${dmFlow.fileName ? "Choose a different file" : "Choose file"}</button>
+    <button class="btn" id="dmFlowGo" ${canWrite ? "" : "disabled"}>${esc(goLabel)}</button>
+    <button class="btn ghost" id="dmFlowCancel">${dmFlow.busy ? "Cancel" : "Close"}</button>
+  </div>`;
+
+  host.innerHTML = `<h4>Data Management workflow &mdash; ${esc(dmFlow.mode === "replace" ? "Replace All CER Data" : "Import CER Data")}</h4>
+    <div class="dm-sub">File: <b>${esc(dmFlow.fileName || "(none)")}</b>${dmFlow.fileSize ? " &middot; " + esc(dmFmtBytes(dmFlow.fileSize)) : ""}</div>
+    <div class="dm-steps">${steps}</div>${body}`;
+
+  const pick = $("#dmFlowPick"); if(pick) pick.addEventListener("click", ()=>{ const f = $("#dmFlowFile"); if(f) f.click(); });
+  const go = $("#dmFlowGo"); if(go) go.addEventListener("click", ()=>{ if(dmGuard("Data Management")) dmFlowWrite(); });
+  const cx = $("#dmFlowCancel"); if(cx) cx.addEventListener("click", ()=>{ if(dmFlow && dmFlow.busy) dmFlowCancel(); else { dmFlow = null; dmFlowRender(); } });
+  const er = $("#dmErrRows"); if(er) er.addEventListener("click", ()=>{ dmFlow.errRows = !dmFlow.errRows; dmFlowRender(); });
+  const si = $("#dmShowInfo"); if(si) si.addEventListener("click", ()=>{ dmFlow.showInfo = !dmFlow.showInfo; dmFlowRender(); });
+  const cy = $("#dmConfirmYes"); if(cy) cy.addEventListener("click", ()=>{ dmFlow.confirmed = true; dmFlow.confirmOpen = false; dmFlowRender(); dmFlowWrite(); });
+  const cn = $("#dmConfirmNo"); if(cn) cn.addEventListener("click", ()=>{ dmFlow.confirmOpen = false; dmFlowRender(); });
+}
+
+/* Cancel an in-flight parse: abort the worker and restore the previous state. */
+function dmFlowCancel(){
+  if(!dmFlow) return;
+  dmAbortWorker();
+  dmFlow.busy = false;
+  dmFlow.pct = 0;
+  dmFlow.status = "";
+  dmFlow.error = "Cancelled - nothing was read and nothing was changed.";
+  dmFlow.stage = "excel";
+  dmFlowRender();
+  toast("Cancelled - nothing was changed.");
+}
+
+/* ---------- choose a file: preflight -> worker parse -> validate -> preview ---------- */
+async function dmFlowFile(file){
+  if(!dmGuard("Data Management")) return;
+  if(!dmFlow) dmFlowReset("import");
+  dmFlow.fileName = file.name || "workbook";
+  dmFlow.fileSize = file.size || 0;
+  dmFlow.error = null; dmFlow.result = null; dmFlow.backup = null;
+  dmFlow.parsed = null; dmFlow.validation = null; dmFlow.preview = null;
+  dmFlow.previewRows = null; dmFlow.merge = null;
+
+  // PREFLIGHT - reject oversized / empty files before any expensive work.
+  const pf = dmPreflight(file);
+  if(!pf.ok){
+    dmFlow.busy = false;
+    dmFlow.validation = { ok:false, blocking:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why: pf.why, action:"Choose a smaller workbook." }],
+      blockingCount:1, warnings:[], warningCount:0, infos:[], infoCount:0,
+      problems:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why: pf.why }], problemCount:1, stats:{} };
+    dmFlow.stage = "validate";
+    dmFlowRender();
+    toast("That file was rejected - nothing was read and nothing was changed.");
+    return;
+  }
+  if(pf.warn) toast(pf.warn);
+
+  dmFlow.busy = true; dmFlow.pct = 0; dmFlow.status = "Preparing\u2026";
+  dmFlow.stage = "validate";
+  dmFlowRender();
+
+  const onProg = (pct, label)=>{ if(!dmFlow || !dmFlow.busy) return; dmFlow.pct = pct; dmFlow.status = label || dmFlow.status; dmFlowRender(); };
+
+  try{
+    let parsed, validation, preview, merge;
+    const isJson = /\.json$/i.test(file.name || "");
+    if(isJson){
+      // A JSON backup is small and cheap - parse it on the main thread.
+      onProg(30, "Reading the backup file\u2026");
+      parsed = await dmParseFile(file);
+      onProg(70, "Validating\u2026");
+      validation = dmValidate(parsed);
+      if(validation.ok){ preview = dmBuildPreview(parsed, dmFlow.mode); merge = preview.merge; }
+    } else {
+      // The workbook goes to the WORKER - the main thread is never blocked.
+      const res = await dmWorkerParse(file, dmFlow.mode, tasks, onProg);
+      parsed = res.parsed; validation = res.validation; preview = res.preview; merge = res.merge;
+    }
+
+    // Hard row limit - a workbook that parses to an absurd number of rows is
+    // refused rather than pushed into the tracker.
+    if(validation && validation.stats && validation.stats.rows > DM_MAX_ROWS){
+      const why = "That workbook holds " + validation.stats.rows + " row(s) - more than the " + DM_MAX_ROWS + " row limit. Split it into smaller files. Nothing was written.";
+      validation = { ok:false, blocking:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why:why, action:"Split the workbook into smaller files and import them one at a time." }],
+        blockingCount:1, warnings:[], warningCount:0, infos:[], infoCount:0,
+        problems:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why:why }], problemCount:1,
+        stats: validation.stats };
+      preview = null; merge = null;
+    }
+    if(validation && validation.stats && validation.stats.rows > DM_WARN_ROWS && validation.ok){
+      toast("Large workbook: " + validation.stats.rows + " row(s) parsed in the background.");
+    }
+
+    dmFlow.parsed = parsed;
+    dmFlow.validation = validation;
+    dmFlow.preview = (validation && validation.ok) ? preview : null;
+    dmFlow.merge = (validation && validation.ok) ? merge : null;
+    dmFlow.previewRows = (validation && validation.ok) ? dmPreviewRows(parsed, dmFlow.mode, merge) : null;
+    dmFlow.stage = (validation && validation.ok) ? "preview" : "validate";
+  }catch(e){
+    const msg = (e && e.message) || String(e);
+    if(msg === "__cancelled__"){ dmFlow.busy = false; return; }
+    if(msg === "__no_worker__"){
+      // No Worker support: fall back to main-thread parsing, but keep the
+      // preflight limits so an oversized file still cannot freeze the page.
+      try{
+        onProg(30, "Parsing on the main thread (background worker unavailable)\u2026");
+        const parsed = await dmParseFile(file);
+        const validation = dmValidate(parsed);
+        dmFlow.parsed = parsed;
+        dmFlow.validation = validation;
+        dmFlow.preview = validation.ok ? dmBuildPreview(parsed, dmFlow.mode) : null;
+        dmFlow.merge = validation.ok ? dmFlow.preview.merge : null;
+        dmFlow.previewRows = validation.ok ? dmPreviewRows(parsed, dmFlow.mode, dmFlow.merge) : null;
+        dmFlow.stage = validation.ok ? "preview" : "validate";
+      }catch(e2){
+        dmFlow.parsed = null; dmFlow.preview = null; dmFlow.merge = null; dmFlow.previewRows = null;
+        const w2 = ((e2 && e2.message) || String(e2));
+        dmFlow.validation = { ok:false, blocking:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why:w2, action:"Check that the file is a valid .xlsx / .xls / .csv workbook." }],
+          blockingCount:1, warnings:[], warningCount:0, infos:[], infoCount:0,
+          problems:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why:w2 }], problemCount:1, stats:{} };
+        dmFlow.stage = "validate";
+      }
+    } else {
+      dmFlow.parsed = null; dmFlow.preview = null; dmFlow.merge = null; dmFlow.previewRows = null;
+      dmFlow.validation = { ok:false, blocking:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why: msg, action:"Check that the file is a valid .xlsx / .xls / .csv workbook." }],
+        blockingCount:1, warnings:[], warningCount:0, infos:[], infoCount:0,
+        problems:[{ row:"-", col:"file", value:"", field:"file", severity:"block", why: msg }], problemCount:1, stats:{} };
+      dmFlow.stage = "validate";
+    }
+  }
+  dmFlow.busy = false;
+  dmFlow.pct = 0;
+  dmFlow.status = "";
+  dmFlowRender();
+}
+
+/* ---------- wiring ---------- */
+function wireDataMgmt(){
+  if(_dmWired) return; _dmWired = true;
+  const btn = $("#dmBtn");
+  if(btn) btn.addEventListener("click", ()=>{ dmPanelOpen ? dmClosePanel() : dmOpenPanel(); });
+  const x = $("#dmClose");
+  if(x) x.addEventListener("click", dmClosePanel);
+  // The audit log is readable by any authenticated user; read it once a session
+  // exists so the history is populated when the panel is opened.
+  loadDmEvents().then(()=>renderDataMgmtUI());
+}
+
 (async function init(){
   // Restore an existing auth session (persisted by supabase-js in localStorage)
   // and WAIT for it — auth checks must never run against a half-restored state.
@@ -4207,13 +6350,22 @@ document.addEventListener("keydown", e=>{
     // Check password change requirement after login
     if(event === "SIGNED_IN"){
       checkAndEnforcePasswordChange();
+      // The release log is readable by any authenticated user; (re)read it now
+      // that a session exists, then refresh the panel with the authoritative
+      // released_by / released_at values.
+      loadPrEvents().then(()=>renderPrDashboard());
+      loadDmEvents().then(()=>renderDataMgmtUI());
     }
   });
   await load();
+  // Optional release audit log. Absent table -> silent fallback (never fatal).
+  await loadPrEvents();
   const now = TODAY.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("#todayLabel").textContent = now;
   initFilters();
   wirePrDashboard();
+  wireDataMgmt();
+  renderDataMgmtUI();
   guardSearchAutofill();
   renderUserBadge();
   renderAll();
@@ -4239,17 +6391,6 @@ document.addEventListener("keydown", e=>{
   // A momentary tab switch / minimise / phone lock used to drop the lock,
   // after which the next Save silently failed to persist (the shared row may
   // only be updated by the lock holder). The lock is still released on unload
-  // and by the explicit "Release" button, and LOCK_TTL still expires it if the
-  // tab is closed outright.
-  document.addEventListener("visibilitychange", ()=>{
-    if(document.visibilityState === "hidden") return;
-    renderLockUI();
-  });
-})();
-</script>
-  </body>
-</html>
-ted by the lock holder). The lock is still released on unload
   // and by the explicit "Release" button, and LOCK_TTL still expires it if the
   // tab is closed outright.
   document.addEventListener("visibilitychange", ()=>{
