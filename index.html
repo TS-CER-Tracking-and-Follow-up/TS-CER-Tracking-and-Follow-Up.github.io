@@ -491,13 +491,53 @@ tbody tr.task-row:last-child{border-bottom:none}
 .pr-tit{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pr-tit .pr-t{font-size:13px;color:var(--txt,#e6e8ee);font-weight:800}
 .pr-card-h .sp{flex:1}
-.pr-items{margin:0 12px 10px;border:1px solid var(--line2,#2a2f3a);border-radius:9px;overflow:auto}
-.pr-itbl{width:100%;min-width:1180px;border-collapse:collapse;font-size:11.5px}
-.pr-itbl th{background:rgba(0,0,0,.22);color:var(--dim,#8b93a3);font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:7px 9px;white-space:nowrap;border-bottom:1px solid var(--line2,#2a2f3a)}
-.pr-itbl td{padding:7px 9px;border-bottom:1px solid rgba(42,47,58,.5);color:var(--txt,#e6e8ee);vertical-align:top}
+.pr-items{margin:0;border:1px solid var(--line2,#2a2f3a);border-radius:9px;overflow:auto;max-width:100%}
+.pr-itbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:auto}
+.pr-itbl th{position:sticky;top:0;background:#171b23;color:var(--dim,#8b93a3);font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:5px 8px;white-space:nowrap;border-bottom:1px solid var(--line2,#2a2f3a);z-index:1}
+.pr-itbl td{padding:5px 8px;border-bottom:1px solid rgba(42,47,58,.5);color:var(--txt,#e6e8ee);vertical-align:middle;white-space:nowrap;line-height:1.3}
+.pr-itbl tr{height:auto}
 .pr-itbl tr:last-child td{border-bottom:0}
-.pr-itbl .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.pr-itbl .it{font-weight:600;min-width:170px}
+.pr-itbl .n{text-align:right;font-variant-numeric:tabular-nums}
+.pr-itbl .it{font-weight:600;min-width:170px;white-space:normal;word-break:break-word;line-height:1.35}
+/* The page's global layout container is ALSO called .wrap (display:flex;
+   flex-direction:column; gap:12px; min-height:100vh). A bare .wrap on a table
+   cell inherited that flex layout, so every item row stretched to ~2886px.
+   Reset the cell back to a real table cell and neutralise the inherited
+   flex/min-height/gap so rows stay compact. */
+.pr-itbl td.wrap{display:table-cell;min-height:0;gap:0;margin:0;padding:5px 8px;white-space:normal;word-break:break-word;min-width:100px;line-height:1.3}
+/* Sticky right-side Actions column - the Release control stays reachable
+   without scrolling the table sideways. */
+.pr-itbl th.act,.pr-itbl td.act{position:sticky;right:0;text-align:center;white-space:nowrap;z-index:2;background:#1b2029;box-shadow:-6px 0 8px -6px rgba(0,0,0,.55)}
+.pr-itbl th.act{background:#171b23;z-index:3}
+.pr-itbl td.act .btn{padding:3px 9px;font-size:11px;line-height:1.2;border-radius:7px}
+.pr-itbl tr.rel td.act{background:#16241d}
+.pr-itbl tr.rel td{background:rgba(52,211,153,.05)}
+.pr-itbl tr.rel td.act{background:#16241d}
+.pr-st{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.pr-st.pend{background:rgba(240,150,60,.16);color:#f0b775;border:1px solid rgba(240,150,60,.35)}
+.pr-st.rel{background:rgba(80,200,140,.14);color:#6fd3a1;border:1px solid rgba(80,200,140,.3)}
+.pr-relby{display:block;font-size:9.5px;color:var(--dim,#8b93a3);margin-top:3px;white-space:normal;word-break:break-word;max-width:150px}
+/* PR-based item view: PR list on the left, the selected PR's items on the right.
+   The split keeps the whole interface inside the available width - the item
+   table scrolls inside its own box instead of pushing the page sideways. */
+.pr-split{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.pr-prlist{flex:0 0 236px;max-width:236px;max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+.pr-detail{flex:1 1 auto;min-width:0}
+.pr-pritem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:9px;padding:7px 9px;cursor:pointer;color:inherit;font:inherit}
+.pr-pritem:hover{background:rgba(148,163,184,.10)}
+.pr-pritem.on{border-color:rgba(240,183,117,.55);background:rgba(240,183,117,.10)}
+.pr-pritem .pn{font-size:12px;font-weight:800;color:var(--txt,#e6e8ee);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-pritem .pc{font-size:10px;color:var(--dim,#8b93a3);white-space:nowrap}
+.pr-pritem .pcol{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.pr-pritem .pdot{flex:none;font-size:11px}
+.pr-detail-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.pr-detail-h .dt{font-size:12.5px;font-weight:800;color:var(--txt,#e6e8ee)}
+.pr-filters{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pr-fbtn{font-size:11px;font-weight:700;color:var(--mut,#b6bdca);background:var(--panel2,#1a1f29);border:1px solid var(--line2,#2a2f3a);border-radius:8px;padding:4px 10px;cursor:pointer}
+.pr-fbtn:hover{background:rgba(148,163,184,.12)}
+.pr-fbtn.on{color:#f0b775;border-color:rgba(240,183,117,.5);background:rgba(240,183,117,.12)}
+.pr-fbtn b{color:var(--txt,#e6e8ee)}
+.pr-relinfo{margin:0 0 8px}
 .pr-working{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 11px;border-radius:9px;font-size:12px;font-weight:700;color:#f0b775;background:rgba(240,183,117,.12);border:1px solid rgba(240,183,117,.32)}
 .pr-spin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(240,183,117,.35);border-top-color:#f0b775;animation:prspin .7s linear infinite;flex:none}
 @keyframes prspin{to{transform:rotate(360deg)}}
@@ -507,7 +547,17 @@ tbody tr.task-row:last-child{border-bottom:none}
 .pr-badge.rel{background:rgba(80,200,140,.14);color:#6fd3a1;border:1px solid rgba(80,200,140,.3)}
 .pr-badge.new{background:rgba(90,150,255,.18);color:#8fb8ff;border:1px solid rgba(90,150,255,.35)}
 @media print{.pr-alert{display:none !important}}
-@media (max-width:640px){.pr-chips{margin-left:0}.pr-items{margin:0 8px 10px;overflow-x:auto}}
+@media (max-width:900px){
+  .pr-split{flex-direction:column}
+  .pr-prlist{flex:1 1 auto;max-width:100%;width:100%;max-height:230px}
+  .pr-detail{width:100%}
+}
+@media (max-width:640px){
+  .pr-chips{margin-left:0}
+  .pr-items{margin:0}
+  .pr-itbl .it{min-width:150px}
+  .pr-filters{margin-left:0;width:100%}
+}
 
 /* ---------- Data Management (Data Management Admin only) ---------- */
 [hidden]{display:none !important}
@@ -669,8 +719,8 @@ tbody tr.task-row:last-child{border-bottom:none}
     </div>
     <div class="pr-panel" id="prPanel" hidden>
       <div class="pr-panel-h">
-        <b>PR Release Required &mdash; item details</b>
-        <span class="pr-panel-note">Every PR whose number is entered but which has not been released yet. All items of the same PR are grouped together &mdash; expand a PR to review its items. Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
+        <b>PR Release &mdash; select a PR, then release its items individually</b>
+        <span class="pr-panel-note">Pick a PR on the left to see all of its items. Each item is released on its own &mdash; releasing one item leaves the other items of the same PR pending, and they can be released later. Use All Items / Pending / Released to filter. Releasing records who released it automatically &mdash; sign in so it is attributed to your account.</span>
         <span id="prPanelNote"></span>
         <span style="flex:1"></span>
         <button class="btn ghost sm" id="prPanelClose" type="button">Close</button>
@@ -3754,6 +3804,8 @@ let prPanelOpen = false;
 let _prHooksWired = false;
 let _prPanelWired = false;
 let _prOpen = {};          // PR No. -> true when that PR's card is expanded (collapsed by default)
+let _prSel = "";           // PR No. currently selected in the PR-based item view
+let _prFilter = "all";     // "all" | "pending" | "released" - item filter inside the selected PR
 
 function prPendingList(){ return tasks.filter(prPending); }
 
@@ -3802,11 +3854,55 @@ function waitingSince(g){
   return waitingFor(new Date(g.headMs).toISOString()) || "";
 }
 
+/* ----- PR-BASED ITEM VIEW (v24) -----
+   Every PR that has at least one item, released or not, so the boss can open a
+   PR and see ALL of its items with their current release status. A PR is NOT
+   released as a whole any more: each item carries its own release state, and
+   items of the same PR may be released at different times. */
+function prAllPrs(){
+  const map = new Map();
+  tasks.forEach(t => {
+    const key = String(t.pr || "").trim();
+    if(!key) return;                       // an item with no PR number has no PR to show
+    let g = map.get(key);
+    if(!g){ g = { pr:key, items:[], pendN:0, relN:0, headMs:0 }; map.set(key, g); }
+    g.items.push(t);
+    if(prReleasedAnywhere(t)) g.relN++; else g.pendN++;
+  });
+  const list = [...map.values()];
+  list.forEach(g => {
+    let ms = 0;
+    g.items.forEach(t => {
+      const s = t.pr_created_at || t.pr_date || "";
+      if(!s) return;
+      const d = new Date(String(s).length === 10 ? s + "T00:00:00" : s);
+      const v = d.getTime();
+      if(!isNaN(v) && (!ms || v < ms)) ms = v;
+    });
+    g.headMs = ms;
+  });
+  list.sort((a,b) => (b.headMs !== a.headMs) ? b.headMs - a.headMs
+                                              : String(a.pr).localeCompare(String(b.pr)));
+  return list;
+}
+/* Every item of one PR, in a stable order (pending first, then by item name). */
+function prItemsFor(pr){
+  const key = String(pr || "").trim();
+  const items = tasks.filter(t => String(t.pr || "").trim() === key);
+  items.sort((a,b) => {
+    const ra = prReleasedAnywhere(a) ? 1 : 0, rb = prReleasedAnywhere(b) ? 1 : 0;
+    if(ra !== rb) return ra - rb;
+    return String(a.item || a.cer || a.id || "").localeCompare(String(b.item || b.cer || b.id || ""));
+  });
+  return items;
+}
+
 function renderPrDashboard(){
   const box = $("#prAlert"); if(!box) return;
-  const groups = prGroups();                 // items grouped by PR No.
-  const nItem = prPendingList().length;      // items still awaiting release
-  const nPr = groups.length;                 // distinct PRs awaiting release
+  const all = prAllPrs();                       // every PR that has items
+  const pendPrs = all.filter(p => p.pendN > 0); // PRs still awaiting at least one release
+  const nItem = tasks.filter(prPending).length; // items still awaiting release
+  const nPr = pendPrs.length;                   // distinct PRs with pending items
   const can = canReleasePr();
 
   // headline (counts PRs - one PR is one release action)
@@ -3829,14 +3925,14 @@ function renderPrDashboard(){
   const chips = $("#prAlertChips");
   if(chips){
     chips.innerHTML = `<button class="pr-chip" type="button" data-prfilter="pr">\ud83d\udfe0 <b>${nPr}</b> PR release pending</button>`
-      + (can ? "" : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`);
+      + (can ? "" : `<span class="pr-ro" title="Only the authorized user can release items">\ud83d\udd12 Read-only \u2014 only the authorized user can release items</span>`);
   }
 
   // read-only indicator inside the panel
   const note = $("#prPanelNote");
   if(note){
     note.innerHTML = can ? ""
-      : `<span class="pr-ro" title="Only the authorized user can release PRs">\ud83d\udd12 Read-only \u2014 only the authorized user can release PRs</span>`;
+      : `<span class="pr-ro" title="Only the authorized user can release items">\ud83d\udd12 Read-only \u2014 only the authorized user can release items</span>`;
   }
 
   // expandable panel
@@ -3844,82 +3940,113 @@ function renderPrDashboard(){
   if(panel) panel.hidden = !prPanelOpen;
   const list = $("#prList");
   if(!list || !prPanelOpen) return;
-  if(!nPr){
-    list.innerHTML = `<div class="pr-empty">No PR is waiting for release right now.</div>`;
+  if(!all.length){
+    list.innerHTML = `<div class="pr-empty">No PR has been created yet.</div>`;
     return;
   }
-  let html = "";
-  groups.forEach(g => { html += prCardHtml(g); });
-  list.innerHTML = html;
+  // Keep the selection valid: fall back to the first PR with pending items,
+  // then to the first PR at all.
+  if(!_prSel || !all.some(p => p.pr === _prSel)) _prSel = (pendPrs[0] || all[0]).pr;
+  list.innerHTML = `<div class="pr-split">`
+    + `<div class="pr-prlist">${all.map(prPrItemHtml).join("")}</div>`
+    + `<div class="pr-detail">${prDetailHtml(_prSel)}</div>`
+    + `</div>`;
 }
 
-/* One COLLAPSIBLE card per PR No.  Collapsed: the PR-level info only.
-   Expanded: a table of every item belonging to THAT PR - and nothing else. */
-function prCardHtml(g){
-  const can = canReleasePr();
-  const open = !!_prOpen[g.pr];
-  const pr = g.pr === "(no PR number)" ? "\u2014" : g.pr;
-  const n = g.items.length;
-  const relId = (g.items.find(x => String(x.pr || "").trim()) || g.items[0]).id;
-  const btn = can
-    ? `<button class="btn ghost sm" type="button" data-release="${esc(relId)}" data-pr="${esc(g.pr)}" title="Mark PR ${esc(pr)} as released (all ${n} item${n===1?"":"s"})">Release PR</button>`
-    : `<button class="btn ghost sm" type="button" disabled title="Only the authorized user can release PRs" style="opacity:.5;cursor:not-allowed">Release PR</button>`;
-  // Deliberately minimal: PR No. + item count + the toggle + the PR-level
-  // Release PR action. There is NO summary subline (no PR Date / Department /
-  // Plant / Owner / Waiting / Total BDT) and NO sort or Header-Data control
-  // here - this view is only for reviewing a PR and its items.
-  return `<div class="pr-card${open ? " open" : ""}">
-    <div class="pr-card-h">
-      <button class="pr-tgl" type="button" data-prtoggle="${esc(g.pr)}" aria-expanded="${open ? "true" : "false"}" title="${open ? "Collapse" : "Expand"} this PR">${open ? "\u25b2" : "\u25bc"}</button>
-      <span class="pr-ic">\ud83d\udfe0</span>
-      <span class="pr-tit">
-        <span class="pr-t">PR No. ${esc(pr)} \u2014 ${n} Item${n === 1 ? "" : "s"}</span>
-      </span>
-      <span class="sp"></span>
-      ${btn}
-    </div>
-    ${open ? `${prRelInfo(g.pr)}<div class="pr-items">${prItemsTable(g.items)}</div>` : ""}
-  </div>`;
+/* One row in the left-hand PR list. Shows the PR number and how many of its
+   items are still pending, so the boss can pick a PR at a glance. */
+function prPrItemHtml(p){
+  const on = p.pr === _prSel;
+  const dot = p.pendN > 0 ? "\ud83d\udfe0" : "\ud83d\udfe2";
+  return `<button class="pr-pritem${on ? " on" : ""}" type="button" data-prsel="${esc(p.pr)}" title="Show the items of PR ${esc(p.pr)}">`
+    + `<span class="pdot">${dot}</span>`
+    + `<span class="pcol">`
+    +   `<span class="pn">PR ${esc(p.pr)}</span>`
+    +   `<span class="pc">${p.items.length} item${p.items.length === 1 ? "" : "s"} \u00b7 ${p.pendN} pending</span>`
+    + `</span>`
+    + `</button>`;
+}
+
+/* The right-hand detail: the selected PR's items, with the All / Pending /
+   Released filter and the per-item Release action. */
+function prDetailHtml(pr){
+  const key = String(pr || "").trim();
+  const items = prItemsFor(key);
+  if(!items.length) return `<div class="pr-empty">This PR has no items.</div>`;
+  const relN  = items.filter(prReleasedAnywhere).length;
+  const pendN = items.length - relN;
+  const f = (_prFilter === "pending" || _prFilter === "released") ? _prFilter : "all";
+  const shown = f === "pending"  ? items.filter(t => !prReleasedAnywhere(t))
+              : f === "released" ? items.filter(t =>  prReleasedAnywhere(t))
+              : items;
+  const fbtn = (k, label, n) => `<button class="pr-fbtn${f === k ? " on" : ""}" type="button" data-prf="${k}">${label} <b>${n}</b></button>`;
+  const head = `<div class="pr-detail-h">`
+    + `<span class="dt">PR No. ${esc(key)}</span>`
+    + `<span class="pc">${items.length} item${items.length === 1 ? "" : "s"} \u00b7 ${relN} released \u00b7 ${pendN} pending</span>`
+    + `<div class="pr-filters">`
+    +   fbtn("all", "All Items", items.length)
+    +   fbtn("pending", "Pending", pendN)
+    +   fbtn("released", "Released", relN)
+    + `</div>`
+    + `</div>`;
+  const body = shown.length
+    ? `<div class="pr-items">${prItemsTable(shown, key)}</div>`
+    : `<div class="pr-empty">No ${f === "pending" ? "pending" : "released"} item in this PR.</div>`;
+  return head + prRelInfo(key) + body;
 }
 
 /* The item table for ONE PR. Every row here belongs to this PR and no other,
-   so items from different PRs can never be interleaved. */
-function prItemsTable(items){
-  // FULL item-level detail for every item of THIS PR - 14 columns, one row per
-  // item. Every row here belongs to this PR and no other, so items from
-  // different PRs can never be interleaved.
+   so items from different PRs can never be interleaved. The Actions column is
+   STICKY on the right, so the Release control stays reachable without
+   scrolling the table sideways. */
+function prItemsTable(items, prKey){
+  const can = canReleasePr();
   const head = `<thead><tr>`
     + `<th class="it">Item</th><th class="n">Qty</th><th>Unit / Area</th>`
     + `<th>Department</th><th>Plant</th><th>Manufacturer</th><th>Agent</th>`
     + `<th class="n">Order Value</th><th class="n">BDT Value</th>`
-    + `<th>PR No.</th><th>PR Date</th><th>Owner</th><th>Waiting Time</th><th>Status</th>`
+    + `<th>PR Date</th><th>Owner</th><th>Waiting Time</th><th>Status</th>`
+    + `<th class="act">Actions</th>`
     + `</tr></thead>`;
   const body = items.map(t => {
     const ov = t.order_value ? (fmtNum(t.order_value) + (t.currency ? " " + esc(t.currency) : "")) : "\u2014";
     const st = smartStage(t);
-    return `<tr>`
+    const rel = prReleasedAnywhere(t);
+    const ev = prEventInfo(String(t.pr || "").trim());
+    const by = rel ? String((ev && ev.released_by) || t.pr_released_by || "").trim() : "";
+    const at = rel ? ((ev && ev.released_at) || t.pr_released_at || "") : "";
+    const status = rel
+      ? `<span class="pr-st rel" title="Released">\ud83d\udfe2 Released</span>`
+        + (by || at ? `<span class="pr-relby">${esc(by || "\u2014")}${at ? " \u00b7 " + esc(localStamp(at)) : ""}</span>` : "")
+      : `<span class="pr-st pend" title="Waiting for release">\ud83d\udfe0 Pending</span>`;
+    const act = rel
+      ? `<span class="pr-st rel" title="This item has already been released">\u2713 Released</span>`
+      : (can
+          ? `<button class="btn primary sm" type="button" data-relitem="${esc(t.id)}" data-pr="${esc(prKey)}" title="Release THIS item only \u2014 the other items of PR ${esc(prKey)} stay pending">Release</button>`
+          : `<button class="btn ghost sm" type="button" disabled title="Only the authorized user can release items" style="opacity:.5;cursor:not-allowed">Release</button>`);
+    return `<tr class="${rel ? "rel" : "pend"}">`
       + `<td class="it">${esc(t.item || t.cer || t.id || "\u2014")}</td>`
       + `<td class="n">${esc(t.qty || "\u2014")}</td>`
-      + `<td>${esc(t.unit_area || "\u2014")}</td>`
-      + `<td>${esc(t.dept || "\u2014")}</td>`
-      + `<td>${esc(t.plant || "\u2014")}</td>`
-      + `<td>${esc(t.manufacturer || "\u2014")}</td>`
-      + `<td>${esc(t.agent || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.unit_area || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.dept || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.plant || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.manufacturer || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.agent || "\u2014")}</td>`
       + `<td class="n">${ov}</td>`
       + `<td class="n">${t.ov_bdt ? fmtBDT(t.ov_bdt) : "\u2014"}</td>`
-      + `<td>${esc(t.pr || "\u2014")}</td>`
       + `<td>${t.pr_date ? fmtDate(t.pr_date) : "\u2014"}</td>`
-      + `<td>${esc(t.owner || "\u2014")}</td>`
+      + `<td class="wrap">${esc(t.owner || "\u2014")}</td>`
       + `<td>${esc(waitingFor(t.pr_created_at || t.pr_date) || "\u2014")}</td>`
-      + `<td>${esc(st)}</td>`
+      + `<td>${status}</td>`
+      + `<td class="act">${act}</td>`
       + `</tr>`;
   }).join("");
   return `<table class="pr-itbl">${head}<tbody>${body}</tbody></table>`;
 }
 
-/* Authoritative release info from pr_release_events, shown in the EXPANDED
-   area only (the collapsed header stays minimal). Renders nothing at all when
-   the SQL has not been applied, or when this PR has no release event. */
+/* Authoritative release info from pr_release_events, shown above the item
+   table. Renders nothing at all when the SQL has not been applied, or when
+   this PR has no release event. */
 function prRelInfo(pr){
   const e = prEventInfo(pr);
   if(!e) return "";
@@ -3932,11 +4059,160 @@ function prRelInfo(pr){
     + ` <span class="pr-src">(from pr_release_events)</span></div>`;
 }
 
-/* ----- Release PR (authorized user only) ----- */
-/* Release one PR - and EVERY item belonging to it, so no item of a released PR
-   is left behind in the pending list. Returns a result object so the caller can
-   report the real outcome; every failure path used to be silent, which made a
-   refused write look like a dead button. */
+/* ----- Release ONE ITEM (authorized user only) -----
+   Releases exactly one record. Every other item of the same PR stays pending
+   until it is released individually, so items of one PR can be released at
+   different times. Returns a result object so the caller can report the real
+   outcome; every failure path is surfaced, never silent. */
+async function releasePrItem(id){
+  const key = String(id == null ? "" : id);
+  if(!key) return { ok:false, msg:"Internal error: no item reference was passed." };
+  const t = tasks.find(x => String(x.id) === key);
+  if(!t) return { ok:false, msg:"That item could not be found - it may have been deleted. Close and reopen the list." };
+
+  const prNum = String(t.pr || "").trim();
+  if(!prNum) return { ok:false, msg:"This item has no PR number, so there is nothing to release." };
+
+  // ---- duplicate guard: an already-released item can never be released twice ----
+  if(prReleasedAnywhere(t)) return { ok:false, msg:"This item has already been released." };
+
+  // ---- permission gate (unchanged, still fail-closed) ----
+  if(!canReleasePr()){
+    return { ok:false, msg: PR_RELEASE_ADMIN_IDS.length
+      ? "Read-only \u2014 only the authorized user can release items. You are signed in as a different account."
+      : "PR release is locked \u2014 no authorized user ID is configured yet." };
+  }
+
+  // ---- confirmation (in-page dialog: native confirm() is blocked in an iframe) ----
+  const label = t.item || t.cer || t.id || "";
+  const ask = "Release this item only?\n\n"
+    + label + "\nPR No. " + prNum + "\n\n"
+    + "Only THIS item is released. Every other item of PR " + prNum + " stays pending until you release it individually.\n"
+    + "The released item, the PR number, the releasing user, the release date/time and the release status are recorded in the audit history.";
+  if(typeof window.__prConfirm !== "function") return { ok:false, msg:"Internal error: the confirmation dialog is unavailable." };
+  const yes = await window.__prConfirm({ title:"Release this item?", text:ask, ok:"Release item" });
+  if(!yes) return { ok:false, cancelled:true, msg:"" };
+
+  // ---- editing lock (every other write path in the app acquires it) ----
+  if(Lock.isLocked() && !Lock.amIHolder()){
+    return { ok:false, msg:"Read-only \u2014 " + (Lock.holderName() || "another user") + " is editing right now. Try again in a moment." };
+  }
+  const lr = await Lock.acquire();
+  if(!lr.ok && !(lr.holder === "not logged in" && !isAuthenticated())){
+    return { ok:false, msg:"Read-only \u2014 " + (lr.holder || "another user") + " is editing right now. Try again in a moment." };
+  }
+
+  const nowIso = new Date().toISOString();          // absolute instant (audit)
+  const who = actName();
+  const todayLocal = nowLocalStamp().slice(0, 10);
+
+  // ---- snapshot for an exact rollback if the write does not land ----
+  const snap = {
+    id:t.id, pr_released:t.pr_released, pr_release_status:t.pr_release_status,
+    pr_released_at:t.pr_released_at, pr_released_by:t.pr_released_by,
+    pr_released_date:t.pr_released_date, pr_history:t.pr_history,
+    pr_release_log:t.pr_release_log,
+    lastEditedBy:t.lastEditedBy, lastEditedAt:t.lastEditedAt,
+    stage:t.stage, progress:t.progress, priority:t.priority, target:t.target
+  };
+
+  // ---- mutate THIS record only ----
+  t.pr_released = true;
+  t.pr_release_status = "Released";
+  t.pr_released_at = nowIso;
+  t.pr_released_by = who;
+  if(!String(t.pr_released_date || "").trim()) t.pr_released_date = todayLocal;
+  if(!Array.isArray(t.pr_history)) t.pr_history = [];   // never lose the history
+  let ev = t.pr_history.find(h => String(h.pr) === prNum);
+  if(!ev){ ev = makePrEvent(prNum); t.pr_history.push(ev); }
+  ev.status = "Released"; ev.released_at = nowIso; ev.released_by = who;
+  // Item-level audit trail ON the record: which item, which PR, who, when, status.
+  if(!Array.isArray(t.pr_release_log)) t.pr_release_log = [];
+  t.pr_release_log.push({
+    item: String(t.item || t.cer || t.id || ""),
+    record_id: String(t.id),
+    pr: prNum,
+    released_by: who,
+    released_at: nowIso,
+    released_date: todayLocal,
+    status: "Released"
+  });
+  t.lastEditedBy = currentUser() || who;
+  t.lastEditedAt = nowIso;
+  applySmart(t);                                        // stage -> "PR Done"
+
+  const rollback = () => {
+    Object.keys(snap).forEach(k => { if(k !== "id") t[k] = snap[k]; });
+  };
+
+  let ok = false, err = null;
+  lastSaveError = null;
+  try { ok = await save(); }
+  catch(e){ ok = false; err = e; }
+  if(!ok) err = err || lastSaveError;
+
+  if(!ok){
+    rollback();
+    const m = (err && (err.message || err.details || err.hint)) || "unknown error";
+    let reason;
+    if(/row-level security|42501|permission|not authorized|policy/i.test(m)) reason = "This account has no write permission on the shared tracker.";
+    else if(/network|fetch|Failed to fetch|timeout|NetworkError/i.test(m)) reason = "Network problem reaching the shared tracker.";
+    else reason = m;
+    console.error("[TSD] Release item failed:", err || m);
+    renderAll();
+    const failMsg = "Release failed. The item was NOT released and nothing was changed. Reason: " + reason;
+    toast(failMsg);
+    return { ok:false, msg:failMsg };
+  }
+
+  // ---- OPTIONAL server-side audit log (public.pr_release_events) ----
+  // release_pr() is SECURITY DEFINER with the boss check INSIDE the function,
+  // so a non-boss caller is refused by the DATABASE (42501) even if they bypass
+  // this UI. Passing ONLY this item's record id logs exactly this item.
+  let logged = false;
+  try{
+    const rpc = await supabaseClient.rpc("release_pr", {
+      p_pr_number:  prNum,
+      p_record_ids: [String(t.id)]
+    });
+    if(rpc && rpc.error){
+      if(prEventsMissing(rpc.error)){
+        console.warn("[TSD] pr_release_events not found - the release is recorded in the shared record only. Run the Option A SQL to enable the audit log.");
+      } else if(String(rpc.error.code || "") === "42501"){
+        rollback();
+        try{ await save(); }catch(e){}
+        renderAll();
+        const m2 = "Release refused by the database: only the authorized user may release an item. Nothing was changed.";
+        console.error("[TSD] Release item refused by the database:", rpc.error);
+        toast(m2);
+        return { ok:false, msg:m2 };
+      } else {
+        console.warn("[TSD] pr_release_events write failed (the release is still recorded in the shared record):", rpc.error.message || rpc.error);
+      }
+    } else {
+      logged = true;
+    }
+  }catch(e){
+    if(prEventsMissing(e)){
+      console.warn("[TSD] pr_release_events not found - the release is recorded in the shared record only.");
+    } else {
+      console.warn("[TSD] pr_release_events write threw (the release is still recorded in the shared record):", (e && (e.message || e)) || e);
+    }
+  }
+  if(logged) await loadPrEvents();
+
+  try{ await Lock.release(); }catch(e){}
+  renderAll();
+  const doneMsg = "Item released successfully \u2014 " + (label || t.id) + " \u00b7 PR " + prNum + " \u00b7 by " + who
+    + (logged ? " \u00b7 logged to pr_release_events" : "");
+  toast(doneMsg);
+  return { ok:true, pr:prNum, id:String(t.id), by:who, logged:logged };
+}
+
+/* ----- Release a WHOLE PR (authorized user only) -----
+   Kept for the PR-level action: releases every still-pending item of the PR.
+   Item-level release above is the primary workflow; this remains available so
+   a PR can still be cleared in one action. */
 async function releasePr(id){
   const key = String(id == null ? "" : id);
   if(!key) return { ok:false, msg:"Internal error: no PR reference was passed." };
@@ -3962,9 +4238,6 @@ async function releasePr(id){
   }
 
   // ---- confirmation ----
-  // A native confirm() is BLOCKED inside a sandboxed iframe (it returns
-  // undefined), and the old code was `if(!confirm(...)) return;` - so in an
-  // embedded tracker the release aborted instantly with no message at all.
   const n = targets.length;
   const ask = "Release PR " + prNum + (n > 1 ? " (" + n + " items)" : "") + "?\n\n"
     + (t.item || t.cer || t.id || "") + (n > 1 ? "  +" + (n - 1) + " more item(s)" : "") + "\n\n"
@@ -3993,6 +4266,7 @@ async function releasePr(id){
     id:x.id, pr_released:x.pr_released, pr_release_status:x.pr_release_status,
     pr_released_at:x.pr_released_at, pr_released_by:x.pr_released_by,
     pr_released_date:x.pr_released_date, pr_history:x.pr_history,
+    pr_release_log:x.pr_release_log,
     lastEditedBy:x.lastEditedBy, lastEditedAt:x.lastEditedAt,
     stage:x.stage, progress:x.progress, priority:x.priority,
     target:x.target
@@ -4008,14 +4282,21 @@ async function releasePr(id){
     let ev = x.pr_history.find(h => String(h.pr) === prNum);
     if(!ev){ ev = makePrEvent(prNum); x.pr_history.push(ev); }
     ev.status = "Released"; ev.released_at = nowIso; ev.released_by = who;
+    if(!Array.isArray(x.pr_release_log)) x.pr_release_log = [];
+    x.pr_release_log.push({
+      item: String(x.item || x.cer || x.id || ""),
+      record_id: String(x.id),
+      pr: prNum,
+      released_by: who,
+      released_at: nowIso,
+      released_date: todayLocal,
+      status: "Released"
+    });
     x.lastEditedBy = currentUser() || who;
     x.lastEditedAt = nowIso;
     applySmart(x);                                        // stage -> "PR Done"
   });
 
-  // Restores the exact in-memory state captured in `snap` above. Used both when
-  // the shared write fails and when the database refuses the release, so the UI
-  // never shows a false "released" state.
   const rollback = () => {
     const byId = new Map(targets.map(x => [x.id, x]));
     snap.forEach(s => {
@@ -4031,8 +4312,6 @@ async function releasePr(id){
   if(!ok) err = err || lastSaveError;
 
   if(!ok){
-    // Honest failure: roll the UI back so the tracker keeps telling the truth,
-    // and report the ACTUAL reason instead of pretending it worked.
     rollback();
     const m = (err && (err.message || err.details || err.hint)) || "unknown error";
     let reason;
@@ -4041,20 +4320,12 @@ async function releasePr(id){
     else reason = m;
     console.error("[TSD] Release PR failed:", err || m);
     renderAll();
-    // Report the ACTUAL outcome. Previously every failure was silent, so a
-    // refused write looked like a dead button.
     const failMsg = "Release failed. PR " + prNum + " was NOT released and nothing was changed. Reason: " + reason;
     toast(failMsg);
     return { ok:false, msg:failMsg };
   }
 
   // ---- OPTIONAL server-side audit log (public.pr_release_events) ----
-  // Runs only AFTER the jsonb write has been verified above. release_pr() is
-  // SECURITY DEFINER with the boss check INSIDE the function, so a non-boss
-  // caller is refused by the DATABASE (42501) even if they bypass this UI.
-  // If the table has not been created yet the release still stands on the
-  // jsonb state alone - the app must not break for users who have not run the
-  // SQL. Note: release_pr() only INSERTs, so INSERT-only privileges suffice.
   let logged = false;
   try{
     const rpc = await supabaseClient.rpc("release_pr", {
@@ -4065,9 +4336,6 @@ async function releasePr(id){
       if(prEventsMissing(rpc.error)){
         console.warn("[TSD] pr_release_events not found - the release is recorded in the shared record only. Run the Option A SQL to enable the audit log.");
       } else if(String(rpc.error.code || "") === "42501"){
-        // The DATABASE refused: this account is not the authorized boss. Do NOT
-        // leave a false "released" state - restore and push the restored state
-        // back, then report it plainly.
         rollback();
         try{ await save(); }catch(e){}
         renderAll();
@@ -4150,9 +4418,8 @@ function wirePrDashboard(){
     const c = e.target.closest("[data-prfilter]"); if(!c) return;
     const key = c.getAttribute("data-prfilter");
     if(key === "pr"){
-      // Open the PR Release panel (one collapsible card per PR, with its item
-      // details). The main tracker table's own sort / Header-Data controls are
-      // left EXACTLY as the user set them - this view never touches them.
+      // Open the PR Release panel (PR list + the selected PR's items). The main
+      // tracker table's own filters are left EXACTLY as the user set them.
       prPanelOpen = true;
       renderPrDashboard();
       const n = $("#prList"); if(n) n.scrollIntoView({block:"nearest", behavior:"smooth"});
@@ -4162,44 +4429,62 @@ function wirePrDashboard(){
   // One DELEGATED listener on #prList - a permanent element - that reads the
   // data-* attributes off the clicked node. Per-button listeners would be
   // thrown away by every renderPrDashboard() re-render, which is one of the
-  // reasons the Release PR button could stop responding.
+  // reasons the Release button could stop responding.
   if(!_prPanelWired){
     _prPanelWired = true;
     const list = $("#prList");
     if(list) list.addEventListener("click", async e=>{
-      const tg = e.target.closest("[data-prtoggle]");
-      if(tg){
+      // 1) select a PR from the left-hand list
+      const ps = e.target.closest("[data-prsel]");
+      if(ps){
         e.preventDefault(); e.stopPropagation();
-        const k = tg.getAttribute("data-prtoggle");
-        _prOpen[k] = !_prOpen[k];
+        _prSel = ps.getAttribute("data-prsel");
+        _prFilter = "all";
         renderPrDashboard();
         return;
       }
+      // 2) All / Pending / Released filter
+      const fb = e.target.closest("[data-prf]");
+      if(fb){
+        e.preventDefault(); e.stopPropagation();
+        _prFilter = fb.getAttribute("data-prf");
+        renderPrDashboard();
+        return;
+      }
+      // 3) release ONE item
+      const ib = e.target.closest("[data-relitem]");
+      if(ib){
+        e.preventDefault(); e.stopPropagation();
+        await runRelease(ib.getAttribute("data-relitem"), "item");
+        return;
+      }
+      // 4) release the WHOLE PR (kept)
       const rb = e.target.closest("[data-release]");
       if(rb){
         e.preventDefault(); e.stopPropagation();
-        await runRelease(rb.getAttribute("data-release"));
+        await runRelease(rb.getAttribute("data-release"), "pr");
       }
     });
   }
 }
 
 /* Drives one release click and reports the OUTCOME to the user. */
-async function runRelease(id){
+async function runRelease(id, kind){
   const working = $("#prWorking"), wtxt = $("#prWorkingTxt");
-  if(working){ working.hidden = false; if(wtxt) wtxt.textContent = "Releasing PR\u2026"; }
-  document.querySelectorAll("#prList [data-release]").forEach(b => { b.disabled = true; });
+  const isItem = kind === "item";
+  if(working){ working.hidden = false; if(wtxt) wtxt.textContent = isItem ? "Releasing item\u2026" : "Releasing PR\u2026"; }
+  document.querySelectorAll("#prList [data-release], #prList [data-relitem]").forEach(b => { b.disabled = true; });
   let res;
   try{
-    res = await releasePr(id);
+    res = isItem ? await releasePrItem(id) : await releasePr(id);
   }catch(e){
-    console.error("[TSD] Release PR threw:", e);
+    console.error("[TSD] Release threw:", e);
     res = { ok:false, msg:"Release failed with an unexpected error: " + ((e && e.message) || e) };
   }
   if(working) working.hidden = true;
   if(res && res.cancelled){ renderPrDashboard(); return; }
-  // releasePr() reports its own outcome through toast(), so this only refreshes
-  // the panel - a single message, never a duplicate.
+  // releasePrItem()/releasePr() report their own outcome through toast(), so
+  // this only refreshes the panel - a single message, never a duplicate.
   renderPrDashboard();
 }
 
