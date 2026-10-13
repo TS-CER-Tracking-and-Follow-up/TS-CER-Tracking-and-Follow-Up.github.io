@@ -2392,9 +2392,18 @@ function updateAuthLanding(){
     $("#authOverlay")?.classList.remove("open");
   }
 }
-$("#authBtn")?.addEventListener("click", ()=>{
+$("#authBtn")?.addEventListener("click", async ()=>{
   if(isAuthenticated()){
-    supabaseClient.auth.signOut().then(()=>{ renderUserBadge(); toast("Signed out"); renderLockUI(); }).catch(e=>toast("Sign out failed: "+(e.message||e)));
+    try{
+      // Release the shared editor lock while the authenticated session still exists.
+      await Lock.release();
+      await supabaseClient.auth.signOut();
+      renderUserBadge();
+      renderLockUI();
+      toast("Signed out");
+    }catch(e){
+      toast("Sign out failed: "+(e.message||e));
+    }
     return;
   }
   openAuthModal("signin");
@@ -2593,14 +2602,9 @@ async function handlePwdSubmit(){
 }
 
 async function checkAndEnforcePasswordChange(){
-  // Called after login / session restore. If the user hasn't changed their
-  // password yet, show the blocking modal — ONCE. After a successful change,
-  // the metadata flag (plus per-user local flag) prevent it ever showing again.
-  if(!isAuthenticated()) return;
-  const changed = await checkPasswordChanged();
-  if(!changed){
-    openPwdModal('first');
-  }
+  // First-time forced password changes are disabled at the owner's request.
+  // Users can still use the separate Change Password button if they choose.
+  return;
 }
 
 // Wire up password change UI events (script runs at bottom of <body>, DOM is ready)
@@ -4765,7 +4769,7 @@ function renderLockUI(){
     b.classList.toggle("lb-me", mine);
     if(mine){
       if(ind) ind.textContent = "🟢";
-      txt.textContent = "🟢 You are the active editor — the tracker is locked for everyone else. Save or release when done.";
+      txt.textContent = "You are the active editor — the tracker is locked for everyone else. Save or release when done.";
       btn.hidden = false;
     } else {
       if(ind) ind.textContent = "🔴";
