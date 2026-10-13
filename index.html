@@ -672,6 +672,10 @@ tbody tr.task-row:last-child{border-bottom:none}
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
       <span class="lbl" id="authBtnLabel">Sign In</span>
     </button>
+    <button class="btn ghost" id="changePasswordBtn" style="display:none" title="Change your password while signed in">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 15v2"/></svg>
+      <span class="lbl">Change Password</span>
+    </button>
     <div class="hdr-actions">
       <span class="sep"></span>
       <button class="btn ghost data" id="printBtn" title="Print / save as PDF">
@@ -2270,12 +2274,10 @@ function renderUserBadge(){
     const nm = getUser();
     el.textContent = nm || getUserEmail() || "Signed in";
     el.title = "Signed in as " + getUserEmail() + " — your identity is used for Last Edited By";
-    if(idEl){
-      const uid = currentUserId();
-      idEl.textContent = uid ? "ID: " + uid : "";
-      idEl.style.display = uid ? "inline" : "none";
-      idEl.title = "Your Supabase user ID — copy this into PR_RELEASE_ADMIN_IDS to grant PR-release rights";
-    }
+    // Keep the account identifier private in the header; show only the user's name.
+    if(idEl){ idEl.textContent = ""; idEl.style.display = "none"; }
+    const passwordBtn = $("#changePasswordBtn");
+    if(passwordBtn) passwordBtn.style.display = "inline-flex";
     if(btn){
       lbl.textContent = "Sign Out";
       btn.title = "Sign out of your account";
@@ -2285,6 +2287,8 @@ function renderUserBadge(){
     el.textContent = authState.ready ? "Not signed in" : "…";
     el.title = "Sign in with your account to edit — identity is set from your login";
     if(idEl){ idEl.textContent = ""; idEl.style.display = "none"; }
+    const passwordBtn = $("#changePasswordBtn");
+    if(passwordBtn) passwordBtn.style.display = "none";
     if(btn){
       lbl.textContent = "Sign In";
       btn.title = "Sign in / sign up with your account";
@@ -2316,6 +2320,13 @@ $("#authBtn")?.addEventListener("click", ()=>{
     return;
   }
   openAuthModal("signin");
+});
+$("#changePasswordBtn")?.addEventListener("click", ()=>{
+  if(!isAuthenticated()){
+    toast("Please sign in first.");
+    return;
+  }
+  openPwdModal("voluntary");
 });
 $("#authClose")?.addEventListener("click", closeAuthModal);
 $("#authOverlay")?.addEventListener("click", e=>{ if(e.target.id==="authOverlay") closeAuthModal(); });
