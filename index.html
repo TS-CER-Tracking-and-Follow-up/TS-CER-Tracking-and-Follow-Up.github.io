@@ -6924,6 +6924,7 @@ function wireDataMgmt(){
   await syncAuthSession();
   // Check if the user needs to change their password (first-time login)
   await checkAndEnforcePasswordChange();
+  recoveryListener.data?.subscription?.unsubscribe?.();
   supabaseClient.auth.onAuthStateChange((event)=>{
     if(event === "PASSWORD_RECOVERY"){
       // The recovery link establishes a temporary Supabase session; let the user set a new password.
@@ -6948,6 +6949,10 @@ function wireDataMgmt(){
       loadDmEvents().then(()=>renderDataMgmtUI());
     }
   });
+  const recoveryType = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type");
+  if(passwordRecoveryDetected || recoveryType === "recovery"){
+    setTimeout(()=>openPwdModal("recovery"), 0);
+  }
   await load();
   // Optional release audit log. Absent table -> silent fallback (never fatal).
   await loadPrEvents();
