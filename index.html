@@ -2626,7 +2626,14 @@ function guardSearchAutofill(){
     if(si.dataset) si.dataset.userTyped = si.dataset.userTyped === "1" ? "1" : "";
     if(si.value !== ""){ si.value = ""; filter.q = ""; }
   };
-  const sweepForce = ()=>{ if(si.value !== ""){ si.value = ""; filter.q = ""; } };
+  // Clear browser autofill only before the user has typed. Do not erase a real search
+  // when the tab/window regains focus or the page is restored.
+  const sweepForce = ()=>{
+    if(si.dataset?.userTyped !== "1" && si.value !== ""){
+      si.value = "";
+      filter.q = "";
+    }
+  };
   window.addEventListener("focus", sweepForce);
   document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") setTimeout(sweepForce, 150); });
   window.addEventListener("pageshow", ()=>{ setTimeout(sweepForce, 150); });   // bfcache restore
