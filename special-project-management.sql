@@ -252,7 +252,7 @@ begin
   end if;
   return new;
 end
-$;
+$$;
 revoke all on function spm_private.refresh_project_progress() from public, anon, authenticated;
 drop trigger if exists spm_refresh_project_progress on public.special_project_tasks;
 create trigger spm_refresh_project_progress
