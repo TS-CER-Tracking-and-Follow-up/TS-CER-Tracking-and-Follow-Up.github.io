@@ -227,6 +227,38 @@ drop trigger if exists spm_task_links_guard on public.special_project_tasks;
 create trigger spm_task_links_guard before insert or update on public.special_project_tasks
 for each row execute function spm_private.validate_task_links();
 
+-- Keep the project-level progress summary synchronized with task completion.
+create or replace function spm_private.refresh_project_progress()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_project_id uuid;
+begin
+  v_project_id := coalesce(new.project_id, old.project_id);
+  update public.special_projects p
+  set progress = coalesce((
+    select round(100.0 * count(*) filter (where t.status = 'done') / nullif(count(*), 0))::integer
+    from public.special_project_tasks t
+    where t.project_id = v_project_id
+  ), 0),
+  updated_at = now()
+  where p.id = v_project_id;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end
+$;
+revoke all on function spm_private.refresh_project_progress() from public, anon, authenticated;
+drop trigger if exists spm_refresh_project_progress on public.special_project_tasks;
+create trigger spm_refresh_project_progress
+after insert or update or delete on public.special_project_tasks
+for each row execute function spm_private.refresh_project_progress();
+
 create or replace function spm_private.validate_member_change()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
