@@ -188,6 +188,22 @@ drop trigger if exists spm_milestone_update_guard on public.special_project_mile
 create trigger spm_milestone_update_guard before update on public.special_project_milestones
 for each row execute function spm_private.guard_milestone_update();
 
+create or replace function spm_private.validate_milestone_responsible()
+returns trigger language plpgsql security definer set search_path = ''
+as $
+begin
+  if new.responsible_uid is not null
+    and not exists (select 1 from public.special_project_members m where m.project_id=new.project_id and m.user_id=new.responsible_uid)
+    and not exists (select 1 from public.special_projects p where p.id=new.project_id and p.owner_uid=new.responsible_uid) then
+    raise exception 'Responsible person must belong to this project';
+  end if;
+  return new;
+end $;
+revoke all on function spm_private.validate_milestone_responsible() from public, anon, authenticated;
+drop trigger if exists spm_milestone_responsible_guard on public.special_project_milestones;
+create trigger spm_milestone_responsible_guard before insert or update on public.special_project_milestones
+for each row execute function spm_private.validate_milestone_responsible();
+
 create or replace function spm_private.validate_task_links()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
@@ -226,8 +242,8 @@ begin
     end if;
   end if;
   if tg_op='UPDATE' then raise exception 'Membership changes must be made by removing and re-adding a member'; end if;
-  return coalesce(new,old);
-end $$;
+  return new;
+end $;
 revoke all on function spm_private.validate_member_change() from public, anon, authenticated;
 drop trigger if exists spm_member_guard on public.special_project_members;
 create trigger spm_member_guard before insert or update on public.special_project_members
