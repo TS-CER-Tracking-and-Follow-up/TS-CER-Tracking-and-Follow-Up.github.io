@@ -6968,8 +6968,7 @@ function wireDataMgmt(){
   // Restore an existing auth session (persisted by supabase-js in localStorage)
   // and WAIT for it — auth checks must never run against a half-restored state.
   await syncAuthSession();
-  // Check if the user needs to change their password (first-time login)
-  await checkAndEnforcePasswordChange();
+  // Password change is optional and remains available from the Change Password button.
   supabaseClient.auth.onAuthStateChange((event)=>{
     // Hide protected tracker content immediately on sign-out while session state settles.
     if(event === "SIGNED_OUT"){
@@ -6984,9 +6983,8 @@ function wireDataMgmt(){
     if(event === "SIGNED_IN" && isAuthenticated() && !Lock.isLocked()){
       Lock.acquire().then(()=>renderLockUI());
     }
-    // Check password change requirement after login
+    // Password change is optional and remains available from the Change Password button.
     if(event === "SIGNED_IN"){
-      checkAndEnforcePasswordChange();
       // The release log is readable by any authenticated user; (re)read it now
       // that a session exists, then refresh the panel with the authoritative
       // released_by / released_at values.
