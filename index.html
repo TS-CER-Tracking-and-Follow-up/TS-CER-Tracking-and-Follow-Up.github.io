@@ -60,6 +60,11 @@ sweep(document)})();</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* Authentication-first landing: keep tracker markup hidden until Supabase confirms a session. */
+body.auth-pending .wrap,body.auth-locked .wrap{display:none!important}
+body.auth-pending #authOverlay,body.auth-locked #authOverlay{display:flex!important;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,18,.94);backdrop-filter:blur(10px)}
+body.auth-pending #authOverlay .modal,body.auth-locked #authOverlay .modal{margin:auto;max-width:400px;width:100%}
+body.auth-pending #authClose,body.auth-locked #authClose{display:none!important}
 :root{
   --bg:#0b1120; --bg2:#111827; --panel:#1a2332; --panel2:#1f2937;
   --line:rgba(148,163,184,.12); --line2:rgba(148,163,184,.22);
@@ -641,7 +646,7 @@ tbody tr.task-row:last-child{border-bottom:none}
 .dm-tag-upd{background:rgba(245,158,11,.16);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
 </style>
 </head>
-<body>
+<body class="auth-pending">
 <div class="wrap">
 
   <!-- Single-editor lock banner -->
@@ -2313,7 +2318,26 @@ function openAuthModal(mode){
   $("#authOverlay").classList.add("open");
   setTimeout(()=>$("#authEmail")?.focus(),60);
 }
-function closeAuthModal(){ $("#authOverlay").classList.remove("open"); $("#authErr").textContent=""; }
+function closeAuthModal(){
+  // The landing sign-in screen cannot be dismissed before authentication.
+  if(!isAuthenticated() && authState.ready) return;
+  $("#authOverlay").classList.remove("open"); $("#authErr").textContent="";
+}
+function updateAuthLanding(){
+  const body = document.body;
+  if(!body) return;
+  body.classList.remove("auth-pending","auth-locked");
+  if(!authState.ready){
+    body.classList.add("auth-pending");
+    $("#authOverlay")?.classList.add("open");
+  } else if(!isAuthenticated()){
+    body.classList.add("auth-locked");
+    $("#authOverlay")?.classList.add("open");
+    openAuthModal("signin");
+  } else {
+    $("#authOverlay")?.classList.remove("open");
+  }
+}
 $("#authBtn")?.addEventListener("click", ()=>{
   if(isAuthenticated()){
     supabaseClient.auth.signOut().then(()=>{ renderUserBadge(); toast("Signed out"); renderLockUI(); }).catch(e=>toast("Sign out failed: "+(e.message||e)));
@@ -2329,7 +2353,7 @@ $("#changePasswordBtn")?.addEventListener("click", ()=>{
   openPwdModal("voluntary");
 });
 $("#authClose")?.addEventListener("click", closeAuthModal);
-$("#authOverlay")?.addEventListener("click", e=>{ if(e.target.id==="authOverlay") closeAuthModal(); });
+$("#authOverlay")?.addEventListener("click", e=>{ if(e.target.id==="authOverlay" && (isAuthenticated() || !authState.ready)) closeAuthModal(); });
 $("#authToggle")?.addEventListener("click", ()=>{ openAuthModal(authMode === "signin" ? "signup" : "signin"); });
 $("#authSubmit")?.addEventListener("click", async ()=>{
   const email = String($("#authEmail")?.value||"").trim();
@@ -2373,6 +2397,7 @@ function syncAuthSession(){
     authState.session = data.session;
     authState.user = data.session ? data.session.user : null;
     authState.ready = true;
+    updateAuthLanding();
     // Capture the user's access token so Lock REST calls use the user's JWT
     // (required for RLS to see auth.uid() correctly).
     // Reset to anon key on sign-out so unauthenticated reads still work.
@@ -2398,6 +2423,7 @@ function syncAuthSession(){
     renderLockUI();
   }).catch(()=>{
     authState.session = null; authState.user = null; authState.ready = true;
+    updateAuthLanding();
     renderUserBadge(); renderLockUI();
   });
 }
@@ -6906,6 +6932,12 @@ function wireDataMgmt(){
   // Check if the user needs to change their password (first-time login)
   await checkAndEnforcePasswordChange();
   supabaseClient.auth.onAuthStateChange((event)=>{
+    // Hide protected tracker content immediately on sign-out while session state settles.
+    if(event === "SIGNED_OUT"){
+      document.body.classList.remove("auth-locked");
+      document.body.classList.add("auth-pending");
+      $("#authOverlay")?.classList.add("open");
+    }
     syncAuthSession();
     // BUG 1 FIX: Auto-acquire the lock immediately after login (SIGNED_IN event),
     // not just on page load. This ensures the "You are the active editor" banner
