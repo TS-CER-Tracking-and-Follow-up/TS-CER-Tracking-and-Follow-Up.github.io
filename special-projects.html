@@ -61,20 +61,6 @@ function renderDetail(){
   state.tab=b.dataset.tab;renderDetail();
  });
  const search=$("itemSearch");if(search)search.oninput=()=>{const q=search.value.toLowerCase();$("projectDetail").querySelectorAll("[data-item-row]").forEach(r=>r.hidden=!r.dataset.search.includes(q))};
- const procSearch=$("procSearch"),procFilter=$("procFilter");
- if(procSearch&&procFilter){
-  const applyProcFilter=()=>{
-   const q=procSearch.value.trim().toLowerCase(),f=procFilter.value;let visible=0;
-   $("projectDetail").querySelectorAll("[data-proc-row]").forEach(r=>{
-    const matchSearch=r.dataset.search.includes(q);
-    const matchFilter=f==="all"||(f==="missing-pr"&&r.dataset.missingPr==="true")||(f==="missing-po"&&r.dataset.missingPo==="true")||(f==="overdue"&&r.dataset.overdue==="true")||(f==="planned"&&["planned","rfq","quotes_received","evaluation","approval_pending","approved"].includes(r.dataset.status))||r.dataset.status===f;
-    r.hidden=!(matchSearch&&matchFilter);if(!r.hidden)visible++;
-   });
-   const count=$("procCount");if(count)count.textContent=visible+" items shown";
-   const empty=$("procEmpty");if(empty)empty.hidden=visible>0;
-  };
-  procSearch.oninput=applyProcFilter;procFilter.onchange=applyProcFilter;
- }
  $("projectDetail").querySelectorAll("[data-task-status]").forEach(sel=>{const task=state.tasks.find(t=>t.id===sel.dataset.taskStatus);sel.disabled=!canManage()&&task?.assignee_uid!==state.user?.id;sel.onchange=()=>updateTaskStatus(sel.dataset.taskStatus,sel.value)});
  $("projectDetail").querySelectorAll("[data-edit-task],[data-delete-task],[data-edit-milestone],[data-delete-milestone],[data-edit-item],[data-delete-item]").forEach(b=>b.hidden=!canManage());
  if($("itemImportBtn"))$("itemImportBtn").hidden=!canManage();if($("addItemBtn"))$("addItemBtn").hidden=!canManage();
@@ -107,14 +93,11 @@ function overviewMarkup(p){
 function procurementMarkup(){
  const today=new Date().toISOString().slice(0,10);
  const list=state.items.filter(i=>!["received","cancelled_item"].includes(i.procurement_status));
- const rows=list.map(i=>{
-  const missingPR=!String(i.purchase_request_no||"").trim();
-  const missingPO=["po_issued","part_received"].includes(i.procurement_status)&&!String(i.po_number||"").trim();
+ return '<div class="sectionbar"><h3>Procurement & delivery follow-up</h3><span class="pill">'+list.length+' open items</span></div><p class="muted">Review sourcing, approval, PR/PO details and delivery dates in one list.</p>'+(list.length?'<div class="tablewrap"><table><thead><tr><th>Item</th><th>Stage</th><th>Tracking no.</th><th>PR No</th><th>Supplier</th><th>PO number</th><th>PO value</th><th>Expected delivery</th><th>Action</th></tr></thead><tbody>'+list.map(i=>{
   const overdue=!!i.expected_delivery_date&&i.expected_delivery_date<today;
-  const search=[i.item_name,i.item_code,i.purchase_request_no,i.supplier_name,i.po_number,i.procurement_status].join(" ").toLowerCase();
-  return '<tr data-proc-row data-search="'+esc(search)+'" data-status="'+esc(i.procurement_status||"")+'" data-missing-pr="'+missingPR+'" data-missing-po="'+missingPO+'" data-overdue="'+overdue+'"><td><strong>'+esc(i.item_name)+'</strong><div class="subtext">Qty '+esc(i.quantity)+' '+esc(i.unit)+'</div></td><td><span class="stage">'+esc(statusLabel(i.procurement_status))+'</span></td><td>'+esc(i.item_code||"—")+'</td><td>'+(missingPR?'<span style="color:var(--danger);font-weight:650">Missing</span>':esc(i.purchase_request_no))+'</td><td>'+esc(i.supplier_name||"Not selected")+'</td><td>'+(String(i.po_number||"").trim()?esc(i.po_number):(missingPO?'<span style="color:var(--danger);font-weight:650">Missing</span>':"—"))+'</td><td>৳'+money(i.quantity*Number(i.po_unit_cost||0))+'</td><td>'+(overdue?'<span style="color:var(--danger);font-weight:650">'+esc(date(i.expected_delivery_date))+' · Overdue</span>':esc(date(i.expected_delivery_date)))+'</td><td><button class="btn small" data-edit-item="'+i.id+'">Open item</button></td></tr>';
- }).join("");
- return '<div class="sectionbar"><h3>Procurement & delivery follow-up</h3><span class="pill" id="procCount">'+list.length+' open items</span></div><p class="muted">Search items or filter to quickly find missing PR/PO details and overdue deliveries.</p><div class="fieldgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0"><div class="field"><label for="procSearch">Search</label><input id="procSearch" placeholder="Item, tracking no., PR, supplier or PO…"></div><div class="field"><label for="procFilter">Show</label><select id="procFilter"><option value="all">All open items</option><option value="missing-pr">Missing PR number</option><option value="missing-po">Missing PO number</option><option value="overdue">Overdue delivery</option><option value="planned">Not yet ordered</option><option value="po_issued">PO issued</option><option value="part_received">Partially received</option></select></div></div>'+(list.length?'<div class="tablewrap"><table><thead><tr><th>Item</th><th>Stage</th><th>Tracking no.</th><th>PR No</th><th>Supplier</th><th>PO number</th><th>PO value</th><th>Expected delivery</th><th>Action</th></tr></thead><tbody id="procRows">'+rows+'</tbody></table></div><p class="muted" id="procEmpty" hidden>No items match this search/filter.</p>':'<div class="empty">All items are received or cancelled.</div>');
+  const missingPO=["po_issued","part_received"].includes(i.procurement_status)&&!String(i.po_number||"").trim();
+  return '<tr><td><strong>'+esc(i.item_name)+'</strong><div class="subtext">Qty '+esc(i.quantity)+' '+esc(i.unit)+'</div></td><td><span class="stage">'+esc(statusLabel(i.procurement_status))+'</span></td><td>'+esc(i.item_code||"—")+'</td><td>'+(String(i.purchase_request_no||"").trim()?esc(i.purchase_request_no):'<span style="color:var(--danger);font-weight:650">Missing</span>')+'</td><td>'+esc(i.supplier_name||"Not selected")+'</td><td>'+(String(i.po_number||"").trim()?esc(i.po_number):(missingPO?'<span style="color:var(--danger);font-weight:650">Missing</span>':"—"))+'</td><td>৳'+money(i.quantity*Number(i.po_unit_cost||0))+'</td><td>'+(overdue?'<span style="color:var(--danger);font-weight:650">'+esc(date(i.expected_delivery_date))+' · Overdue</span>':esc(date(i.expected_delivery_date)))+'</td><td><button class="btn small" data-edit-item="'+i.id+'">Open item</button></td></tr>';
+ }).join("")+'</tbody></table></div>':'<div class="empty">All items are received or cancelled.</div>');
 }
 function closureMarkup(){
  const list=state.items.filter(i=>i.procurement_status!=="cancelled_item"&&(i.procurement_status==="received"||Number(i.received_quantity)>0||i.installation_status!=="not_started"||i.testing_status!=="not_started"));
