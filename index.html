@@ -705,6 +705,25 @@ tbody tr.task-row:last-child{border-bottom:none}
 .dm-tag{font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:999px;letter-spacing:.3px}
 .dm-tag-new{background:rgba(52,211,153,.16);color:#34d399;border:1px solid rgba(52,211,153,.35)}
 .dm-tag-upd{background:rgba(245,158,11,.16);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
+
+/* Monthly Ordered Items dashboard */
+.mo-panel{background:linear-gradient(145deg,rgba(20,34,56,.98),rgba(16,25,42,.98));border:1px solid rgba(96,165,250,.22);border-radius:18px;padding:20px;box-shadow:0 18px 48px rgba(0,0,0,.22);gap:16px}
+.mo-panel[hidden]{display:none!important}.mo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.mo-eyebrow{font-size:10px;letter-spacing:.16em;font-weight:800;color:#67e8f9;margin-bottom:5px}.mo-head h2{font:800 22px var(--display);letter-spacing:-.035em;color:#f1f5f9}.mo-head p{font-size:12px;color:var(--mut);margin-top:5px;max-width:650px}
+.mo-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.mo-controls label{font-size:11px;color:var(--mut);font-weight:700}.mo-controls select{background:#0f172a;color:var(--txt);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;min-height:34px}
+.mo-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mo-kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:13px;padding:15px 16px;background:linear-gradient(135deg,rgba(51,65,85,.42),rgba(15,23,42,.7));min-width:0}
+.mo-kpi:after{content:"";position:absolute;right:-20px;top:-28px;width:90px;height:90px;border-radius:50%;background:var(--mo-accent,rgba(34,211,238,.12))}
+.mo-kpi-label{font-size:11px;color:var(--mut);font-weight:700;position:relative;z-index:1}.mo-kpi-value{font:800 clamp(20px,2.5vw,28px) var(--display);letter-spacing:-.04em;color:#f8fafc;margin-top:5px;position:relative;z-index:1;overflow-wrap:anywhere}.mo-kpi-note{font-size:10px;color:var(--dim);margin-top:3px;position:relative;z-index:1}
+.mo-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mo-card{border:1px solid var(--line);background:rgba(9,16,29,.55);border-radius:13px;padding:15px;min-width:0}
+.mo-card-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px;font-size:12px;font-weight:800;color:#e2e8f0}.mo-card-title small{font-size:10px;font-weight:500;color:var(--dim);text-align:right}
+.mo-chart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;align-items:end;min-height:176px;padding-top:12px}.mo-bar-item{border:0;background:transparent;color:var(--mut);padding:0 1px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:7px;min-width:0;cursor:pointer;border-radius:8px}
+.mo-bar-item:hover .mo-bar{filter:brightness(1.25)}.mo-bar-item:focus-visible{outline:2px solid #67e8f9;outline-offset:2px}.mo-bar-val{font-size:9px;color:#cbd5e1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mo-bar-track{height:112px;display:flex;align-items:flex-end;justify-content:center;border-radius:6px;background:rgba(148,163,184,.045);overflow:hidden}
+.mo-bar{display:block;width:min(100%,26px);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#22d3ee,#3b82f6);transition:height .2s,filter .2s}.mo-bar-item.selected .mo-bar{background:linear-gradient(180deg,#a78bfa,#6366f1);box-shadow:0 0 18px rgba(139,92,246,.28)}.mo-bar-month{font-size:10px;font-weight:700;text-align:center;white-space:nowrap}.mo-bar-item.selected .mo-bar-month{color:#c4b5fd}
+.mo-month-card{padding:0;overflow:hidden}.mo-month-card .mo-card-title{padding:15px 15px 0}.mo-table-wrap{overflow:auto;max-width:100%}.mo-table{border-collapse:collapse;width:100%;font-size:11px;min-width:940px}.mo-table th{background:rgba(30,41,59,.72);color:#94a3b8;font-size:10px;text-align:left;white-space:nowrap;font-weight:700;padding:10px;border-bottom:1px solid var(--line2)}.mo-table td{padding:10px;border-bottom:1px solid var(--line);color:#dbe4ef;vertical-align:top}.mo-table tbody tr:hover{background:rgba(59,130,246,.055)}.mo-table .mo-money{font-weight:800;white-space:nowrap;color:#67e8f9;text-align:right}
+.mo-empty{padding:24px;text-align:center;color:var(--dim);font-size:12px}.mo-missing{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 16px;border:1px solid rgba(245,158,11,.24);border-radius:12px;background:rgba(245,158,11,.055)}.mo-missing b{color:#fbbf24;font-size:12px}.mo-missing p{color:var(--mut);font-size:11px;margin-top:3px}.mo-missing button{white-space:nowrap}
+@media(max-width:850px){.mo-charts{grid-template-columns:1fr}.mo-controls{justify-content:flex-start}.mo-chart{gap:4px}.mo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.mo-panel{padding:12px}.mo-head h2{font-size:19px}.mo-kpis{grid-template-columns:1fr 1fr;gap:8px}.mo-kpi{padding:12px}.mo-chart{gap:2px;min-height:155px}.mo-bar-track{height:94px}.mo-bar-month{font-size:9px}.mo-bar-val{font-size:8px}.mo-controls>*{max-width:100%}}
+@media print{body.mo-printing .wrap>*:not(header):not(#monthlyOrdersPanel){display:none!important}body.mo-printing #monthlyOrdersPanel{display:flex!important;background:#fff!important;color:#111!important;box-shadow:none;border:0;padding:0}body.mo-printing #monthlyOrdersPanel *{color:#111!important;box-shadow:none!important}body.mo-printing .mo-controls,body.mo-printing .mo-missing button{display:none!important}body.mo-printing .mo-card,body.mo-printing .mo-kpi,body.mo-printing .mo-missing{background:#fff!important;border:1px solid #bbb!important}body.mo-printing .mo-bar-track{background:#eee!important}body.mo-printing .mo-bar{background:#777!important}body.mo-printing .mo-table{min-width:0;font-size:8px}body.mo-printing .mo-table th,body.mo-printing .mo-table td{padding:5px;white-space:normal}body.mo-printing .mo-chart{min-height:100px}body.mo-printing .mo-bar-track{height:55px}}
 </style>
 </head>
 <body class="auth-pending">
@@ -757,6 +776,10 @@ tbody tr.task-row:last-child{border-bottom:none}
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M8 14h3M8 17h7"/></svg>
         <span class="lbl">Special Projects</span>
       </a>
+      <button class="btn ghost data" id="monthlyOrdersBtn" type="button" title="Open graphical monthly ordered-items summary">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="6" y="12" width="3" height="6" rx="1"/><rect x="11" y="8" width="3" height="10" rx="1"/><rect x="16" y="5" width="3" height="13" rx="1"/></svg>
+        <span class="lbl">Monthly Orders</span>
+      </button>
       <button class="btn primary" id="addBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span class="lbl">Add Item</span>
@@ -776,6 +799,18 @@ tbody tr.task-row:last-child{border-bottom:none}
 
   <!-- Stats -->
   <section class="stats" id="statsRow"></section>
+
+  <!-- Monthly Ordered Items dashboard -->
+  <section class="mo-panel" id="monthlyOrdersPanel" hidden>
+    <div class="mo-head"><div><div class="mo-eyebrow">PROCUREMENT ANALYTICS</div><h2>Monthly Ordered Items</h2><p>Items count as ordered as soon as a PR number is entered. Month is determined only by PR Date.</p></div>
+      <div class="mo-controls"><label for="moYear">PR year</label><select id="moYear" aria-label="Filter by PR year"></select><button class="btn ghost sm" id="moExport" type="button">Export Excel</button><button class="btn ghost sm" id="moPrint" type="button">Print / PDF</button><button class="btn ghost sm" id="moClose" type="button">Close</button></div>
+    </div>
+    <div class="mo-kpis" id="moKpis"></div>
+    <div class="mo-charts"><div class="mo-card"><div class="mo-card-title"><span>Ordered value by month</span><small>BDT · click a bar to see items</small></div><div class="mo-chart" id="moValueChart"></div></div>
+      <div class="mo-card"><div class="mo-card-title"><span>Ordered item count</span><small>Items with a PR number · click a bar</small></div><div class="mo-chart" id="moCountChart"></div></div></div>
+    <div class="mo-card mo-month-card"><div class="mo-card-title"><span id="moDetailTitle">Monthly item details</span><small id="moDetailSub">Choose a month above</small></div><div class="mo-table-wrap"><table class="mo-table"><thead><tr><th>PR No.</th><th>PR Date</th><th>Item details</th><th>Department</th><th>Plant</th><th>Quantity</th><th>Ordered value (BDT)</th><th>Manufacturer / Supplier</th><th>PO No.</th></tr></thead><tbody id="moDetailBody"></tbody></table></div><div class="mo-empty" id="moEmpty" hidden>Select a month to view its ordered items.</div></div>
+    <div class="mo-missing" id="moMissing"><div><b>Date Missing</b><p>Items with a PR number but no valid PR date are not assigned to any month.</p></div><button class="btn ghost sm" id="moMissingBtn" type="button">View items <span id="moMissingCount">0</span></button></div>
+  </section>
 
   <!-- Procurement workflow: PR release dashboard (additive) -->
   <section class="pr-alert" id="prAlert">
@@ -5695,9 +5730,82 @@ function explainImportError(err){
   return m;
 }
 
+
+/* ---------- Monthly Ordered Items dashboard ---------- */
+let moSelectedMonth = "";
+let moSelectedMissing = false;
+const MO_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function moValidDate(value){
+  const v=String(value||"").trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) return "";
+  const d=new Date(v+"T00:00:00");
+  if(isNaN(d)||d.getFullYear()!==Number(v.slice(0,4))||d.getMonth()+1!==Number(v.slice(5,7))||d.getDate()!==Number(v.slice(8,10))) return "";
+  return v;
+}
+function moItems(){return tasks.filter(t=>String(t.pr||"").trim()).map(t=>{const date=moValidDate(t.pr_date);return Object.assign({},t,{_moDate:date,_moYear:date?date.slice(0,4):"",_moMonth:date?Number(date.slice(5,7))-1:-1});});}
+function moMoney(t){return Number(t.ov_bdt)||0;}
+function moValueText(n){return "৳ "+fmtNum(Number(n)||0);}
+function moRenderDetail(items,title,subtitle){
+  $("#moDetailTitle").textContent=title;$("#moDetailSub").textContent=subtitle;
+  const body=$("#moDetailBody"),empty=$("#moEmpty");
+  if(!items.length){body.innerHTML="";empty.hidden=false;empty.textContent=moSelectedMissing?"No items have a PR number with a missing or invalid PR date.":"No ordered items found for this selection.";return;}
+  empty.hidden=true;
+  body.innerHTML=items.slice().sort((a,b)=>(a._moDate||"").localeCompare(b._moDate||"")||String(a.pr||"").localeCompare(String(b.pr||""))).map(t=>
+    "<tr><td><b>"+esc(t.pr||"—")+"</b></td><td>"+(t._moDate?esc(fmtDate(t._moDate)):'<span style="color:#fbbf24">Date Missing</span>')+"</td>"+
+    "<td>"+esc(t.item||"—")+(t.cer?'<div style="color:var(--dim);font-size:10px">CER: '+esc(t.cer)+"</div>":"")+"</td>"+
+    "<td>"+esc(t.dept||"—")+"</td><td>"+esc(t.plant||t.unit_area||"—")+"</td><td>"+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+"</td>"+
+    '<td class="mo-money">'+esc(moValueText(moMoney(t)))+"</td><td>"+esc(t.manufacturer||t.agent||"—")+"</td><td>"+esc(t.po||"—")+"</td></tr>"
+  ).join("");
+}
+function moDrawChart(targetId,months,metric,valueLabel){
+  const el=$("#"+targetId);if(!el)return;
+  const max=Math.max(1,...months.map(m=>m[metric]));
+  el.innerHTML=months.map(m=>{
+    const val=Number(m[metric])||0,height=val?Math.max(4,Math.round(val/max*100)):0;
+    const selected=!moSelectedMissing&&moSelectedMonth===String(m.index);
+    return '<button class="mo-bar-item '+(selected?"selected":"")+'" type="button" data-mo-month="'+m.index+'" title="'+esc(m.name+": "+valueLabel(val))+'" aria-label="'+esc(m.name+": "+valueLabel(val)+". View items")+'" aria-pressed="'+selected+'">'+
+      '<span class="mo-bar-val">'+(val?esc(valueLabel(val)):"—")+'</span><span class="mo-bar-track"><i class="mo-bar" style="height:'+height+'%"></i></span><span class="mo-bar-month">'+m.name+"</span></button>";
+  }).join("");
+  el.querySelectorAll("[data-mo-month]").forEach(btn=>btn.addEventListener("click",()=>{moSelectedMonth=btn.dataset.moMonth;moSelectedMissing=false;renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});}));
+}
+function renderMonthlyOrders(preserveYear){
+  const items=moItems(),yearSelect=$("#moYear");if(!yearSelect)return;
+  const years=[...new Set(items.filter(t=>t._moDate).map(t=>t._moYear))].sort((a,b)=>b.localeCompare(a)),old=yearSelect.value;
+  yearSelect.innerHTML=years.length?years.map(y=>'<option value="'+y+'">'+y+"</option>").join(""):'<option value="">No dated PRs</option>';
+  const year=preserveYear&&years.includes(old)?old:(years.includes(old)?old:(years[0]||""));yearSelect.value=year;
+  const dated=items.filter(t=>t._moDate&&t._moYear===year),missing=items.filter(t=>!t._moDate);
+  const months=MO_MONTHS.map((name,index)=>{const rows=dated.filter(t=>t._moMonth===index);return {name,index,rows,count:rows.length,value:rows.reduce((sum,t)=>sum+moMoney(t),0)};});
+  const totalValue=dated.reduce((sum,t)=>sum+moMoney(t),0);
+  const kpis=[{label:"Ordered items",value:fmtNum(dated.length),note:year?"PR date in "+year:"No dated PRs",accent:"rgba(34,211,238,.18)"},{label:"Total ordered value",value:moValueText(totalValue),note:"Sum of ordered value (BDT)",accent:"rgba(59,130,246,.2)"},{label:"Date Missing",value:fmtNum(missing.length),note:"PR number entered, PR date missing/invalid",accent:"rgba(245,158,11,.18)"}];
+  $("#moKpis").innerHTML=kpis.map(k=>'<div class="mo-kpi" style="--mo-accent:'+k.accent+'"><div class="mo-kpi-label">'+k.label+'</div><div class="mo-kpi-value">'+k.value+'</div><div class="mo-kpi-note">'+k.note+"</div></div>").join("");
+  moDrawChart("moValueChart",months,"value",v=>v>=10000000?"৳"+(v/10000000).toFixed(1)+"cr":v>=100000?"৳"+(v/100000).toFixed(1)+"L":v?"৳"+fmtNum(v):"৳0");
+  moDrawChart("moCountChart",months,"count",v=>fmtNum(v)+" items");
+  $("#moMissingCount").textContent=fmtNum(missing.length);
+  if(moSelectedMissing)moRenderDetail(missing,"Date Missing — ordered items",missing.length+" item(s) have no valid PR date");
+  else if(moSelectedMonth!==""){const m=months.find(x=>x.index===Number(moSelectedMonth));if(m)moRenderDetail(m.rows,m.name+" "+year,m.count+" ordered item(s) · "+moValueText(m.value));else moRenderDetail([],"Monthly item details","Choose a month above");}
+  else moRenderDetail([],"Monthly item details","Choose a month above");
+  $("#moMissing").style.borderColor=missing.length?"rgba(245,158,11,.3)":"var(--line)";
+  return {items,dated,missing,months,year,totalCount:dated.length,totalValue};
+}
+function moExportExcel(){
+  const report=renderMonthlyOrders(true);if(typeof XLSX==="undefined"){toast("Excel export library is not available. Please refresh and try again.");return;}
+  const summary=report.months.map(m=>({"Month":m.name+" "+report.year,"Ordered items":m.count,"Total ordered value (BDT)":m.value}));
+  summary.push({"Month":"Date Missing","Ordered items":report.missing.length,"Total ordered value (BDT)":report.missing.reduce((n,t)=>n+moMoney(t),0)});
+  const details=report.items.map(t=>({"PR No.":t.pr,"PR Date":t._moDate||"Date Missing","Item":t.item,"CER":t.cer,"Department":t.dept,"Plant":t.plant||t.unit_area,"Quantity":t.qty,"Ordered Value (BDT)":moMoney(t),"Manufacturer":t.manufacturer,"Local Agent":t.agent,"PO No.":t.po}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),"Monthly Summary");XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(details),"Ordered Items");
+  XLSX.writeFile(wb,"CER_Monthly_Ordered_Items"+(report.year?"_"+report.year:"")+".xlsx");
+}
+function moPrint(){document.body.classList.add("mo-printing");const done=()=>document.body.classList.remove("mo-printing");window.addEventListener("afterprint",done,{once:true});window.print();setTimeout(done,1200);}
+
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
 $("#printBtn").addEventListener("click", ()=>window.print());
+$("#monthlyOrdersBtn").addEventListener("click",()=>{const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
+$("#moClose").addEventListener("click",()=>{$("#monthlyOrdersPanel").hidden=true;$("#monthlyOrdersBtn").focus();});
+$("#moYear").addEventListener("change",()=>{moSelectedMonth="";moSelectedMissing=false;renderMonthlyOrders(false);});
+$("#moMissingBtn").addEventListener("click",()=>{moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
+$("#moExport").addEventListener("click",moExportExcel);
+$("#moPrint").addEventListener("click",moPrint);
 /* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
 $("#cerImportFile").addEventListener("change", e=>{
   const f = e.target.files && e.target.files[0];
