@@ -707,6 +707,7 @@ tbody tr.task-row:last-child{border-bottom:none}
 .dm-tag-upd{background:rgba(245,158,11,.16);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
 
 /* Monthly Ordered Items dashboard */
+.mo-selected-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mo-selected-summary:empty{display:none}.mo-selected-kpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(15,23,42,.55)}.mo-selected-kpi span{display:block;color:var(--mut);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.mo-selected-kpi b{display:block;font-size:19px;margin-top:5px;color:var(--txt)}
 .mo-panel{display:flex;flex-direction:column;background:linear-gradient(145deg,rgba(20,34,56,.98),rgba(16,25,42,.98));border:1px solid rgba(96,165,250,.22);border-radius:18px;padding:20px;box-shadow:0 18px 48px rgba(0,0,0,.22);gap:16px}
 .mo-panel[hidden]{display:none!important}.mo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .mo-eyebrow{font-size:10px;letter-spacing:.16em;font-weight:800;color:#67e8f9;margin-bottom:5px}.mo-head h2{font:800 22px var(--display);letter-spacing:-.035em;color:#f1f5f9}.mo-head p{font-size:12px;color:var(--mut);margin-top:5px;max-width:650px}
@@ -722,8 +723,8 @@ tbody tr.task-row:last-child{border-bottom:none}
 .mo-month-card{padding:0;overflow:hidden}.mo-month-card .mo-card-title{padding:15px 15px 0}.mo-table-wrap{overflow:auto;max-width:100%}.mo-table{border-collapse:collapse;width:100%;font-size:11px;min-width:940px}.mo-table th{background:rgba(30,41,59,.72);color:#94a3b8;font-size:10px;text-align:left;white-space:nowrap;font-weight:700;padding:10px;border-bottom:1px solid var(--line2)}.mo-table td{padding:10px;border-bottom:1px solid var(--line);color:#dbe4ef;vertical-align:top}.mo-table tbody tr:hover{background:rgba(59,130,246,.055)}.mo-table .mo-money{font-weight:800;white-space:nowrap;color:#67e8f9;text-align:right}
 .mo-empty{padding:24px;text-align:center;color:var(--dim);font-size:12px}.mo-missing{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 16px;border:1px solid rgba(245,158,11,.24);border-radius:12px;background:rgba(245,158,11,.055)}.mo-missing b{color:#fbbf24;font-size:12px}.mo-missing p{color:var(--mut);font-size:11px;margin-top:3px}.mo-missing button{white-space:nowrap}
 @media(max-width:850px){.mo-charts{grid-template-columns:1fr}.mo-controls{justify-content:flex-start}.mo-chart{gap:4px}.mo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.mo-panel{padding:12px}.mo-head h2{font-size:19px}.mo-kpis{grid-template-columns:1fr 1fr;gap:8px}.mo-kpi{padding:12px}.mo-chart{gap:2px;min-height:155px}.mo-bar-track{height:94px}.mo-bar-month{font-size:9px}.mo-bar-val{font-size:8px}.mo-controls>*{max-width:100%}}
-@media print{body.mo-printing .wrap>*:not(header):not(#monthlyOrdersPanel){display:none!important}body.mo-printing #monthlyOrdersPanel{display:flex!important;background:#fff!important;color:#111!important;box-shadow:none;border:0;padding:0}body.mo-printing #monthlyOrdersPanel *{color:#111!important;box-shadow:none!important}body.mo-printing .mo-controls,body.mo-printing .mo-missing button{display:none!important}body.mo-printing .mo-card,body.mo-printing .mo-kpi,body.mo-printing .mo-missing{background:#fff!important;border:1px solid #bbb!important}body.mo-printing .mo-bar-track{background:#eee!important}body.mo-printing .mo-bar{background:#777!important}body.mo-printing .mo-table{min-width:0;font-size:8px}body.mo-printing .mo-table th,body.mo-printing .mo-table td{padding:5px;white-space:normal}body.mo-printing .mo-chart{min-height:100px}body.mo-printing .mo-bar-track{height:55px}}
+@media(max-width:520px){.mo-selected-summary{grid-template-columns:1fr}.mo-panel{padding:12px}.mo-head h2{font-size:19px}.mo-kpis{grid-template-columns:1fr 1fr;gap:8px}.mo-kpi{padding:12px}.mo-chart{gap:2px;min-height:155px}.mo-bar-track{height:94px}.mo-bar-month{font-size:9px}.mo-bar-val{font-size:8px}.mo-controls>*{max-width:100%}}
+@media print{body.mo-printing .wrap{display:none!important}body.mo-printing #moPrintReport{display:block!important;color:#111!important;background:#fff!important;padding:0!important}body.mo-printing #moPrintReport h1{font-size:20px}body.mo-printing #moPrintReport p{font-size:11px}body.mo-printing #moPrintReport table{width:100%;border-collapse:collapse;font-size:9px}body.mo-printing #moPrintReport th,body.mo-printing #moPrintReport td{border:1px solid #bbb;padding:5px;text-align:left;vertical-align:top}body.mo-printing #moPrintReport th{background:#eee!important}body.mo-printing .wrap>*:not(header):not(#monthlyOrdersPanel){display:none!important}body.mo-printing #monthlyOrdersPanel{display:flex!important;background:#fff!important;color:#111!important;box-shadow:none;border:0;padding:0}body.mo-printing #monthlyOrdersPanel *{color:#111!important;box-shadow:none!important}body.mo-printing .mo-controls,body.mo-printing .mo-missing button{display:none!important}body.mo-printing .mo-card,body.mo-printing .mo-kpi,body.mo-printing .mo-missing{background:#fff!important;border:1px solid #bbb!important}body.mo-printing .mo-bar-track{background:#eee!important}body.mo-printing .mo-bar{background:#777!important}body.mo-printing .mo-table{min-width:0;font-size:8px}body.mo-printing .mo-table th,body.mo-printing .mo-table td{padding:5px;white-space:normal}body.mo-printing .mo-chart{min-height:100px}body.mo-printing .mo-bar-track{height:55px}}
 </style>
 </head>
 <body class="auth-pending">
@@ -803,11 +804,11 @@ tbody tr.task-row:last-child{border-bottom:none}
   <!-- Monthly Ordered Items dashboard -->
   <section class="mo-panel" id="monthlyOrdersPanel" hidden>
     <div class="mo-head"><div><div class="mo-eyebrow">PROCUREMENT ANALYTICS</div><h2>Monthly Ordered Items</h2><p>Items count as ordered as soon as a PR number is entered. Month is determined only by PR Date.</p></div>
-      <div class="mo-controls"><label for="moYear">PR year</label><select id="moYear" aria-label="Filter by PR year"></select><button class="btn ghost sm" id="moExport" type="button">Export Excel</button><button class="btn ghost sm" id="moPrint" type="button">Print / PDF</button><button class="btn ghost sm" id="moClose" type="button">Close</button></div>
+      <div class="mo-controls"><label for="moYear">PR year</label><select id="moYear" aria-label="Filter by PR year"></select><label for="moPrintMode">Print</label><select id="moPrintMode" aria-label="Choose what to print"><option value="selected">Selected month details</option><option value="summary">All months summary</option><option value="year">Full year item details</option><option value="missing">Date Missing items</option></select><button class="btn ghost sm" id="moPrint" type="button">Print / PDF</button><button class="btn ghost sm" id="moClose" type="button">Close</button></div>
     </div>
     <div class="mo-kpis" id="moKpis"></div>
-    <div class="mo-charts"><div class="mo-card"><div class="mo-card-title"><span>Ordered value by month</span><small>BDT · click a bar to see items</small></div><div class="mo-chart" id="moValueChart"></div></div>
-      <div class="mo-card"><div class="mo-card-title"><span>Ordered item count</span><small>Items with a PR number · click a bar</small></div><div class="mo-chart" id="moCountChart"></div></div></div>
+    <div class="mo-charts"><div class="mo-card"><div class="mo-card-title"><span>Monthly ordered value</span><small>BDT · click a month to see its summary and items</small></div><div class="mo-chart" id="moValueChart"></div></div></div>
+    <div class="mo-selected-summary" id="moSelectedSummary"></div>
     <div class="mo-card mo-month-card"><div class="mo-card-title"><span id="moDetailTitle">Monthly item details</span><small id="moDetailSub">Choose a month above</small></div><div class="mo-table-wrap"><table class="mo-table"><thead><tr><th>PR No.</th><th>PR Date</th><th>Item details</th><th>Department</th><th>Plant</th><th>Quantity</th><th>Ordered value (BDT)</th><th>Manufacturer / Supplier</th><th>PO No.</th></tr></thead><tbody id="moDetailBody"></tbody></table></div><div class="mo-empty" id="moEmpty" hidden>Select a month to view its ordered items.</div></div>
     <div class="mo-missing" id="moMissing"><div><b>Date Missing</b><p>Items with a PR number but no valid PR date are not assigned to any month.</p></div><button class="btn ghost sm" id="moMissingBtn" type="button">View items <span id="moMissingCount">0</span></button></div>
   </section>
@@ -5788,7 +5789,11 @@ function renderMonthlyOrders(preserveYear){
   const kpis=[{label:"Ordered items",value:fmtNum(dated.length),note:year?"PR date in "+year:"No dated PRs",accent:"rgba(34,211,238,.18)"},{label:"Total ordered value",value:moValueText(totalValue),note:"Sum of ordered value (BDT)",accent:"rgba(59,130,246,.2)"},{label:"Date Missing",value:fmtNum(missing.length),note:"PR number entered, PR date missing/invalid",accent:"rgba(245,158,11,.18)"}];
   $("#moKpis").innerHTML=kpis.map(k=>'<div class="mo-kpi" style="--mo-accent:'+k.accent+'"><div class="mo-kpi-label">'+k.label+'</div><div class="mo-kpi-value">'+k.value+'</div><div class="mo-kpi-note">'+k.note+"</div></div>").join("");
   moDrawChart("moValueChart",months,"value",v=>v>=10000000?"৳"+(v/10000000).toFixed(1)+"cr":v>=100000?"৳"+(v/100000).toFixed(1)+"L":v?"৳"+fmtNum(v):"৳0");
-  moDrawChart("moCountChart",months,"count",v=>fmtNum(v)+" items");
+  const selected=months.find(m=>m.index===Number(moSelectedMonth));
+  const summary=$("#moSelectedSummary");
+  if(moSelectedMissing){summary.innerHTML='<div class="mo-selected-kpi"><span>Selection</span><b>Date Missing</b></div><div class="mo-selected-kpi"><span>Ordered items</span><b>'+fmtNum(missing.length)+'</b></div><div class="mo-selected-kpi"><span>Total ordered value</span><b>'+moValueText(missing.reduce((n,t)=>n+moMoney(t),0))+'</b></div>';}
+  else if(selected){summary.innerHTML='<div class="mo-selected-kpi"><span>Selected month</span><b>'+selected.name+' '+esc(year)+'</b></div><div class="mo-selected-kpi"><span>Ordered items</span><b>'+fmtNum(selected.count)+'</b></div><div class="mo-selected-kpi"><span>Total ordered value</span><b>'+moValueText(selected.value)+'</b></div>';}
+  else summary.innerHTML='<div class="mo-selected-kpi"><span>Selected year</span><b>'+esc(year||"—")+'</b></div><div class="mo-selected-kpi"><span>Ordered items</span><b>'+fmtNum(dated.length)+'</b></div><div class="mo-selected-kpi"><span>Total ordered value</span><b>'+moValueText(totalValue)+'</b></div>';
   $("#moMissingCount").textContent=fmtNum(missing.length);
   if(moSelectedMissing)moRenderDetail(missing,"Date Missing — ordered items",missing.length+" item(s) have no valid PR date");
   else if(moSelectedMonth!==""){const m=months.find(x=>x.index===Number(moSelectedMonth));if(m)moRenderDetail(m.rows,m.name+" "+year,m.count+" ordered item(s) · "+moValueText(m.value));else moRenderDetail([],"Monthly item details","Choose a month above");}
@@ -5796,16 +5801,38 @@ function renderMonthlyOrders(preserveYear){
   $("#moMissing").style.borderColor=missing.length?"rgba(245,158,11,.3)":"var(--line)";
   return {items,dated,missing,months,year,totalCount:dated.length,totalValue};
 }
-function moExportExcel(){
-  if(!dmGuard("export Monthly Ordered Items"))return;
-  const report=renderMonthlyOrders(true);if(typeof XLSX==="undefined"){toast("Excel export library is not available. Please refresh and try again.");return;}
-  const summary=report.months.map(m=>({"Month":m.name+" "+report.year,"Ordered items":m.count,"Total ordered value (BDT)":m.value}));
-  summary.push({"Month":"Date Missing","Ordered items":report.missing.length,"Total ordered value (BDT)":report.missing.reduce((n,t)=>n+moMoney(t),0)});
-  const details=report.items.map(t=>({"PR No.":t.pr,"PR Date":t._moDate||"Date Missing","Item":t.item,"CER":t.cer,"Department":t.dept,"Plant":t.plant||t.unit_area,"Quantity":t.qty,"Ordered Value (BDT)":moMoney(t),"Manufacturer":t.manufacturer,"Local Agent":t.agent,"PO No.":t.po}));
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),"Monthly Summary");XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(details),"Ordered Items");
-  XLSX.writeFile(wb,"CER_Monthly_Ordered_Items"+(report.year?"_"+report.year:"")+".xlsx");
+function moPrint(){
+  if(!dmGuard("print Monthly Ordered Items"))return;
+  const report=renderMonthlyOrders(true),mode=$("#moPrintMode").value;
+  let title="",rows=[],summaryHtml="";
+  const selected=report.months.find(m=>m.index===Number(moSelectedMonth));
+  if(mode==="summary"){
+    title="Monthly Ordered Items Summary — "+(report.year||"All years");
+    summaryHtml='<table><thead><tr><th>Month</th><th>Ordered items</th><th>Total ordered value (BDT)</th></tr></thead><tbody>'+
+      report.months.map(m=>'<tr><td>'+m.name+' '+esc(report.year||"")+'</td><td>'+fmtNum(m.count)+'</td><td>'+esc(moValueText(m.value))+'</td></tr>').join("")+
+      '<tr><th>Date Missing</th><th>'+fmtNum(report.missing.length)+'</th><th>'+esc(moValueText(report.missing.reduce((n,t)=>n+moMoney(t),0)))+'</th></tr></tbody></table>';
+  }else{
+    if(mode==="missing"){title="Date Missing — Ordered Items";rows=report.missing;}
+    else if(mode==="year"){title="Ordered Items — "+(report.year||"All years");rows=report.dated;}
+    else if(moSelectedMissing){title="Date Missing — Ordered Items";rows=report.missing;}
+    else if(selected){title="Ordered Items — "+selected.name+" "+report.year;rows=selected.rows;}
+    else {title="Monthly Ordered Items Summary — "+(report.year||"All years");summaryHtml='<table><thead><tr><th>Month</th><th>Ordered items</th><th>Total ordered value (BDT)</th></tr></thead><tbody>'+report.months.map(m=>'<tr><td>'+m.name+' '+esc(report.year||"")+'</td><td>'+fmtNum(m.count)+'</td><td>'+esc(moValueText(m.value))+'</td></tr>').join("")+'</tbody></table>';}
+    if(rows.length){
+      summaryHtml='<p><b>Ordered items:</b> '+fmtNum(rows.length)+' &nbsp; <b>Total ordered value:</b> '+esc(moValueText(rows.reduce((n,t)=>n+moMoney(t),0)))+'</p>'+
+      '<table><thead><tr><th>PR No.</th><th>PR Date</th><th>Item details</th><th>Department</th><th>Plant</th><th>Quantity</th><th>Ordered value (BDT)</th><th>Manufacturer / Supplier</th><th>PO No.</th></tr></thead><tbody>'+
+      rows.map(t=>'<tr><td>'+esc(t.pr||"—")+'</td><td>'+esc(t._moDate?fmtDate(t._moDate):"Date Missing")+'</td><td>'+esc(t.item||"—")+(t.cer?'<br>CER: '+esc(t.cer):"")+'</td><td>'+esc(t.dept||"—")+'</td><td>'+esc(t.plant||t.unit_area||"—")+'</td><td>'+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+'</td><td>'+esc(moValueText(moMoney(t)))+'</td><td>'+esc(t.manufacturer||t.agent||"—")+'</td><td>'+esc(t.po||"—")+'</td></tr>').join("")+'</tbody></table>';
+    }
+  }
+  let printNode=$("#moPrintReport");
+  if(!printNode){printNode=document.createElement("div");printNode.id="moPrintReport";printNode.style.display="none";document.body.appendChild(printNode);}
+  printNode.innerHTML='<h1>CER Tracker — '+esc(title)+'</h1><p>Generated on '+esc(new Date().toLocaleString())+'</p>'+summaryHtml;
+  document.body.classList.add("mo-printing");
+  const done=()=>{document.body.classList.remove("mo-printing");printNode.style.display="none";};
+  printNode.style.display="block";
+  window.addEventListener("afterprint",done,{once:true});
+  window.print();
+  setTimeout(done,1500);
 }
-function moPrint(){if(!dmGuard("print Monthly Ordered Items"))return;document.body.classList.add("mo-printing");const done=()=>document.body.classList.remove("mo-printing");window.addEventListener("afterprint",done,{once:true});window.print();setTimeout(done,1200);}
 
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
@@ -5814,7 +5841,6 @@ $("#monthlyOrdersBtn").addEventListener("click",()=>{if(!dmGuard("open Monthly O
 $("#moClose").addEventListener("click",()=>{$("#monthlyOrdersPanel").hidden=true;$("#monthlyOrdersBtn").focus();});
 $("#moYear").addEventListener("change",()=>{moSelectedMonth="";moSelectedMissing=false;renderMonthlyOrders(false);});
 $("#moMissingBtn").addEventListener("click",()=>{if(!dmGuard("view Date Missing items"))return;moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
-$("#moExport").addEventListener("click",moExportExcel);
 $("#moPrint").addEventListener("click",moPrint);
 /* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
 $("#cerImportFile").addEventListener("change", e=>{
