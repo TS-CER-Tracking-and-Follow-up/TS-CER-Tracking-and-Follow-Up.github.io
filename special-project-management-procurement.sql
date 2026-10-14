@@ -55,6 +55,32 @@ create table if not exists public.special_project_item_quotes (
   created_at timestamptz not null default now()
 );
 
+
+create or replace function spm_private.validate_item_quote_link()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if not exists (
+    select 1 from public.special_project_items i
+    where i.id = new.item_id and i.project_id = new.project_id
+  ) then
+    raise exception 'Quotation item must belong to the same project';
+  end if;
+  if tg_op = 'UPDATE' and new.id is distinct from old.id then
+    raise exception 'Quotation identity is immutable';
+  end if;
+  return new;
+end
+$;
+revoke all on function spm_private.validate_item_quote_link() from public, anon, authenticated;
+drop trigger if exists spm_item_quote_link_guard on public.special_project_item_quotes;
+create trigger spm_item_quote_link_guard
+before insert or update on public.special_project_item_quotes
+for each row execute function spm_private.validate_item_quote_link();
+
 create index if not exists sp_items_project_created_idx on public.special_project_items(project_id,created_at);
 create index if not exists sp_items_status_idx on public.special_project_items(project_id,procurement_status);
 create index if not exists sp_quotes_item_price_idx on public.special_project_item_quotes(item_id,quoted_unit_price);
