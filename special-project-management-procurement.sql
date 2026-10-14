@@ -61,7 +61,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $function$
 begin
   if not exists (
     select 1 from public.special_project_items i
@@ -74,7 +74,7 @@ begin
   end if;
   return new;
 end
-$;
+$function$;
 revoke all on function spm_private.validate_item_quote_link() from public, anon, authenticated;
 drop trigger if exists spm_item_quote_link_guard on public.special_project_item_quotes;
 create trigger spm_item_quote_link_guard
