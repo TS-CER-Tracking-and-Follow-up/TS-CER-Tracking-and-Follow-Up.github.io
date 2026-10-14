@@ -5775,7 +5775,7 @@ function moDrawChart(targetId,months,metric,valueLabel){
     return '<button class="mo-bar-item '+(selected?"selected":"")+'" type="button" data-mo-month="'+m.index+'" title="'+esc(m.name+": "+valueLabel(val))+'" aria-label="'+esc(m.name+": "+valueLabel(val)+". View items")+'" aria-pressed="'+selected+'">'+
       '<span class="mo-bar-val">'+(val?esc(valueLabel(val)):"—")+'</span><span class="mo-bar-track"><i class="mo-bar" style="height:'+height+'%"></i></span><span class="mo-bar-month">'+m.name+"</span></button>";
   }).join("");
-  el.querySelectorAll("[data-mo-month]").forEach(btn=>btn.addEventListener("click",()=>{moSelectedMonth=btn.dataset.moMonth;moSelectedMissing=false;renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});}));
+  el.querySelectorAll("[data-mo-month]").forEach(btn=>btn.addEventListener("click",()=>{moSelectedMonth=btn.dataset.moMonth;moSelectedMissing=false;renderMonthlyOrders(true);}));
 }
 function renderMonthlyOrders(preserveYear){
   const items=moItems(),yearSelect=$("#moYear");if(!yearSelect)return;
