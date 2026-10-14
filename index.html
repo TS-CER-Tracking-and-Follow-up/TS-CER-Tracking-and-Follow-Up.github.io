@@ -776,7 +776,7 @@ tbody tr.task-row:last-child{border-bottom:none}
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M8 14h3M8 17h7"/></svg>
         <span class="lbl">Special Projects</span>
       </a>
-      <button class="btn ghost data" id="monthlyOrdersBtn" type="button" title="Open graphical monthly ordered-items summary">
+      <button class="btn ghost data" id="monthlyOrdersBtn" type="button" hidden title="Open graphical monthly ordered-items summary">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="6" y="12" width="3" height="6" rx="1"/><rect x="11" y="8" width="3" height="10" rx="1"/><rect x="16" y="5" width="3" height="13" rx="1"/></svg>
         <span class="lbl">Monthly Orders</span>
       </button>
@@ -2370,10 +2370,19 @@ function dmGuard(action){
 }
 window.tsdCanManageData = canManageData;
 
+function refreshMonthlyOrdersAccess(){
+  const allowed = canManageData();
+  const btn = $("#monthlyOrdersBtn");
+  const panel = $("#monthlyOrdersPanel");
+  if(btn) btn.hidden = !allowed;
+  if(!allowed && panel) panel.hidden = true;
+  return allowed;
+}
 function renderUserBadge(){
   const el = $("#userBadgeName"); if(!el) return;
   const btn = $("#authBtn"); const lbl = $("#authBtnLabel");
   const idEl = $("#userBadgeId");
+  refreshMonthlyOrdersAccess();
   if(isAuthenticated()){
     const nm = getUser();
     el.textContent = nm || getUserEmail() || "Signed in";
@@ -5788,6 +5797,7 @@ function renderMonthlyOrders(preserveYear){
   return {items,dated,missing,months,year,totalCount:dated.length,totalValue};
 }
 function moExportExcel(){
+  if(!dmGuard("export Monthly Ordered Items"))return;
   const report=renderMonthlyOrders(true);if(typeof XLSX==="undefined"){toast("Excel export library is not available. Please refresh and try again.");return;}
   const summary=report.months.map(m=>({"Month":m.name+" "+report.year,"Ordered items":m.count,"Total ordered value (BDT)":m.value}));
   summary.push({"Month":"Date Missing","Ordered items":report.missing.length,"Total ordered value (BDT)":report.missing.reduce((n,t)=>n+moMoney(t),0)});
@@ -5795,15 +5805,15 @@ function moExportExcel(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),"Monthly Summary");XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(details),"Ordered Items");
   XLSX.writeFile(wb,"CER_Monthly_Ordered_Items"+(report.year?"_"+report.year:"")+".xlsx");
 }
-function moPrint(){document.body.classList.add("mo-printing");const done=()=>document.body.classList.remove("mo-printing");window.addEventListener("afterprint",done,{once:true});window.print();setTimeout(done,1200);}
+function moPrint(){if(!dmGuard("print Monthly Ordered Items"))return;document.body.classList.add("mo-printing");const done=()=>document.body.classList.remove("mo-printing");window.addEventListener("afterprint",done,{once:true});window.print();setTimeout(done,1200);}
 
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
 $("#printBtn").addEventListener("click", ()=>window.print());
-$("#monthlyOrdersBtn").addEventListener("click",()=>{const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
+$("#monthlyOrdersBtn").addEventListener("click",()=>{if(!dmGuard("open Monthly Ordered Items"))return;const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
 $("#moClose").addEventListener("click",()=>{$("#monthlyOrdersPanel").hidden=true;$("#monthlyOrdersBtn").focus();});
 $("#moYear").addEventListener("change",()=>{moSelectedMonth="";moSelectedMissing=false;renderMonthlyOrders(false);});
-$("#moMissingBtn").addEventListener("click",()=>{moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
+$("#moMissingBtn").addEventListener("click",()=>{if(!dmGuard("view Date Missing items"))return;moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
 $("#moExport").addEventListener("click",moExportExcel);
 $("#moPrint").addEventListener("click",moPrint);
 /* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
