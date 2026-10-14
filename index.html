@@ -5762,7 +5762,7 @@ function moRenderDetail(items,title,subtitle){
   body.innerHTML=items.slice().sort((a,b)=>(a._moDate||"").localeCompare(b._moDate||"")||String(a.pr||"").localeCompare(String(b.pr||""))).map(t=>
     "<tr><td><b>"+esc(t.pr||"—")+"</b></td><td>"+(t._moDate?esc(fmtDate(t._moDate)):'<span style="color:#fbbf24">Date Missing</span>')+"</td>"+
     "<td>"+esc(t.item||"—")+(t.cer?'<div style="color:var(--dim);font-size:10px">CER: '+esc(t.cer)+"</div>":"")+"</td>"+
-    "<td>"+esc(t.dept||"—")+"</td><td>"+esc(t.plant||t.unit_area||"—")+"</td><td>"+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+"</td>"+
+    "<td>"+esc(t.owner||"—")+"</td><td>"+esc(t.dept||"—")+"</td><td>"+esc(t.plant||t.unit_area||"—")+"</td><td>"+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+"</td>"+
     '<td class="mo-money">'+esc(moValueText(moMoney(t)))+"</td><td>"+esc(t.manufacturer||t.agent||"—")+"</td><td>"+esc(t.po||"—")+"</td></tr>"
   ).join("");
 }
