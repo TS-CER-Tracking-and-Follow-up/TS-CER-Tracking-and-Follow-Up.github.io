@@ -813,7 +813,7 @@ tbody tr.task-row:last-child{border-bottom:none}
     </div>
     <div class="mo-kpis" id="moKpis"></div>
     <div class="mo-charts mo-dashboard-grid"><div class="mo-card mo-value-card"><div class="mo-card-title"><span>Monthly ordered value</span><small>BDT · click a month to see its summary and items</small></div><div class="mo-chart" id="moValueChart"></div></div><div class="mo-selected-summary" id="moSelectedSummary"></div></div>
-    <div class="mo-card mo-month-card"><div class="mo-card-title"><span id="moDetailTitle">Monthly item details</span><small id="moDetailSub">Choose a month above</small></div><div class="mo-table-wrap"><table class="mo-table"><thead><tr><th>PR No.</th><th>PR Date</th><th>Item details</th><th>Responsible Person</th><th>Quantity</th><th>Ordered value (BDT)</th><th>Reduction %</th><th class="mo-expand-head">Details</th></tr></thead><tbody id="moDetailBody"></tbody></table></div><div class="mo-empty" id="moEmpty" hidden>Select a month to view its ordered items.</div></div>
+    <div class="mo-card mo-month-card"><div class="mo-card-title"><span id="moDetailTitle">Monthly item details</span><small id="moDetailSub">Choose a month above</small></div><div class="mo-table-wrap"><table class="mo-table"><thead><tr><th>PR No.</th><th>PR Date</th><th>Item details</th><th>Quantity</th><th>Initial quoted value (BDT)</th><th>Ordered value (BDT)</th><th>Reduction %</th><th class="mo-expand-head">Details</th></tr></thead><tbody id="moDetailBody"></tbody></table></div><div class="mo-empty" id="moEmpty" hidden>Select a month to view its ordered items.</div></div>
     <div class="mo-missing" id="moMissing"><div><b>Date Missing</b><p>Items with a PR number but no valid PR date are not assigned to any month.</p></div><button class="btn ghost sm" id="moMissingBtn" type="button">View items <span id="moMissingCount">0</span></button></div>
   </section>
 
@@ -5771,11 +5771,11 @@ function moRenderDetail(items,title,subtitle){
     return '<tr class="mo-item-row" data-mo-expand="'+id+'" tabindex="0" aria-expanded="false" title="Click to view full item details">'+
       '<td><b>'+esc(t.pr||"—")+'</b></td><td>'+(t._moDate?esc(fmtDate(t._moDate)):'<span style="color:#fbbf24">Date Missing</span>')+'</td>'+
       '<td><b>'+esc(t.item||"—")+'</b>'+(t.cer?'<div class="mo-muted">CER: '+esc(t.cer)+'</div>':"")+'</td>'+
-      '<td>'+esc(t.owner||"—")+'</td><td>'+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+'</td>'+
+      '<td>'+esc([t.qty,t.unit_area].filter(Boolean).join(" ")||"—")+'</td><td class="mo-money">'+esc(moValueText(Number(t.init_bdt)||0))+'</td>'+
       '<td class="mo-money">'+esc(moValueText(moMoney(t)))+'</td><td class="mo-reduction">'+esc(moReductionPercent(t))+'</td><td class="mo-expand-cell"><button type="button" class="mo-expand-btn" aria-label="Show item details" aria-expanded="false">＋ Details</button></td></tr>'+
       '<tr class="mo-expanded-row" id="'+id+'" hidden><td colspan="8"><div class="mo-expanded-grid">'+
-      '<div><span>Department</span><b>'+esc(t.dept||"—")+'</b></div><div><span>Plant</span><b>'+esc(t.plant||t.unit_area||"—")+'</b></div>'+
-      '<div><span>Initial quoted price (BDT)</span><b>'+esc(moValueText(Number(t.init_bdt)||0))+'</b></div><div><span>Ordered value (BDT)</span><b>'+esc(moValueText(moMoney(t)))+'</b></div>'+
+      '<div><span>Responsible Person</span><b>'+esc(t.owner||"—")+'</b></div><div><span>Department</span><b>'+esc(t.dept||"—")+'</b></div><div><span>Plant</span><b>'+esc(t.plant||t.unit_area||"—")+'</b></div>'+
+      '<div><span>Ordered value (BDT)</span><b>'+esc(moValueText(moMoney(t)))+'</b></div>'+
       '<div><span>Reduction</span><b>'+esc(moReductionPercent(t))+'</b></div><div><span>Manufacturer / Supplier</span><b>'+esc(t.manufacturer||t.agent||"—")+'</b></div>'+
       '<div><span>PO No.</span><b>'+esc(t.po||"—")+'</b></div><div><span>Tracking / CER</span><b>'+esc(t.cer||"—")+'</b></div></div></td></tr>';
   }).join("");
