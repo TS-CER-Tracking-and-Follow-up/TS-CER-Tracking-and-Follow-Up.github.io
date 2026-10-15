@@ -731,6 +731,22 @@ tbody tr.task-row:last-child{border-bottom:none}
 @media(max-width:700px){.mo-dashboard-grid{grid-template-columns:1fr}.mo-dashboard-grid .mo-selected-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.mo-dashboard-grid .mo-selected-kpi{min-height:0}}@media(max-width:520px){.mo-selected-summary{grid-template-columns:1fr}.mo-dashboard-grid .mo-selected-summary{grid-template-columns:1fr}.mo-panel{padding:12px}.mo-head h2{font-size:19px}.mo-kpis{grid-template-columns:1fr 1fr;gap:8px}.mo-kpi{padding:12px}.mo-chart{gap:2px;min-height:155px}.mo-bar-track{height:94px}.mo-bar-month{font-size:9px}.mo-bar-val{font-size:8px}.mo-controls>*{max-width:100%}}
 @media print{body.mo-printing .wrap{display:none!important}body.mo-printing #moPrintReport{display:block!important;position:static!important;visibility:visible!important;color:#111!important;background:#fff!important;padding:0!important;margin:0!important;width:100%!important}body.mo-printing #monthlyOrdersPanel{display:none!important}body.mo-printing #moPrintReport h1{font-size:20px}body.mo-printing #moPrintReport p{font-size:11px}body.mo-printing #moPrintReport table{width:100%;border-collapse:collapse;font-size:9px}body.mo-printing #moPrintReport th,body.mo-printing #moPrintReport td{border:1px solid #bbb;padding:5px;text-align:left;vertical-align:top}body.mo-printing #moPrintReport th{background:#eee!important}}
 
+
+/* Print preview cleanup: prevent decorative artifacts and awkward page splits. */
+@media print{
+  body.mo-printing,body.mo-printing html{background:#fff!important;background-image:none!important}
+  body.mo-printing #moPrintReport,body.mo-printing #moPrintReport *{box-shadow:none!important;text-shadow:none!important;background-image:none!important}
+  body.mo-printing #moPrintReport::before,body.mo-printing #moPrintReport::after,
+  body.mo-printing #moPrintReport *::before,body.mo-printing #moPrintReport *::after{content:none!important;display:none!important}
+  body.mo-printing #moPrintReport h1{border-radius:0!important}
+  body.mo-printing #moPrintReport .mo-report-kpis{display:flex!important;gap:10px!important;flex-wrap:nowrap!important}
+  body.mo-printing #moPrintReport .mo-report-kpi{flex:1 1 0!important;min-width:0!important}
+  body.mo-printing #moPrintReport .mo-print-graph,
+  body.mo-printing #moPrintReport .mo-summary-table,
+  body.mo-printing #moPrintReport .mo-item-core,
+  body.mo-printing #moPrintReport .mo-item-commercial{break-inside:auto;page-break-inside:auto}
+  body.mo-printing #moPrintReport .mo-print-section{break-after:avoid-page;page-break-after:avoid}
+}
 /* Monthly Orders: balanced, readable columns in the live dashboard. */
 #monthlyOrdersPanel .mo-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}
 #monthlyOrdersPanel .mo-table th,#monthlyOrdersPanel .mo-table td{box-sizing:border-box;overflow-wrap:anywhere;word-break:normal}
