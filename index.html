@@ -730,6 +730,37 @@ tbody tr.task-row:last-child{border-bottom:none}
 @media(max-width:850px){.mo-charts{grid-template-columns:1fr}.mo-controls{justify-content:flex-start}.mo-chart{gap:4px}.mo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.mo-dashboard-grid{grid-template-columns:1fr}.mo-dashboard-grid .mo-selected-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.mo-dashboard-grid .mo-selected-kpi{min-height:0}}@media(max-width:520px){.mo-selected-summary{grid-template-columns:1fr}.mo-dashboard-grid .mo-selected-summary{grid-template-columns:1fr}.mo-panel{padding:12px}.mo-head h2{font-size:19px}.mo-kpis{grid-template-columns:1fr 1fr;gap:8px}.mo-kpi{padding:12px}.mo-chart{gap:2px;min-height:155px}.mo-bar-track{height:94px}.mo-bar-month{font-size:9px}.mo-bar-val{font-size:8px}.mo-controls>*{max-width:100%}}
 @media print{body.mo-printing .wrap{display:none!important}body.mo-printing #moPrintReport{display:block!important;position:static!important;visibility:visible!important;color:#111!important;background:#fff!important;padding:0!important;margin:0!important;width:100%!important}body.mo-printing #monthlyOrdersPanel{display:none!important}body.mo-printing #moPrintReport h1{font-size:20px}body.mo-printing #moPrintReport p{font-size:11px}body.mo-printing #moPrintReport table{width:100%;border-collapse:collapse;font-size:9px}body.mo-printing #moPrintReport th,body.mo-printing #moPrintReport td{border:1px solid #bbb;padding:5px;text-align:left;vertical-align:top}body.mo-printing #moPrintReport th{background:#eee!important}}
+
+/* Monthly Orders: balanced, readable columns in the live dashboard. */
+#monthlyOrdersPanel .mo-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}
+#monthlyOrdersPanel .mo-table th,#monthlyOrdersPanel .mo-table td{box-sizing:border-box;overflow-wrap:anywhere;word-break:normal}
+#monthlyOrdersPanel .mo-table th:nth-child(1),#monthlyOrdersPanel .mo-table td:nth-child(1){width:9%}
+#monthlyOrdersPanel .mo-table th:nth-child(2),#monthlyOrdersPanel .mo-table td:nth-child(2){width:10%}
+#monthlyOrdersPanel .mo-table th:nth-child(3),#monthlyOrdersPanel .mo-table td:nth-child(3){width:25%}
+#monthlyOrdersPanel .mo-table th:nth-child(4),#monthlyOrdersPanel .mo-table td:nth-child(4){width:8%}
+#monthlyOrdersPanel .mo-table th:nth-child(5),#monthlyOrdersPanel .mo-table td:nth-child(5){width:13%}
+#monthlyOrdersPanel .mo-table th:nth-child(6),#monthlyOrdersPanel .mo-table td:nth-child(6){width:12%}
+#monthlyOrdersPanel .mo-table th:nth-child(7),#monthlyOrdersPanel .mo-table td:nth-child(7){width:9%}
+#monthlyOrdersPanel .mo-table th:nth-child(8),#monthlyOrdersPanel .mo-table td:nth-child(8){width:14%}
+#monthlyOrdersPanel .mo-table th{padding:9px 6px;font-size:10px;line-height:1.35;white-space:normal;hyphens:auto}
+#monthlyOrdersPanel .mo-table td{padding:9px 6px;vertical-align:top;line-height:1.4}
+#monthlyOrdersPanel .mo-table td.mo-money{white-space:normal;word-break:normal;font-size:10px}
+#monthlyOrdersPanel .mo-table .mo-expand-btn{white-space:normal;padding:5px 4px}
+#monthlyOrdersPanel .mo-expanded-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#monthlyOrdersPanel .mo-expanded-grid>div{min-width:0}
+@media(max-width:900px){#monthlyOrdersPanel .mo-table-wrap{overflow-x:auto}#monthlyOrdersPanel .mo-table{min-width:760px}}
+@media print{
+  body.mo-printing #moPrintReport,body.mo-printing #moPrintReport *{box-shadow:none!important;text-shadow:none!important}
+  body.mo-printing #moPrintReport::before,body.mo-printing #moPrintReport::after,
+  body.mo-printing #moPrintReport *::before,body.mo-printing #moPrintReport *::after{content:none!important;display:none!important}
+  body.mo-printing #moPrintReport{background:#fff!important;overflow:visible!important}
+  body.mo-printing #moPrintReport .mo-report-eyebrow{margin-top:0!important;padding-top:0!important}
+  body.mo-printing #moPrintReport .mo-report-kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.mo-printing #moPrintReport .mo-print-section{break-after:avoid-page!important;page-break-after:avoid!important}
+  body.mo-printing #moPrintReport table{break-inside:auto!important;page-break-inside:auto!important}
+  body.mo-printing #moPrintReport thead{display:table-header-group}
+  body.mo-printing #moPrintReport tr{break-inside:avoid!important;page-break-inside:avoid!important}
+}
 </style>
 </head>
 <body class="auth-pending">
