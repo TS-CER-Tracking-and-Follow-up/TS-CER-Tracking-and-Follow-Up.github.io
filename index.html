@@ -149,10 +149,15 @@ body{background:
   color:var(--txt);font-family:var(--font);font-size:14px;line-height:1.5;
   min-height:100vh;-webkit-font-smoothing:antialiased}
 ::selection{background:rgba(59,130,246,.25)}
-::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#334155;border-radius:8px;border:2px solid var(--bg)}
-::-webkit-scrollbar-thumb:hover{background:#475569}
+/* High-visibility scrollbar: cyan thumb on a dark-grey track */
+html{scrollbar-color:#22d3ee #303b4b;scrollbar-width:auto}
+*{scrollbar-color:#22d3ee #303b4b}
+::-webkit-scrollbar{width:14px;height:14px}
+::-webkit-scrollbar-track{background:#303b4b;border-radius:8px}
+::-webkit-scrollbar-thumb{background:#22d3ee;border:3px solid #303b4b;border-radius:8px;min-height:36px}
+::-webkit-scrollbar-thumb:hover{background:#67e8f9;border-color:#303b4b}
+::-webkit-scrollbar-thumb:active{background:#a5f3fc}
+::-webkit-scrollbar-corner{background:#303b4b}
 
 .wrap{max-width:none;margin:0 auto;padding:14px 20px 16px;min-height:100vh;
   display:flex;flex-direction:column;gap:12px}
