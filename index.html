@@ -2375,8 +2375,23 @@ function dmGuard(action){
 }
 window.tsdCanManageData = canManageData;
 
+/* Monthly Orders is read-only analytics: the Data Management Admin and the
+   authorized PR Release boss may view it. This does NOT grant Data Management
+   permissions to the boss. */
+function canViewMonthlyOrders(){
+  return canManageData() || canReleasePr();
+}
+function moGuard(action){
+  if(canViewMonthlyOrders()) return true;
+  const who = isAuthenticated() ? (currentUser() || currentUserId() || "a signed-in user") : "not signed in";
+  const msg = "Monthly Orders is available to the Data Management Admin and PR Release boss. You are " + who
+            + " - this action was refused.";
+  console.warn("[TSD] Monthly Orders refused (" + action + "):", msg);
+  toast(msg);
+  return false;
+}
 function refreshMonthlyOrdersAccess(){
-  const allowed = canManageData();
+  const allowed = canViewMonthlyOrders();
   const btn = $("#monthlyOrdersBtn");
   const panel = $("#monthlyOrdersPanel");
   if(btn) btn.hidden = !allowed;
@@ -5819,7 +5834,7 @@ function renderMonthlyOrders(preserveYear){
   return {items,dated,missing,months,year,totalCount:dated.length,totalValue};
 }
 function moPrint(){
-  if(!dmGuard("print Monthly Ordered Items"))return;
+  if(!moGuard("print Monthly Ordered Items"))return;
   const report=renderMonthlyOrders(true),mode=$("#moPrintMode").value;
   let title="",rows=[],summaryHtml="";
   const selected=report.months.find(m=>m.index===Number(moSelectedMonth));
@@ -5858,10 +5873,10 @@ function moPrint(){
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
 $("#printBtn").addEventListener("click", ()=>window.print());
-$("#monthlyOrdersBtn").addEventListener("click",()=>{if(!dmGuard("open Monthly Ordered Items"))return;const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
+$("#monthlyOrdersBtn").addEventListener("click",()=>{if(!moGuard("open Monthly Ordered Items"))return;const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
 $("#moClose").addEventListener("click",()=>{$("#monthlyOrdersPanel").hidden=true;$("#monthlyOrdersBtn").focus();});
 $("#moYear").addEventListener("change",()=>{moSelectedMonth="";moSelectedMissing=false;renderMonthlyOrders(false);});
-$("#moMissingBtn").addEventListener("click",()=>{if(!dmGuard("view Date Missing items"))return;moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
+$("#moMissingBtn").addEventListener("click",()=>{if(!moGuard("view Date Missing items"))return;moSelectedMissing=true;moSelectedMonth="";renderMonthlyOrders(true);$("#moDetailTitle").scrollIntoView({behavior:"smooth",block:"nearest"});});
 $("#moPrint").addEventListener("click",moPrint);
 /* 3-dot menu: "Import Data from Excel" — the original 30-column CER workbook. */
 $("#cerImportFile").addEventListener("change", e=>{
