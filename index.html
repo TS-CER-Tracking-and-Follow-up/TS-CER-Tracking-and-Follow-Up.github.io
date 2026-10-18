@@ -6875,7 +6875,12 @@ async function dmFlowWrite(){
             + " from " + dmFlow.fileName + " (" + tasks.length + " record(s))"
   });
   if(r && r.refused) toast(r.msg);
+  const successMessage = (dmFlow.mode === "replace" ? "REPLACEMENT SUCCESSFUL" : "IMPORT SUCCESSFUL")
+    + "\n\n" + tasks.length + " CER record(s) are now saved in the shared Supabase database."
+    + "\n\nThe database was read back and the record count was verified. Other users will see this shared dataset when they reload the tracker.";
   toast((dmFlow.mode === "replace" ? "Replaced all CER data" : "Imported CER data") + " - " + tasks.length + " record(s), verified against the database.");
+  // A persistent, unmistakable confirmation: do not rely on the short-lived toast alone.
+  window.alert(successMessage);
   renderDataMgmtUI();
 }
 
