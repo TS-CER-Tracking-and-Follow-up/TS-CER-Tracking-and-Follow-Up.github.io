@@ -3188,80 +3188,43 @@ async function save(){
 
     const sharedId = (existingRows && existingRows.length) ? existingRows[0].id : null;
 
-    // Did the row on the server really receive this payload?
-    async function persisted(id){
-      try{
-        const { data, error } = await supabaseClient
-          .from("cer_records")
-          .select("data")
-          .eq("id", id)
-          .limit(1);
-        if(error) return false;
-        const row = data && data[0];
-        if(!row || !Array.isArray(row.data)) return false;
-        if(row.data.length !== tasks.length) return false;
-        // CONTENT CHECK (not just a row count). A refused UPDATE can match zero
-        // rows while PostgREST still reports NO error, and the retry below may
-        // be refused too - so an "update", an "insert" and a "refused" write
-        // are indistinguishable by length alone. jsonb does not preserve key
-        // order, so compare the fields that actually decide what the user sees
-        // (read per-record by name) instead of comparing raw JSON text.
-        const byId = new Map();
-        row.data.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
-        for(const t of tasks){
-          const r = byId.get(String(t.id));
-          if(!r) return false;
-          if(String(r.pr_released === true) !== String(t.pr_released === true)) return false;
-          if(String(r.stage || "") !== String(t.stage || "")) return false;
-          if(String(r.lastEditedAt || "") !== String(t.lastEditedAt || "")) return false;
-        }
-        return true;
-      }catch(e){ return false; }
-    }
-
-    // 1) Normal path: update the existing shared row.
+    // Verify writes using the returned row ID. Reading the entire tracker
+    // JSON array back after every save made edits and deletes unnecessarily slow.
+    // PostgREST returns the ID only when the guarded row was actually changed.
     let wrote = false;
     if(sharedId){
-      const { error: updateError } = await supabaseClient
+      const { data: updatedRows, error: updateError } = await supabaseClient
         .from("cer_records")
         .update(payload)
-        .eq("id", sharedId);
+        .eq("id", sharedId)
+        .select("id");
 
-      // A policy refusal is deliberately NOT rethrown here: it falls through
-      // to the acquire-and-retry step below, because a lock that was merely
-      // lost or expired is recoverable. Only a write that still has not
-      // landed after that retry is reported to the user as a failure.
-      if(updateError){ console.warn("cer_records update refused:", updateError.message || updateError); }
-      wrote = await persisted(sharedId);
+      if(updateError) console.warn("cer_records update refused:", updateError.message || updateError);
+      wrote = !!(updatedRows && updatedRows.length);
     }
 
-    // 2) The write did not land: take the editing lock and retry once. This
-    //    is what makes a save survive a tab switch that happened while the
-    //    form was open.
+    // If the guarded update matched no row, reacquire the lock and retry once.
     if(!wrote && sharedId){
       try{ await Lock.acquire(); }catch(e){}
-      const { error: retryError } = await supabaseClient
+      const { data: retryRows, error: retryError } = await supabaseClient
         .from("cer_records")
         .update(payload)
-        .eq("id", sharedId);
+        .eq("id", sharedId)
+        .select("id");
 
       if(retryError) throw retryError;
-      wrote = await persisted(sharedId);
+      wrote = !!(retryRows && retryRows.length);
     }
 
-    // 3) No shared row exists yet: create the first one (allowed by the
-    //    insert policy while no live lock is held).
+    // No shared row exists yet: create the first one and return its ID.
     if(!wrote && !sharedId){
-      const { error: insertError } = await supabaseClient
+      const { data: insertedRows, error: insertError } = await supabaseClient
         .from("cer_records")
-        .insert(payload);
+        .insert(payload)
+        .select("id");
 
       if(insertError) throw insertError;
-      const { data: afterInsert } = await supabaseClient
-        .from("cer_records")
-        .select("id")
-        .limit(1);
-      wrote = !!(afterInsert && afterInsert.length);
+      wrote = !!(insertedRows && insertedRows.length);
     }
 
     if(!wrote){
