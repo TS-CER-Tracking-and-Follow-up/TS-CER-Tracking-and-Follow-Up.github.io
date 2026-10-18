@@ -2089,11 +2089,10 @@ function sanitizeDates(arr){
 /* ---------- state ---------- */
 let tasks = [];
 let filter = { q:"", stage:"", plant:"", owner:"", pf:"" };
-/* v21 - the user-facing sorting dropdown was removed at the owner's request.
-   The tracker renders in one fixed DEFAULT order (soonest deadline first) and
-   no control on the page can change it. DEFAULT_ORDER is NOT a replacement
-   sort control - it is simply the order the table already loaded with. */
-const DEFAULT_ORDER = { key:"target", dir:"asc" };
+/* Fixed default display order: newest CER receiving date first, oldest last.
+   Records without a CER date are placed after dated records; their creation
+   date is used as a fallback by the CER-date sorter. No sort controls are shown. */
+const DEFAULT_ORDER = { key:"cer_date", dir:"desc" };
 /* Multi-select. Keyed by the STABLE record id (never the row number, and never
    the item name, which repeats). Only ids that are in the current result set
    can ever be acted on - see pruneSelection(). */
