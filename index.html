@@ -2113,12 +2113,12 @@ let pendingDelete = null;
      2. Open the browser console (F12) and run:  tsdWhoAmI()
         -> it prints the exact ID to paste below.
         (The ID is also shown next to the name in the header.)
-     3. Paste it here, e.g.  const PR_RELEASE_ADMIN_IDS = ["4bfcc2f5-1df5-443e-9efe-d4a2b72e4bd8"];
+     3. Paste it here, e.g.  const PR_RELEASE_ADMIN_IDS = [];
    The gate is FAIL-CLOSED: if the array is EMPTY, NOBODY can release a PR.
    NOTE: this is a client-side UI gate. For real enforcement add the
    Supabase RLS policy given in the delivery notes.
    ============================================================ */
-const PR_RELEASE_ADMIN_IDS = ["4bfcc2f5-1df5-443e-9efe-d4a2b72e4bd8"];   // <-- BOSS'S SUPABASE AUTH USER ID. Only IDs listed here may release/edit PR Release data.
+const PR_RELEASE_ADMIN_IDS = [];   // <-- BOSS'S SUPABASE AUTH USER ID. Only IDs listed here may release/edit PR Release data.
 /* ============================================================
    DATA MANAGEMENT ADMIN  (a SEPARATE role from PR Release)
    ------------------------------------------------------------
@@ -2374,16 +2374,15 @@ function dmGuard(action){
 }
 window.tsdCanManageData = canManageData;
 
-/* Monthly Orders is read-only analytics: the Data Management Admin and the
-   authorized PR Release boss may view it. This does NOT grant Data Management
-   permissions to the boss. */
+/* Monthly Orders is read-only analytics and is restricted to the sole
+   Data Management Admin. PR Release permission does not grant access. */
 function canViewMonthlyOrders(){
-  return canManageData() || canReleasePr();
+  return canManageData();
 }
 function moGuard(action){
   if(canViewMonthlyOrders()) return true;
   const who = isAuthenticated() ? (currentUser() || currentUserId() || "a signed-in user") : "not signed in";
-  const msg = "Monthly Orders is available to the Data Management Admin and PR Release boss. You are " + who
+  const msg = "Monthly Orders is available only to the Data Management Admin. You are " + who
             + " - this action was refused.";
   console.warn("[TSD] Monthly Orders refused (" + action + "):", msg);
   toast(msg);
