@@ -5981,6 +5981,9 @@ function renderDataMgmtUI(){
     return;
   }
 
+  const ownerOptions = [...new Set(tasks.map(t=>String(t.owner||"").trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b))
+    .map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
   body.innerHTML = `
     <div class="dm-grid">
       <div class="dm-card"><b>Export Excel</b><span>Download the current CER dataset as an Excel (.xlsx) workbook.</span>
@@ -5993,6 +5996,11 @@ function renderDataMgmtUI(){
         <button class="btn ghost" id="dmCerUp">Import CER Data</button></div>
       <div class="dm-card"><b>Replace All CER Data</b><span>Swap the ENTIRE dataset for a workbook or backup. Validated, backed up and verified first - destructive, asks first.</span>
         <button class="btn ghost" id="dmReplace">Replace All</button></div>
+      <div class="dm-card"><b>Delete Data</b><span>Keep only one Responsible Person's records, or delete every record. A verified backup is downloaded before any deletion.</span>
+        <label for="dmKeepOwner" style="display:block;margin:8px 0 5px;font-size:12px">Keep records for</label>
+        <select id="dmKeepOwner" style="width:100%;margin-bottom:8px;padding:8px;border-radius:8px">${ownerOptions}</select>
+        <button class="btn ghost" id="dmKeepOnly">Keep Only This Person</button>
+        <button class="btn danger" id="dmDeleteAll" style="margin-top:7px">Delete All Data</button></div>
       <div class="dm-card"><b>Restore Backup</b><span>Restore the dataset from a JSON backup file. Asks first.</span>
         <button class="btn ghost" id="dmRestore">Restore Backup</button></div>
       <div class="dm-card"><b>Import / Replacement History</b><span>Refresh the audit log of Data Management operations.</span>
@@ -6009,6 +6017,8 @@ function renderDataMgmtUI(){
   on("dmExportCsv",   ()=>{ if(dmGuard("Export CSV")) dmExportCsv(); });
   on("dmCerUp",   ()=>{ if(dmGuard("Import CER data")) $("#cerImportFile").click(); });
   on("dmReplace", ()=>{ if(dmGuard("Replace all CER data")) dmFlowStart("replace"); });
+  on("dmKeepOnly", ()=>{ if(dmGuard("Delete data")) dmDeleteData("keep-owner"); });
+  on("dmDeleteAll", ()=>{ if(dmGuard("Delete all data")) dmDeleteData("all"); });
   on("dmBackup",  ()=>{ if(dmGuard("Download backup")) dmDownloadBackup(); });
   on("dmRestore", ()=>{ if(dmGuard("Restore backup")) $("#dmRestoreFile").click(); });
   on("dmRefresh", ()=>{ if(dmGuard("Import history")) loadDmEvents().then(renderDataMgmtUI); });
@@ -6016,6 +6026,69 @@ function renderDataMgmtUI(){
   const sf = $("#dmRestoreFile"); if(sf) sf.addEventListener("change", e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) dmRestoreBackup(f); });
   const ff = $("#dmFlowFile"); if(ff) ff.addEventListener("change", e=>{ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) dmFlowFile(f); });
   dmFlowRender();
+}
+
+/* ---------- carefully guarded data deletion ---------- */
+async function dmDeleteData(mode){
+  if(!dmGuard(mode === "all" ? "Delete all CER data" : "Keep only one Responsible Person")) return;
+  if(!isAuthenticated()){ toast("Please sign in before changing shared data."); return; }
+  const ownerEl = $("#dmKeepOwner");
+  const owner = ownerEl ? String(ownerEl.value || "").trim() : "";
+  if(mode !== "all" && !owner){ toast("Choose a Responsible Person first."); return; }
+  const original = tasks.slice();
+  const kept = mode === "all" ? [] : original.filter(t => String(t.owner || "").trim().toLowerCase() === owner.toLowerCase());
+  const removeCount = original.length - kept.length;
+  if(removeCount <= 0){
+    toast(mode === "all" ? "There is no data to delete." : "No records would be deleted; the tracker already contains only " + owner + "'s records.");
+    return;
+  }
+  const yes = await window.__prConfirm({
+    title: mode === "all" ? "Delete ALL CER data?" : "Keep only " + owner + "'s records?",
+    text: mode === "all"
+      ? "This will remove all " + original.length + " CER record(s) from the shared tracker. A verified backup will be downloaded first. Continue only if you are certain."
+      : "Keep " + kept.length + " record(s) assigned to " + owner + " and delete the other " + removeCount + " of " + original.length + " record(s)? A verified backup will be downloaded first.",
+    ok: mode === "all" ? "Delete All Data" : "Keep Only " + owner
+  });
+  if(!yes) return;
+  const pre = dmMakeBackup();
+  const bv = dmVerifyBackup(pre);
+  if(!bv.ok){ toast("Backup verification failed (" + bv.why + "). Nothing was deleted."); return; }
+  dmDownloadBackupPayload(pre, mode === "all" ? "pre-delete-all" : "pre-keep-" + owner.replace(/[^a-z0-9_-]+/gi,"-"));
+  const snapshot = JSON.parse(JSON.stringify(tasks));
+  if(!Lock.amIHolder()){
+    const lockResult = await Lock.acquire();
+    if(!lockResult || !lockResult.ok){ toast("Read-only - " + ((lockResult && lockResult.holder) || "another user") + " is editing. Nothing was deleted."); return; }
+  }
+  try{
+    tasks = kept;
+    const saved = await save();
+    if(!saved) throw new Error("the shared save did not succeed");
+    const {data,error} = await supabaseClient.from("cer_records").select("id,data").limit(1);
+    if(error) throw new Error("database verification failed: " + (error.message || error));
+    if(!data || !data.length) throw new Error("the shared database row could not be read back");
+    const live = Array.isArray(data[0].data) ? data[0].data : [];
+    if(live.length !== kept.length) throw new Error("database has " + live.length + " record(s), expected " + kept.length);
+    if(mode !== "all" && live.some(t => String(t.owner || "").trim().toLowerCase() !== owner.toLowerCase()))
+      throw new Error("verification found records outside " + owner + "'s records");
+    renderAll();
+    try{ await Lock.release(); }catch(e){}
+    const detail = mode === "all"
+      ? "Deleted all CER data; removed " + removeCount + " record(s)"
+      : "Kept only " + owner + "; removed " + removeCount + " record(s), kept " + kept.length;
+    toast("Data change completed and verified. " + kept.length + " record(s) remain.");
+    const logResult = await dmLogEvent("log_cer_data_mgmt", {p_action:"delete_data",p_detail:detail,p_row_count:kept.length});
+    if(logResult && logResult.refused) toast(logResult.msg);
+    renderDataMgmtUI();
+  }catch(err){
+    tasks = snapshot;
+    let rolledBack = false;
+    try{ rolledBack = await save(); }catch(e){}
+    renderAll();
+    try{ await Lock.release(); }catch(e){}
+    toast("Data deletion failed: " + ((err && err.message) || err) + ". Previous data " + (rolledBack ? "was restored." : "is available in the downloaded backup."));
+    console.error("[TSD] Data deletion failed:",err);
+    renderDataMgmtUI();
+  }
 }
 
 /* ---------- the actions ---------- */
