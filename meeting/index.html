@@ -15,7 +15,7 @@
 <div class="shell">
 <aside class="sidebar"><div class="brand"><span class="brandmark">◉</span><span class="brandtext">MeetPoint</span></div><div><div class="navlabel">Workspace</div><div class="navitem active"><span class="navicon">⌂</span><span class="navtext">Home</span></div><div class="navitem"><span class="navicon">▣</span><span class="navtext">Meetings</span></div><div class="navitem"><span class="navicon">▦</span><span class="navtext">Calendar</span></div><div class="navitem"><span class="navicon">▤</span><span class="navtext">Recordings</span></div></div><div><div class="navlabel">Preferences</div><div class="navitem"><span class="navicon">⚙</span><span class="navtext">Settings</span></div></div><div class="sidebottom">Simple, browser-based video meetings.<br><br>Camera and microphone access are requested only when you start or join a call.</div></aside>
 <main class="main"><header class="topbar"><div class="crumb">Workspace / Home</div><div class="profile"><span class="avatar" id="profileAvatar">G</span><span id="profileName">Guest</span></div></header>
-<section class="welcome"><div><div class="eyebrow">Your meeting space</div><h1>Bring your team together.</h1><p>Meet face-to-face, share ideas, and get things done.</p></div><button class="primary" id="newTop">＋ New meeting</button></section>
+<section class="welcome"><div><div class="eyebrow">Your meeting space</div><h1>Bring your team together.</h1><p>Meet face-to-face, share ideas, and get things done.</p></div><div style="display:flex;gap:9px;flex-wrap:wrap"><button class="outline" id="checkMedia">Test camera &amp; mic</button><button class="primary" id="newTop">＋ New meeting</button></div></section>
 <section class="actions"><button class="action" id="newMeeting"><span class="symbol">▣</span><span><strong>Start a meeting</strong><small>Start an instant video call</small></span></button><button class="action" id="joinMeeting"><span class="symbol">↗</span><span><strong>Join with a code</strong><small>Enter a meeting room code</small></span></button><button class="action" id="scheduleMeeting"><span class="symbol">▦</span><span><strong>Share a meeting link</strong><small>Create a room and invite others</small></span></button></section>
 <section class="lower"><div class="panel"><div class="panelhead"><h2>Get started</h2><span class="status"><span class="statusdot"></span>Ready to meet</span></div><div class="empty"><div class="emptyicon">🎥</div><strong>Your next conversation starts here</strong><p>Start a room, copy its code, and share it with people you want to meet.</p><button class="primary" id="startEmpty">Start a meeting</button></div></div><div class="panel"><div class="panelhead"><h2>Quick guide</h2></div><div class="tip"><strong>1. Create a room</strong><p>Choose Start a meeting and allow your browser to use the camera and microphone.</p></div><div class="tip"><strong>2. Invite your team</strong><p>Copy the room code or link and send it to your participants.</p></div><div class="tip"><strong>3. Collaborate</strong><p>Use in-meeting chat, mute controls, and screen sharing.</p></div></div></section>
 </main></div>
@@ -28,11 +28,31 @@
 const $=id=>document.getElementById(id);
 let mode='host', peer=null, localStream=null, screenStream=null, currentRoom='', displayName='Guest', hostId='', mediaCalls=new Map(), dataConnections=new Map(), remoteStreams=new Map(), micOn=true, camOn=true, toastTimer, joined=false;
 const modalBack=$('modalBack');
-function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3400)}
+function toast(msg,duration=3400){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),duration)}
 function cleanRoom(v){return v.trim().replace(/[^a-zA-Z0-9-]/g,'').slice(0,35)}
 function makeRoom(){return 'meet-'+Math.random().toString(36).slice(2,8)+'-'+Math.random().toString(36).slice(2,5)}
 function showModal(next){mode=next;modalBack.classList.add('show');$('displayName').value=displayName==='Guest'?'':displayName;$('codeField').classList.toggle('hidden',next!=='join');$('modalTitle').textContent=next==='join'?'Join a meeting':'Start a meeting';$('modalDesc').textContent=next==='join'?'Enter the room code shared by your host.':'Create a room and invite your team.';$('confirmModal').textContent=next==='join'?'Join meeting':'Start meeting';if(next==='join')$('roomCode').focus();else $('displayName').focus()}
 function closeModal(){modalBack.classList.remove('show')}
+async function checkMediaAccess(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Camera access is unavailable in this browser context. Open this page directly at its HTTPS website, not inside a preview or embedded window.',9000);return}
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  stream.getTracks().forEach(t=>t.stop());
+  toast('Camera and microphone access is working. You can now start or join a meeting.',6000);
+ }catch(err){
+  console.error('Camera/microphone permission check failed:',err);
+  if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
+   toast('Chrome is blocking access. Click the icon left of the address bar → Site settings → set Camera and Microphone to Allow, then reload this page. Also check Windows Settings → Privacy & security.',12000);
+  }else if(err.name==='NotFoundError'){
+   toast('No camera or microphone was found. Connect a device or select an available device in Chrome settings.',9000);
+  }else if(err.name==='NotReadableError'){
+   toast('Your camera or microphone may be in use by another app. Close other meeting apps and try again.',9000);
+  }else{
+   toast('Could not access camera/microphone ('+(err.name||'unknown error')+'). Check Chrome site permissions and Windows privacy settings.',10000);
+  }
+ }
+}
+$('checkMedia').addEventListener('click',checkMediaAccess);
 ['newTop','newMeeting','scheduleMeeting','startEmpty'].forEach(id=>$(id).addEventListener('click',()=>showModal('host')));
 $('joinMeeting').addEventListener('click',()=>showModal('join'));$('cancelModal').addEventListener('click',closeModal);
 modalBack.addEventListener('click',e=>{if(e.target===modalBack)closeModal()});
@@ -45,7 +65,7 @@ function updateCount(){const n=$('tiles').children.length;$('participantCount').
 function setStatus(s){$('connectionStatus').textContent=s}
 function inviteUrl(){return location.origin+location.pathname+'?room='+encodeURIComponent(currentRoom)}
 async function enterMeeting(room,isHost){if(!window.Peer){toast('The meeting connection library did not load. Check your internet and refresh.');return}currentRoom=room;joined=true;hostId='mp-'+room;micOn=true;camOn=true;$('micBtn').classList.remove('off');$('micBtn').innerHTML='<span>🎙</span>Mute';$('camBtn').classList.remove('off');$('camBtn').innerHTML='<span>▣</span>Stop video';$('tiles').innerHTML='';$('chatMessages').innerHTML='';$('meeting').classList.add('show');$('meetRoom').textContent=room;$('copyInvite').textContent='▣ Copy invite';addSystem('Welcome to room '+room);
-try{localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true})}catch(err){joined=false;$('meeting').classList.remove('show');toast(err.name==='NotAllowedError'?'Camera/microphone permission was denied. Allow access in your browser and try again.':'Camera or microphone unavailable. Check your device permissions and try again.');return}
+try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('MEDIA_API_UNAVAILABLE');localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true})}catch(err){joined=false;$('meeting').classList.remove('show');const denied=err.name==='NotAllowedError'||err.name==='PermissionDeniedError';toast(denied?'Chrome is blocking camera/microphone. Click the icon left of the address bar → Site settings → set Camera and Microphone to Allow, then reload and try again.':err.message==='MEDIA_API_UNAVAILABLE'?'Open the meeting using its HTTPS website directly, not an embedded preview.':'Camera/microphone unavailable ('+(err.name||'unknown error')+'). Check Chrome site permissions, Windows privacy settings, and whether another app is using the devices.',11000);return}
 createTile('local',displayName,localStream,true);
 setStatus(isHost?'Creating room…':'Connecting to host…');
 try{peer=isHost?new Peer(hostId,{debug:0}):new Peer({debug:0})}catch(e){cleanup();toast('Could not start the meeting connection.');return}
