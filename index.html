@@ -769,6 +769,10 @@ tbody tr.task-row:last-child{border-bottom:none}
     </button>
     <div class="hdr-actions">
       <span class="sep"></span>
+      <button class="btn ghost data" id="meetingsBtn" type="button" title="Open MeetPoint meetings">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>
+        <span class="lbl">Meetings</span>
+      </button>
       <button class="btn ghost data" id="printBtn" title="Print / save as PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         <span class="lbl">Print</span>
@@ -7221,5 +7225,8 @@ function wireDataMgmt(){
   });
 })();
 </script>
-  </body>
+  <script>
+document.getElementById('meetingsBtn')?.addEventListener('click',()=>{window.location.href='meeting/'});
+</script>
+</body>
 </html>
