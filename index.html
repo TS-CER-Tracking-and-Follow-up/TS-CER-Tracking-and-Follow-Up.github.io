@@ -5896,8 +5896,15 @@ function printResponsiblePerson(){
 }
 
 function printResponsiblePersonReport(ownerValue,ownerLabel){
-  const previousOwner=filter.owner;
+  /* A responsible-person report must contain ALL records assigned to that
+     person, not just whatever happens to be visible under the current search,
+     stage or plant filters. */
+  const previousFilter={...filter};
+  filter.q="";
+  filter.stage="";
+  filter.plant="";
   filter.owner=ownerValue;
+  filter.pf="";
   renderTable();
 
   let heading=$("#responsiblePrintHeader");
@@ -5910,17 +5917,18 @@ function printResponsiblePersonReport(ownerValue,ownerLabel){
     panel.insertBefore(heading,tableScroll);
   }
 
+  const reportCount=filtered().length;
   heading.innerHTML=`
     <div class="responsible-print-report-title">TSD Follow-Up Tracker</div>
     <div class="responsible-print-report-subtitle">Responsible Person Report · ${esc(ownerLabel)}</div>
-    <div class="responsible-print-report-meta">Generated ${esc(new Date().toLocaleDateString())} · ${esc(filtered().length)} item(s)</div>`;
+    <div class="responsible-print-report-meta">Generated ${esc(new Date().toLocaleDateString())} · ${esc(reportCount)} item(s)</div>`;
   heading.style.display="block";
   document.body.classList.add("responsible-printing");
 
   const restore=()=>{
     document.body.classList.remove("responsible-printing");
     heading.style.display="none";
-    filter.owner=previousOwner;
+    Object.assign(filter,previousFilter);
     renderTable();
   };
   window.addEventListener("afterprint",restore,{once:true});
