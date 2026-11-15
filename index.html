@@ -494,12 +494,46 @@ tbody tr.task-row:last-child{border-bottom:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
 
+/* ---------- Responsible-person print dialog ---------- */
+#responsiblePrintOverlay{
+  position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(3,8,18,.72);backdrop-filter:blur(8px);
+}
+#responsiblePrintOverlay.open{display:flex}
+.responsible-print-modal{
+  width:min(520px,100%);background:var(--panel);border:1px solid var(--line2);
+  border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden;
+}
+.responsible-print-head{display:flex;gap:18px;padding:22px 24px 18px;border-bottom:1px solid var(--line)}
+.responsible-print-head>div:first-child{flex:1}
+.responsible-print-eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--cyan);margin-bottom:5px}
+.responsible-print-head h2{font-family:var(--display);font-size:20px;font-weight:800;letter-spacing:-.02em}
+.responsible-print-head p{margin-top:5px;color:var(--mut);font-size:12px;line-height:1.55}
+.responsible-print-close{width:32px;height:32px;border:1px solid var(--line2);border-radius:9px;background:transparent;color:var(--mut);font-size:22px;line-height:1;cursor:pointer}
+.responsible-print-close:hover{color:var(--txt);background:rgba(148,163,184,.08)}
+.responsible-print-body{padding:22px 24px 10px}
+.responsible-print-body label{display:block;font-size:12px;font-weight:700;color:var(--mut);margin-bottom:7px}
+#responsiblePrintSelect{
+  width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--txt);font:600 13px var(--font);outline:none;
+}
+#responsiblePrintSelect:focus{border-color:rgba(59,130,246,.6);box-shadow:0 0 0 3px rgba(59,130,246,.14)}
+.responsible-print-note{margin-top:10px;color:var(--dim);font-size:11px;line-height:1.5}
+.responsible-print-actions{display:flex;justify-content:flex-end;gap:9px;padding:16px 24px 20px}
+#responsiblePrintHeader{display:none;padding:0 0 12px;border-bottom:2px solid #17365d;margin-bottom:10px}
+.responsible-print-report-title{font-size:21px;font-weight:800;color:#17365d}
+.responsible-print-report-subtitle{font-size:14px;font-weight:700;color:#111;margin-top:3px}
+.responsible-print-report-meta{font-size:10.5px;color:#555;margin-top:3px}
+
 /* print */
 @media print{
   body{background:#fff;color:#111}
   header,.stats,.toolbar,.modal-f,.foot .hide-print,.row-act,.hdr-actions,.selbar,.sel-cell,.sel-wrap{display:none !important}
+  #responsiblePrintOverlay{display:none !important}
   .wrap{padding:0;max-width:none}
   .panel{border:none;box-shadow:none}
+  #responsiblePrintHeader{display:none}
+  body.responsible-printing #responsiblePrintHeader{display:block}
   .table-scroll{overflow:visible;max-height:none;flex:none}
   table{min-width:0;font-size:10.5px}
   thead th{position:static;background:var(--bg2);color:var(--txt)}
@@ -773,9 +807,13 @@ tbody tr.task-row:last-child{border-bottom:none}
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>
         <span class="lbl">Meetings</span>
       </button>
-      <button class="btn ghost data" id="printBtn" title="Print / save as PDF">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+      <button class="btn ghost data" id="printBtn" title="Print current filtered view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5h-2M6 14h12v8H6z"/></svg>
         <span class="lbl">Print</span>
+      </button>
+      <button class="btn ghost data" id="printResponsibleBtn" type="button" title="Print data for one responsible person">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c.8-3.2 2.8-5 6-5s5.2 1.8 6 5"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M15 15c2.8.2 4.8 1.8 6 5"/></svg>
+        <span class="lbl">Print by Responsible</span>
       </button>
       <input type="file" id="cerImportFile" accept=".xlsx,.xls,.csv" style="display:none">
       <button class="btn ghost data" id="dmBtn" hidden title="Data Management - import, replace, back up and restore CER data (Data Management Admin only)">
@@ -5797,6 +5835,100 @@ function moPrint(){
 /* ---------- actions ---------- */
 $("#addBtn").addEventListener("click", openAdd);
 $("#printBtn").addEventListener("click", ()=>window.print());
+
+/* ---------- individual responsible-person printing ---------- */
+function printResponsiblePerson(){
+  const ownerSelect=$("#ownerFilter");
+  if(!ownerSelect) return;
+  const owners=[...ownerSelect.options]
+    .filter(o=>String(o.value||"").trim())
+    .map(o=>({value:o.value,label:o.textContent.trim()}));
+  if(!owners.length){
+    toast("No responsible persons are available to print.");
+    return;
+  }
+
+  let overlay=$("#responsiblePrintOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="responsiblePrintOverlay";
+    overlay.innerHTML=`
+      <div class="responsible-print-modal" role="dialog" aria-modal="true" aria-labelledby="responsiblePrintTitle">
+        <div class="responsible-print-head">
+          <div>
+            <div class="responsible-print-eyebrow">PRINT REPORT</div>
+            <h2 id="responsiblePrintTitle">Responsible Person Report</h2>
+            <p>Select one responsible person. Only that person's records will be included in the printout.</p>
+          </div>
+          <button type="button" class="responsible-print-close" id="responsiblePrintClose" aria-label="Close">×</button>
+        </div>
+        <div class="responsible-print-body">
+          <label for="responsiblePrintSelect">Responsible Person</label>
+          <select id="responsiblePrintSelect"></select>
+          <div class="responsible-print-note">The report uses the same current tracker data and includes the responsible person's assigned records only.</div>
+        </div>
+        <div class="responsible-print-actions">
+          <button type="button" class="btn ghost" id="responsiblePrintCancel">Cancel</button>
+          <button type="button" class="btn primary" id="responsiblePrintGo">Print Report</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const close=()=>overlay.remove();
+    $("#responsiblePrintClose").addEventListener("click",close);
+    $("#responsiblePrintCancel").addEventListener("click",close);
+    overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
+    $("#responsiblePrintGo").addEventListener("click",()=>{
+      const value=$("#responsiblePrintSelect").value;
+      const label=$("#responsiblePrintSelect").selectedOptions[0]?.textContent||value;
+      if(!value) return;
+      close();
+      printResponsiblePersonReport(value,label);
+    });
+  }
+
+  const select=$("#responsiblePrintSelect");
+  select.innerHTML=owners.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+  const current=String(filter.owner||"").trim();
+  if(current && owners.some(o=>o.value===current)) select.value=current;
+  overlay.classList.add("open");
+  select.focus();
+}
+
+function printResponsiblePersonReport(ownerValue,ownerLabel){
+  const previousOwner=filter.owner;
+  filter.owner=ownerValue;
+  renderTable();
+
+  let heading=$("#responsiblePrintHeader");
+  if(!heading){
+    heading=document.createElement("div");
+    heading.id="responsiblePrintHeader";
+    const panel=document.querySelector(".panel");
+    const tableScroll=panel?.querySelector(".table-scroll");
+    if(!panel||!tableScroll) return;
+    panel.insertBefore(heading,tableScroll);
+  }
+
+  heading.innerHTML=`
+    <div class="responsible-print-report-title">TSD Follow-Up Tracker</div>
+    <div class="responsible-print-report-subtitle">Responsible Person Report · ${esc(ownerLabel)}</div>
+    <div class="responsible-print-report-meta">Generated ${esc(new Date().toLocaleDateString())} · ${esc(filtered().length)} item(s)</div>`;
+  heading.style.display="block";
+  document.body.classList.add("responsible-printing");
+
+  const restore=()=>{
+    document.body.classList.remove("responsible-printing");
+    heading.style.display="none";
+    filter.owner=previousOwner;
+    renderTable();
+  };
+  window.addEventListener("afterprint",restore,{once:true});
+  window.print();
+  setTimeout(restore,1800);
+}
+
+$("#printResponsibleBtn").addEventListener("click", printResponsiblePerson);
 $("#monthlyOrdersBtn").addEventListener("click",()=>{if(!moGuard("open Monthly Ordered Items"))return;const panel=$("#monthlyOrdersPanel");panel.hidden=!panel.hidden;if(!panel.hidden){renderMonthlyOrders(false);panel.scrollIntoView({behavior:"smooth",block:"start"});}});
 $("#moClose").addEventListener("click",()=>{$("#monthlyOrdersPanel").hidden=true;$("#monthlyOrdersBtn").focus();});
 $("#moYear").addEventListener("change",()=>{moSelectedMonth="";moSelectedMissing=false;renderMonthlyOrders(false);});
