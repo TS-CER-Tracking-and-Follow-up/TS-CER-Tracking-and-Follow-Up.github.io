@@ -2128,10 +2128,11 @@ function sanitizeDates(arr){
 /* ---------- state ---------- */
 let tasks = [];
 let filter = { q:"", stage:"", plant:"", owner:"", pf:"" };
-/* Fixed default display order: newest-added records first, oldest last.
-   New items receive a creation timestamp when saved, so they appear at the top
-   even when their CER receiving date is blank or older. No sort controls shown. */
-const DEFAULT_ORDER = { key:"created", dir:"desc" };
+/* Fixed default display order: latest CER received date first, oldest last.
+   Records with a CER receiving date are ordered newest -> oldest. Records
+   without a CER date are kept at the bottom, using creation time only as a
+   secondary fallback among undated records. No sort controls shown. */
+const DEFAULT_ORDER = { key:"cer_date", dir:"desc" };
 /* Multi-select. Keyed by the STABLE record id (never the row number, and never
    the item name, which repeats). Only ids that are in the current result set
    can ever be acted on - see pruneSelection(). */
